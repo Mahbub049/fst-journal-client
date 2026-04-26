@@ -1,30 +1,48 @@
 const journalInfo = [
-  ["Abbr.", "Int. J. Comput. Adv."],
-  ["ISSN Print", "2754-8813"],
-  ["ISSN Online", "2754-8821"],
-  ["Frequency", "Bimonthly"],
-  ["Founded", "January 2014"],
+  ["Abbreviation", "BUP FST Journal"],
+  ["ISSN Print", "2959-4812"],
+  ["ISSN Online", "Pending"],
+  ["Frequency", "Annual"],
   ["Language", "English"],
-  ["Publisher", "Academic Press International"],
+  ["Publisher", "Faculty of Science & Technology, BUP"],
+  ["Access Type", "Open Access"],
 ];
 
 export default function JournalInfoSidebar() {
   return (
-    <aside className="overflow-hidden rounded-none border border-slate-200 bg-white">
-      <div className="bg-[#123D6B] px-5 py-4">
-        <h3 className="text-[18px] font-bold text-white">Journal Information</h3>
+    <aside className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-slate-200 bg-[#f8fafc] px-6 py-5">
+        <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#1e2557]">
+          Quick Facts
+        </p>
+
+        <h3
+          className="mt-2 text-[24px] font-semibold text-slate-950"
+          style={{ fontFamily: "var(--font-source-serif)" }}
+        >
+          Journal Information
+        </h3>
       </div>
 
-      <div>
+      <div className="divide-y divide-slate-200">
         {journalInfo.map(([label, value]) => (
           <div
             key={label}
-            className="grid grid-cols-[90px_1fr] border-b border-slate-200 px-4 py-4 text-[13px] last:border-b-0"
+            className="grid grid-cols-[120px_1fr] gap-4 px-6 py-4 text-[14px]"
           >
             <span className="text-slate-500">{label}</span>
-            <span className="font-medium text-slate-800">{value}</span>
+            <span className="font-medium leading-6 text-slate-800">
+              {value}
+            </span>
           </div>
         ))}
+      </div>
+
+      <div className="border-t border-slate-200 bg-[#f8fafc] px-6 py-5">
+        <p className="text-[13px] leading-6 text-slate-600">
+          For manuscript preparation, authors should follow the latest journal
+          guidelines before submission.
+        </p>
       </div>
     </aside>
   );

@@ -9,9 +9,9 @@ import RecentIssuesSection from "@/components/home/RecentIssuesSection";
 export default function HomePage() {
   return (
     <PublicLayout>
-      <main className="bg-[#F3F5F7]">
-        <Container className="py-6">
-          <div className="grid gap-4 lg:grid-cols-[2.05fr_0.95fr]">
+      <main className="bg-[#f7f8fb]">
+        <Container className="py-10 md:py-14">
+          <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_390px]">
             <OverviewSection />
             <JournalInfoSidebar />
           </div>
@@ -19,11 +19,8 @@ export default function HomePage() {
 
         <ExecutiveEditorsSection />
 
-        <Container className="py-6">
+        <Container className="space-y-10 py-10 md:py-14">
           <ArticlesSection />
-        </Container>
-
-        <Container className="pb-8">
           <RecentIssuesSection />
         </Container>
       </main>

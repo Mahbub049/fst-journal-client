@@ -1,44 +1,49 @@
 export default function OverviewSection() {
   return (
-    <section className="rounded-none bg-[#EAF1F5] px-8 py-6">
-      <h2 className="text-[24px] font-bold text-[#111827]">Overview</h2>
+    <section className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-8">
+      <div className="max-w-3xl">
+        <p className="journal-subheading">About the Journal</p>
 
-      <div className="mt-5 space-y-4 text-[13px] leading-7 text-slate-700">
-        <p>
-          International Journal of Computer Vision (IJCV) details the science
-          and engineering of this rapidly growing field. Regular articles
-          present the technical advances of broad general interest.
-        </p>
+        <h2 className="journal-heading mt-3">Overview</h2>
 
-        <p>
-          Survey articles offer critical reviews of the state of the art and or
-          tutorial presentations of pertinent topics.
-        </p>
+        <div className="mt-6 space-y-5 text-[15px] leading-8 text-slate-600">
+          <p>
+            BUP Faculty of Science & Technology Journal is a peer-reviewed
+            academic publication dedicated to research in computing, engineering,
+            applied science, technology, and interdisciplinary innovation.
+          </p>
 
-        <p className="font-semibold text-slate-800">Coverage includes:</p>
+          <p>
+            The journal welcomes original research articles, review papers,
+            technical studies, and scholarly contributions that address current
+            academic and practical challenges in science and technology.
+          </p>
 
-        <p>
-          – Mathematical, physical and computational aspects of computer
-          vision: image formation, processing, analysis, and interpretation;
-          machine learning techniques; statistical approaches; sensors.
-        </p>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+            <p className="font-medium text-slate-900">Coverage includes:</p>
 
-        <p>
-          – Applications: image-based rendering, computer graphics, robotics,
-          photo interpretation, image retrieval, video analysis and annotation,
-          multimedia, and more.
-        </p>
+            <ul className="mt-4 space-y-3 text-slate-600">
+              <li>
+                Computing, artificial intelligence, data science, cybersecurity,
+                software engineering, and information systems.
+              </li>
+              <li>
+                Engineering applications, emerging technologies, applied
+                sciences, and interdisciplinary research.
+              </li>
+              <li>
+                Research with academic contribution, practical relevance, and
+                potential social or industrial impact.
+              </li>
+            </ul>
+          </div>
 
-        <p>
-          – Connections with human perception: computational and architectural
-          aspects of human vision.
-        </p>
-
-        <p>
-          The journal also features book reviews, position papers, editorials by
-          leading scientific figures, as well as additional online material such
-          as still images, video sequences, data sets, and software.
-        </p>
+          <p>
+            The journal aims to support researchers, faculty members, students,
+            and professionals by providing a reliable platform for scholarly
+            communication and research visibility.
+          </p>
+        </div>
       </div>
     </section>
   );

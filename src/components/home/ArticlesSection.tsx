@@ -1,81 +1,103 @@
 const articles = [
   {
-    type: "Research article",
+    type: "Research Article",
     title:
-      "Treatment and resource recovery of wastewater using membrane technologies",
-    authors: "A. Ahmed, S. Rahman",
-    date: "June 2024",
+      "AI-assisted academic systems for outcome-based education and assessment",
+    authors: "A. Rahman, S. Akter",
+    date: "July 2026",
   },
   {
-    type: "Review article",
+    type: "Review Article",
     title:
-      "A review of the effect of welding parameters on thermal properties",
-    authors: "M. Karim, A. Chowdhury",
-    date: "June 2024",
+      "Emerging trends in cybersecurity education and institutional readiness",
+    authors: "M. Hasan, N. Chowdhury",
+    date: "July 2026",
   },
   {
-    type: "Review article",
+    type: "Research Article",
     title:
-      "A review on microstructure and tribological properties of composites",
-    authors: "M. Singh, A. Kumar",
-    date: "June 2024",
+      "Machine learning based decision support for sustainable technology systems",
+    authors: "T. Islam, R. Ahmed",
+    date: "July 2026",
   },
   {
-    type: "Review article",
+    type: "Technical Article",
     title:
-      "Characteristics of raw dredged sediments and thermal durability overview",
-    authors: "P. Karmokar",
-    date: "June 2024",
+      "Modern web-based information systems for academic process automation",
+    authors: "F. Karim",
+    date: "July 2026",
   },
   {
-    type: "Research article",
+    type: "Review Article",
     title:
-      "Engineering oriented-defined metal-oxide networks for tumor therapy",
-    authors: "Ying Zhu, Hongli Chu",
-    date: "June 2024",
+      "Data-driven approaches in applied science and interdisciplinary research",
+    authors: "S. Hossain, M. Rahman",
+    date: "July 2026",
   },
   {
-    type: "Review article",
+    type: "Research Article",
     title:
-      "Edge cutting and AI-driven strategies for semiconductor devices",
-    authors: "U. Das, S. Muborak",
-    date: "June 2024",
+      "Explainable artificial intelligence for educational and healthcare applications",
+    authors: "J. Mahbub, A. Islam",
+    date: "July 2026",
   },
+];
+
+const tabs = [
+  "Latest published",
+  "Articles in press",
+  "Top cited",
+  "Most downloaded",
+  "Most popular",
 ];
 
 export default function ArticlesSection() {
   return (
-    <section className="rounded-none bg-white px-6 py-6">
-      <div className="border-b border-slate-300 pb-4">
-        <h2 className="text-[24px] font-bold text-slate-900">Articles</h2>
+    <section className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-8">
+      <div className="flex flex-col gap-5 border-b border-slate-200 pb-6 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="journal-subheading">Research Publications</p>
+          <h2 className="journal-heading mt-3">Articles</h2>
+        </div>
 
-        <div className="mt-4 flex flex-wrap gap-5 text-[12px] font-medium text-slate-600">
-          <span className="border-b-2 border-[#B63B96] pb-1 text-slate-900">
-            Latest published
-          </span>
-          <span>Articles in press</span>
-          <span>Top cited</span>
-          <span>Most downloaded</span>
-          <span>Most popular</span>
+        <div className="flex flex-wrap gap-2">
+          {tabs.map((tab, index) => (
+            <button
+              key={tab}
+              className={`rounded-full px-4 py-2 text-[13px] font-medium transition ${
+                index === 0
+                  ? "bg-[#1e2557] text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="mt-8 grid gap-x-10 gap-y-8 md:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-7 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {articles.map((article, index) => (
-          <article key={index} className="text-[12px] leading-6 text-slate-700">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-              {article.type} • Open access
+          <article
+            key={index}
+            className="rounded-2xl border border-slate-200 bg-[#fbfcfd] p-5 transition hover:-translate-y-1 hover:bg-white hover:shadow-md"
+          >
+            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[#1e2557]">
+              {article.type} · Open Access
             </p>
 
-            <h3 className="mt-3 text-[16px] font-semibold leading-7 text-slate-900">
+            <h3 className="mt-4 text-[17px] font-semibold leading-7 text-slate-950">
               {article.title}
             </h3>
 
-            <p className="mt-3 text-slate-600">{article.authors}</p>
-            <p className="mt-2 text-slate-500">{article.date}</p>
+            <p className="mt-4 text-[14px] text-slate-600">
+              {article.authors}
+            </p>
 
-            <button className="mt-3 text-[12px] font-semibold text-[#1DA9D6]">
-              View PDF
+            <p className="mt-2 text-[13px] text-slate-500">{article.date}</p>
+
+            <button className="mt-5 text-[14px] font-medium text-[#1e2557] hover:text-slate-950">
+              View article →
             </button>
           </article>
         ))}
