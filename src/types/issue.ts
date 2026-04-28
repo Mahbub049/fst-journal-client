@@ -12,6 +12,9 @@ export type Issue = {
   isRecent: boolean;
   isPublished: boolean;
   order: number;
+
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type PopulatedIssue = {
