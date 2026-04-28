@@ -25,7 +25,7 @@ export default function PublicFooter() {
                 className="truncate text-[22px] leading-none text-[#111433]"
                 style={{ fontFamily: "var(--font-source-serif)" }}
               >
-                BUP FST Journal
+                Journal of FST
               </h2> */}
 
                   {/* <p className="truncate pt-1 text-[13px] text-slate-500">
@@ -39,7 +39,7 @@ export default function PublicFooter() {
                   className="text-[24px] leading-none text-slate-900"
                   style={{ fontFamily: "var(--font-source-serif)" }}
                 >
-                  BUP FST Journal
+                  Journal of FST
                 </h3>
                 <p className="pt-1 text-[13px] text-slate-500">
                   Bangladesh University of Professionals
@@ -158,7 +158,7 @@ export default function PublicFooter() {
         </div>
 
         <div className="mt-12 flex flex-col gap-3 border-t border-slate-200 pt-6 text-[13px] text-slate-500 md:flex-row md:items-center md:justify-between">
-          <p>Copyright © 2026 BUP FST Journal. All rights reserved.</p>
+          <p>Copyright © 2026 Journal of FST. All rights reserved.</p>
           <p>Designed for academic publishing and research visibility.</p>
         </div>
       </Container>

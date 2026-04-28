@@ -5,10 +5,15 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getRecentIssues } from "@/services/issues.service";
 import { Issue } from "@/types/issue";
+import { PublicHomepageContent } from "@/services/publicHomepageService";
+
+type Props = {
+  homepage?: PublicHomepageContent | null;
+};
 
 const DEFAULT_COVER = "/images/cover.jpg";
 
-export default function RecentIssuesSection() {
+export default function RecentIssuesSection({ homepage }: Props) {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -31,9 +36,13 @@ export default function RecentIssuesSection() {
     <section className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="journal-subheading">Published Volumes</p>
+          <p className="journal-subheading">
+            {homepage?.recentIssuesSubtitle || "Published Volumes"}
+          </p>
 
-          <h2 className="journal-heading mt-3">Recent Issues</h2>
+          <h2 className="journal-heading mt-3">
+            {homepage?.recentIssuesTitle || "Recent Issues"}
+          </h2>
         </div>
 
         <Link
@@ -57,12 +66,12 @@ export default function RecentIssuesSection() {
           {issues.map((issue) => (
             <Link
               key={issue._id}
-              href={issue.pdfUrl || "#"}
+              href={`/issues/${issue.slug}`}
               className="group overflow-hidden rounded-3xl border border-slate-200 bg-[#fbfcfd] transition hover:-translate-y-1 hover:bg-white hover:shadow-md"
             >
               <div className="relative aspect-[0.72] w-full overflow-hidden bg-slate-100">
                 <Image
-                  src={DEFAULT_COVER}
+                  src={issue.coverImage || DEFAULT_COVER}
                   alt={issue.title || "Journal of FST"}
                   fill
                   sizes="(max-width: 768px) 100vw, 33vw"
@@ -73,7 +82,7 @@ export default function RecentIssuesSection() {
 
               <div className="p-5">
                 <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[#1e2557]">
-                  Science & Technology · ISSN 2959-4812
+                  Science & Technology · ISSN {issue.issn || "2959-4812"}
                 </p>
 
                 <h3 className="mt-3 text-[17px] font-semibold leading-7 text-slate-950">

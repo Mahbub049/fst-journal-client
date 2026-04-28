@@ -1,1 +1,1 @@
-export const SITE_NAME = "BUP FST Journal";
+export const SITE_NAME = "Journal of FST";

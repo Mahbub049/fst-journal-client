@@ -1,148 +1,259 @@
 import Container from "@/components/common/Container";
 import PublicLayout from "@/components/layout/PublicLayout";
 
-const executiveEditors = [
-  {
-    id: "exec-1",
-    name: "Professor Dr. Md. Mahbubur Rahman",
-    role: "Executive Editor",
-    org: "Faculty of Science & Technology, Bangladesh University of Professionals",
-    interests:
-      "Computer science, artificial intelligence, information systems, academic research management",
-    initials: "MR",
-  },
-  {
-    id: "exec-2",
-    name: "Dr. Nusrat Jahan",
-    role: "Associate Executive Editor",
-    org: "Department of ICT, Bangladesh University of Professionals",
-    interests:
-      "Data science, machine learning, natural language processing, educational technology",
-    initials: "NJ",
-  },
-  {
-    id: "exec-3",
-    name: "Dr. Tanvir Ahmed",
-    role: "Executive Editor",
-    org: "Department of Environmental Science, Bangladesh University of Professionals",
-    interests:
-      "Applied science, environmental technology, sustainable development, interdisciplinary research",
-    initials: "TA",
-  },
-];
-
-const groupedEditors = [
-  {
-    id: "group-1",
-    title: "Computer Science and Information Technology",
-    members: [
-      {
-        id: "cs-1",
-        name: "Dr. Farhana Islam",
-        role: "Editorial Board Member",
-        org: "Department of ICT, Bangladesh University of Professionals",
-        interests:
-          "Software engineering, database systems, cybersecurity, human-computer interaction",
-        initials: "FI",
-      },
-      {
-        id: "cs-2",
-        name: "Dr. Arif Hossain",
-        role: "Editorial Board Member",
-        org: "Department of Computer Science, Bangladesh University of Professionals",
-        interests:
-          "Artificial intelligence, deep learning, computer vision, explainable AI",
-        initials: "AH",
-      },
-    ],
-  },
-  {
-    id: "group-2",
-    title: "Engineering and Applied Technology",
-    members: [
-      {
-        id: "eng-1",
-        name: "Dr. Sabrina Rahman",
-        role: "Editorial Board Member",
-        org: "Faculty of Science & Technology, Bangladesh University of Professionals",
-        interests:
-          "Engineering systems, applied technology, automation, smart infrastructure",
-        initials: "SR",
-      },
-    ],
-  },
-  {
-    id: "group-3",
-    title: "Environmental Science and Interdisciplinary Research",
-    members: [
-      {
-        id: "env-1",
-        name: "Dr. Mehedi Hasan",
-        role: "Editorial Board Member",
-        org: "Department of Environmental Science, Bangladesh University of Professionals",
-        interests:
-          "Environmental modeling, climate adaptation, sustainability, applied research methods",
-        initials: "MH",
-      },
-    ],
-  },
-];
-
-function EditorCard({
-  name,
-  role,
-  org,
-  interests,
-  initials,
-}: {
+type EditorialBoardMember = {
+  _id: string;
+  category: string;
+  editorialArea?: string;
   name: string;
-  role: string;
-  org: string;
-  interests: string;
-  initials: string;
-}) {
+  designation?: string;
+  institution?: string;
+  department?: string;
+  expertise?: string[];
+  profileImage?: string;
+  bio?: string;
+  email?: string;
+  order?: number;
+  isActive?: boolean;
+};
+
+type EditorialSection = {
+  id: string;
+  label: string;
+  title: string;
+  category: string;
+  members: EditorialBoardMember[];
+};
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+
+const sectionConfig = [
+  {
+    id: "chief-patron",
+    label: "Chief Patron",
+    title: "Chief Patron",
+    category: "Chief Patron",
+  },
+  {
+    id: "chief-editor",
+    label: "Chief Editor",
+    title: "Chief Editor",
+    category: "Chief Editor",
+  },
+  {
+    id: "editor",
+    label: "Editor",
+    title: "Editor",
+    category: "Editor",
+  },
+  {
+    id: "assistant-editors",
+    label: "Assistant Editors",
+    title: "Assistant Editors",
+    category: "Assistant Editor",
+  },
+  {
+    id: "editorial-advisory-board",
+    label: "Editorial Advisory Board",
+    title: "Editorial Advisory Board",
+    category: "Editorial Advisory Board",
+  },
+];
+
+async function getEditorialBoardMembers(): Promise<EditorialBoardMember[]> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/editorial-board`, {
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      return [];
+    }
+
+    const data = await res.json();
+
+    return Array.isArray(data?.data) ? data.data : [];
+  } catch (error) {
+    console.error("Failed to fetch editorial board members:", error);
+    return [];
+  }
+}
+
+function normalizeCategory(value?: string) {
+  return (value || "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function isCategoryMatch(category: string | undefined, acceptedNames: string[]) {
+  const currentCategory = normalizeCategory(category);
+
+  return acceptedNames.some(
+    (name) => normalizeCategory(name) === currentCategory
+  );
+}
+
+function sortMembers(members: EditorialBoardMember[]) {
+  return [...members].sort((a, b) => {
+    const orderA = Number(a.order ?? 0);
+    const orderB = Number(b.order ?? 0);
+
+    if (orderA !== orderB) return orderA - orderB;
+
+    return (a.name || "").localeCompare(b.name || "");
+  });
+}
+
+function buildEditorialSections(
+  members: EditorialBoardMember[]
+): EditorialSection[] {
+  const configuredSections = sectionConfig.map((section) => ({
+    ...section,
+    members: sortMembers(
+      members.filter((member) => member.category === section.category)
+    ),
+  }));
+
+  const knownCategories = sectionConfig.map((section) => section.category);
+
+  const extraCategories = Array.from(
+    new Set(
+      members
+        .map((member) => member.category)
+        .filter((category) => category && !knownCategories.includes(category))
+    )
+  );
+
+  const extraSections = extraCategories.map((category) => ({
+    id: category
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, ""),
+    label: category,
+    title: category,
+    category,
+    members: sortMembers(
+      members.filter((member) => member.category === category)
+    ),
+  }));
+
+  return [...configuredSections, ...extraSections].filter(
+    (section) => section.members.length > 0
+  );
+}
+
+function getInitials(name: string) {
+  return name
+    .replace(/Dr\.|Professor|Prof\.|Major General|Brigadier General/gi, "")
+    .split(" ")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
+function getCategoryCount(
+  members: EditorialBoardMember[],
+  acceptedNames: string[]
+) {
+  return members.filter((member) =>
+    isCategoryMatch(member.category, acceptedNames)
+  ).length;
+}
+
+function EditorCard({ member }: { member: EditorialBoardMember }) {
+  const imageUrl = member.profileImage?.trim();
+
   return (
     <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
-      <div className="flex flex-col gap-5 sm:flex-row">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#111433] text-[15px] font-semibold text-white">
-          {initials}
+      <div className="flex flex-col gap-6 md:flex-row md:items-start">
+        <div className="shrink-0">
+          <div className="h-[220px] w-[170px] overflow-hidden rounded-2xl border border-slate-200 bg-[#f1f5f9] shadow-sm">
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={member.name}
+                className="h-full w-full object-cover object-top"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-[40px] font-bold text-[#111433]">
+                {getInitials(member.name)}
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-            <div>
-              <h3 className="text-[18px] font-semibold text-slate-950">
-                {name}
-              </h3>
+        <div className="min-w-0 flex-1 pt-1">
+          <h3 className="text-[20px] font-semibold leading-8 text-slate-950">
+            {member.name}
+          </h3>
 
-              <p className="mt-1 text-[14px] font-medium text-[#111433]">
-                {role}
-              </p>
+          <p className="mt-1 text-[14px] font-semibold text-[#111433]">
+            {member.category}
+          </p>
+
+          <div className="mt-5 space-y-2 text-[15px] leading-7 text-slate-700">
+            {member.designation ? <p>{member.designation}</p> : null}
+
+            {member.department ? (
+              <p className="text-slate-600">{member.department}</p>
+            ) : null}
+
+            {member.institution ? (
+              <p className="text-slate-600">{member.institution}</p>
+            ) : null}
+          </div>
+
+          {member.expertise && member.expertise.length > 0 ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {member.expertise.map((item) => (
+                <span
+                  key={item}
+                  className="rounded-full bg-slate-100 px-3 py-1 text-[12px] font-semibold text-slate-600"
+                >
+                  {item}
+                </span>
+              ))}
             </div>
+          ) : null}
 
-            <button className="w-fit rounded-full border border-slate-200 px-4 py-2 text-[13px] font-medium text-slate-600 hover:border-[#111433]/30 hover:text-[#111433]">
-              View biography
-            </button>
-          </div>
-
-          <p className="mt-4 text-[14px] leading-7 text-slate-600">{org}</p>
-
-          <div className="mt-4 rounded-2xl bg-slate-50 p-4">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Research Interests
+          {member.bio ? (
+            <p className="mt-4 text-[14px] leading-7 text-slate-600">
+              {member.bio}
             </p>
-
-            <p className="mt-2 text-[14px] leading-7 text-slate-700">
-              {interests}
-            </p>
-          </div>
+          ) : null}
         </div>
       </div>
     </article>
   );
 }
 
-export default function EditorialBoardPage() {
+export default async function EditorialBoardPage() {
+  const members = await getEditorialBoardMembers();
+  const editorialSections = buildEditorialSections(members);
+
+  const chiefPatronCount = getCategoryCount(members, ["Chief Patron"]);
+
+  const chiefEditorCount = getCategoryCount(members, ["Chief Editor"]);
+
+  const editorCount = getCategoryCount(members, ["Editor"]);
+
+  const assistantEditorCount = getCategoryCount(members, [
+    "Assistant Editor",
+    "Assistant Editors",
+  ]);
+
+  const advisoryBoardCount = getCategoryCount(members, [
+    "Editorial Advisory Board",
+    "Editorial Advisory Board Member",
+    "Editorial Advisory Board Members",
+    "Advisory Board Member",
+    "Advisory Board Members",
+  ]);
+
+  const totalMembers = members.length;
+
   return (
     <PublicLayout>
       <main className="bg-[#f7f8fb]">
@@ -159,9 +270,9 @@ export default function EditorialBoardPage() {
               </h1>
 
               <p className="mt-5 text-[16px] leading-8 text-slate-600">
-                The editorial board is responsible for supporting the journal’s
-                academic quality, peer-review standards, publication ethics, and
-                scholarly direction.
+                The editorial board of BUP Faculty of Science and Technology
+                Journal supports academic quality, publication ethics,
+                manuscript evaluation, and scholarly direction.
               </p>
             </div>
           </Container>
@@ -176,100 +287,112 @@ export default function EditorialBoardPage() {
                 className="mt-3 text-[26px] font-semibold leading-tight text-slate-950"
                 style={{ fontFamily: "var(--font-source-serif)" }}
               >
-                Academic Review Structure
+                Editorial Review Structure
               </h2>
 
               <p className="mt-4 text-[14px] leading-7 text-slate-600">
-                Members are grouped by academic expertise to support manuscript
-                evaluation across science, technology, engineering, and
-                interdisciplinary research areas.
+                Members are organized according to the official editorial board
+                structure, including chief patron, chief editor, editor,
+                assistant editors, and advisory board members.
               </p>
 
-              <div className="mt-6 grid gap-3">
+              <div className="mt-6 grid grid-cols-2 gap-3">
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <p className="text-[28px] font-semibold text-slate-950">
-                    {executiveEditors.length}
+                    {chiefPatronCount}
                   </p>
                   <p className="mt-1 text-[13px] text-slate-500">
-                    Executive Editors
+                    Chief Patron
                   </p>
                 </div>
 
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <p className="text-[28px] font-semibold text-slate-950">
-                    {groupedEditors.reduce(
-                      (total, group) => total + group.members.length,
-                      0
-                    )}
+                    {chiefEditorCount}
                   </p>
                   <p className="mt-1 text-[13px] text-slate-500">
-                    Board Members
+                    Chief Editor
                   </p>
                 </div>
 
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <p className="text-[28px] font-semibold text-slate-950">
-                    {groupedEditors.length}
+                    {editorCount}
+                  </p>
+                  <p className="mt-1 text-[13px] text-slate-500">Editor</p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-[28px] font-semibold text-slate-950">
+                    {assistantEditorCount}
                   </p>
                   <p className="mt-1 text-[13px] text-slate-500">
-                    Research Groups
+                    Assistant Editors
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-[28px] font-semibold text-slate-950">
+                    {advisoryBoardCount}
+                  </p>
+                  <p className="mt-1 text-[13px] text-slate-500">
+                    Advisory Board Members
+                  </p>
+                </div>
+
+                <div className="col-span-2 rounded-2xl border border-[#111433]/10 bg-[#111433] p-4 text-white">
+                  <p className="text-[28px] font-semibold">{totalMembers}</p>
+                  <p className="mt-1 text-[13px] text-white/70">
+                    Total Members
                   </p>
                 </div>
               </div>
 
-              <div className="mt-6 rounded-2xl bg-[#111433] p-5 text-white">
-                <p className="text-[13px] font-medium uppercase tracking-[0.16em] text-white/70">
+              {/* <div className="mt-6 rounded-2xl bg-[#f5c84b] p-5 text-[#111433]">
+                <p className="text-[13px] font-bold uppercase tracking-[0.16em]">
                   Note
                 </p>
 
-                <p className="mt-3 text-[14px] leading-7 text-white/90">
-                  Editorial information can later be connected to the admin
-                  dashboard for dynamic updates.
+                <p className="mt-3 text-[14px] leading-7">
+                  This page is connected with the admin editorial board data.
+                  Active members will appear here automatically.
                 </p>
-              </div>
+              </div> */}
             </aside>
 
             <section className="space-y-10">
-              <div>
-                <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-                  <div>
-                    <p className="journal-subheading">Core Editorial Team</p>
-
-                    <h2 className="journal-heading mt-3">
-                      Executive Editors
-                    </h2>
-                  </div>
-                </div>
-
-                <div className="mt-6 grid gap-5">
-                  {executiveEditors.map((editor) => (
-                    <EditorCard key={editor.id} {...editor} />
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-10">
-                {groupedEditors.map((group) => (
-                  <section key={group.id}>
+              {editorialSections.length > 0 ? (
+                editorialSections.map((section) => (
+                  <section key={section.id}>
                     <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                      <p className="journal-subheading">Editorial Area</p>
+                      <p className="journal-subheading">{section.label}</p>
 
                       <h2
                         className="mt-3 text-[28px] font-semibold leading-tight text-slate-950"
                         style={{ fontFamily: "var(--font-source-serif)" }}
                       >
-                        {group.title}
+                        {section.title}
                       </h2>
                     </div>
 
                     <div className="mt-5 grid gap-5">
-                      {group.members.map((member) => (
-                        <EditorCard key={member.id} {...member} />
+                      {section.members.map((member) => (
+                        <EditorCard key={member._id} member={member} />
                       ))}
                     </div>
                   </section>
-                ))}
-              </div>
+                ))
+              ) : (
+                <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+                  <h2 className="text-xl font-semibold text-slate-950">
+                    No editorial board members found
+                  </h2>
+                  <p className="mt-3 text-sm leading-7 text-slate-600">
+                    Add active members from the admin editorial board panel to
+                    show them on this page.
+                  </p>
+                </div>
+              )}
             </section>
           </div>
         </Container>

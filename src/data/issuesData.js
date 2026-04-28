@@ -1,0 +1,70 @@
+export const issues = [
+  {
+    id: "vol-03-issue-01-2025",
+    slug: "volume-03-issue-01-july-2025",
+    journalName: "Journal of FST",
+    volume: "Volume 03",
+    issue: "Issue 01",
+    year: "2025",
+    month: "July",
+    date: "July 2025",
+    issn: "2959-4812",
+    coverImage: "/images/journal-cover.jpg",
+    description:
+      "This issue contains research articles from the Faculty of Science and Technology, Bangladesh University of Professionals.",
+    papers: [
+      {
+        id: "paper-3143",
+        slug: "data-center-standards-and-management",
+        title: "Data Center Standards and Management",
+        authors: ["Author Name 1", "Author Name 2"],
+        pages: "1-12",
+        abstract:
+          "This paper discusses data center standards, management approaches, operational requirements, and related technological considerations.",
+        keywords: ["Data Center", "Standards", "Management", "Technology"],
+        pdfUrl: "https://journal.bup.edu.bd/Journals/Article/Download/3143",
+      },
+      {
+        id: "paper-3144",
+        slug: "machine-learning-application-in-modern-computing",
+        title: "Machine Learning Application in Modern Computing",
+        authors: ["Author Name 3", "Author Name 4"],
+        pages: "13-24",
+        abstract:
+          "This paper explores the application of machine learning techniques in modern computational systems.",
+        keywords: ["Machine Learning", "AI", "Computing"],
+        pdfUrl: "https://journal.bup.edu.bd/Journals/Article/Download/3144",
+      },
+    ],
+  },
+  {
+    id: "vol-02-issue-01-2023",
+    slug: "volume-02-issue-01-july-2023",
+    journalName: "Journal of FST",
+    volume: "Volume 02",
+    issue: "Issue 01",
+    year: "2023",
+    month: "July",
+    date: "July 2023",
+    issn: "2959-4812",
+    coverImage: "/images/journal-cover.jpg",
+    description:
+      "This issue contains selected research papers from the Faculty of Science and Technology.",
+    papers: [],
+  },
+  {
+    id: "vol-01-issue-01-2022",
+    slug: "volume-01-issue-01-july-2022",
+    journalName: "Journal of FST",
+    volume: "Volume 01",
+    issue: "Issue 01",
+    year: "2022",
+    month: "July",
+    date: "July 2022",
+    issn: "2959-4812",
+    coverImage: "/images/journal-cover.jpg",
+    description:
+      "This is the first issue of Journal of FST published by Bangladesh University of Professionals.",
+    papers: [],
+  },
+];

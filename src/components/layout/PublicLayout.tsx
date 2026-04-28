@@ -1,18 +1,18 @@
 import { ReactNode } from "react";
-import TopBreadcrumb from "./TopBreadcrumb";
 import JournalHero from "./JournalHero";
 import PublicNavbar from "./PublicNavbar";
 import PublicFooter from "./PublicFooter";
+import { PublicHomepageContent } from "@/services/publicHomepageService";
 
 type PublicLayoutProps = {
   children: ReactNode;
+  homepage?: PublicHomepageContent | null;
 };
 
-export default function PublicLayout({ children }: PublicLayoutProps) {
+export default function PublicLayout({ children, homepage }: PublicLayoutProps) {
   return (
     <>
-      {/* <TopBreadcrumb items={["Home", "International Journal of Computer Vision"]} /> */}
-      <JournalHero />
+      <JournalHero homepage={homepage} />
       <PublicNavbar />
       {children}
       <PublicFooter />

@@ -1,14 +1,28 @@
-const journalInfo = [
-  ["Abbreviation", "BUP FST Journal"],
+import { PublicHomepageContent } from "@/services/publicHomepageService";
+
+type Props = {
+  homepage?: PublicHomepageContent | null;
+};
+
+const fallbackJournalInfo = [
+  ["Abbreviation", "Journal of FST"],
   ["ISSN Print", "2959-4812"],
-  ["ISSN Online", "Pending"],
+  ["ISSN Online", "2959-4812"],
   ["Frequency", "Annual"],
   ["Language", "English"],
   ["Publisher", "Faculty of Science & Technology, BUP"],
   ["Access Type", "Open Access"],
 ];
 
-export default function JournalInfoSidebar() {
+export default function JournalInfoSidebar({ homepage }: Props) {
+  const journalInfo =
+    homepage?.journalInfoItems?.filter((item) => item.isActive).length
+      ? homepage.journalInfoItems
+          .filter((item) => item.isActive)
+          .sort((a, b) => Number(a.order || 0) - Number(b.order || 0))
+          .map((item) => [item.label, item.value])
+      : fallbackJournalInfo;
+
   return (
     <aside className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-slate-200 bg-[#f8fafc] px-6 py-5">
@@ -20,7 +34,7 @@ export default function JournalInfoSidebar() {
           className="mt-2 text-[24px] font-semibold text-slate-950"
           style={{ fontFamily: "var(--font-source-serif)" }}
         >
-          Journal Information
+          {homepage?.journalInfoTitle || "Journal Information"}
         </h3>
       </div>
 

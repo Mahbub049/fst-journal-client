@@ -15,7 +15,7 @@ const sourceSerif = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
-  title: "BUP FST Journal",
+  title: "Journal of FST",
   description: "BUP Faculty of Science & Technology Journal",
   icons: {
     icon: "/images/bup.jpg",
