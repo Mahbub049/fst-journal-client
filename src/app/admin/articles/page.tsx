@@ -76,7 +76,7 @@ const emptyForm: ArticleFormState = {
 
   status: "published",
   articleType: "Research Article",
-  accessType: "Open Access",
+  accessType: "Hybrid",
 
   order: "0",
   isPublished: true,
@@ -692,7 +692,7 @@ export default function AdminArticlesPage() {
                       accessType: event.target.value,
                     }))
                   }
-                  placeholder="Open Access"
+                  placeholder="Hybrid"
                   className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
                 />
               </div>
@@ -879,7 +879,7 @@ export default function AdminArticlesPage() {
                             {article.articleType || "Research Article"}
                           </span>
                           <span className="rounded-full bg-white px-3 py-1 text-slate-700">
-                            {article.accessType || "Open Access"}
+                            {article.accessType || "Hybrid"}
                           </span>
                           <span
                             className={[

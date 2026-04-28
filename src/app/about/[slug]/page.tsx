@@ -42,12 +42,12 @@ const pageData: Record<
     ],
   },
   "open-access-statement": {
-    title: "Open Access Statement",
+    title: "Hybrid Statement",
     subtitle:
       "The journal supports accessible scholarly communication and research visibility.",
     content: [
       "BUP Faculty of Science & Technology Journal supports open academic communication by making published research accessible to readers.",
-      "Open access helps increase research visibility, supports knowledge sharing, and allows researchers, students, and professionals to benefit from scholarly work.",
+      "Hybrid helps increase research visibility, supports knowledge sharing, and allows researchers, students, and professionals to benefit from scholarly work.",
       "Authors should follow the journal’s copyright and licensing guidelines before publication.",
     ],
   },
@@ -67,7 +67,7 @@ const sideLinks = [
   { label: "About the Journal", href: "/about/about-the-journal" },
   { label: "Aims & Scope", href: "/about/aims-scope" },
   { label: "Policies & Ethics", href: "/about/policies-ethics" },
-  { label: "Open Access Statement", href: "/about/open-access-statement" },
+  { label: "Hybrid Statement", href: "/about/open-access-statement" },
   { label: "Abstracting & Indexing", href: "/about/abstracting-indexing" },
 ];
 

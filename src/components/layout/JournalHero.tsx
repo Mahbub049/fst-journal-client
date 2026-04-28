@@ -55,9 +55,9 @@ export default function JournalHero({ homepage }: Props) {
   const heroTitle = heroData?.heroTitle || "Journal of FST";
   const heroSubtitle = heroData?.heroSubtitle || "";
   const journalCoverImage = heroData?.journalCoverImage || "/images/cover.jpg";
-  const publishingModel = heroData?.publishingModel || "Open Access";
+  const publishingModel = heroData?.publishingModel || "Hybrid";
   const issnOnline = heroData?.issnOnline || "2959-4812";
-  const issnPrint = heroData?.issnPrint || "2959-4812";
+  const issnPrint = heroData?.issnPrint || "3134-7339";
 
   const metrics =
     heroData?.metrics?.filter((metric) => metric.isActive).length
