@@ -8,11 +8,13 @@ import Container from "@/components/common/Container";
 import JournalDropdownMenu, {
   DropdownMenuItem,
 } from "@/components/common/JournalDropdownMenu";
+import { getPublicIssues } from "@/services/issues.service";
 import {
   getPublicMenus,
   PublicMenuItem,
   PublicMenuLocation,
 } from "@/services/publicMenuService";
+import type { Issue } from "@/types/issue";
 
 const fallbackAboutItems: DropdownMenuItem[] = [
   { label: "About the Journal", href: "/about/about-the-journal" },
@@ -41,6 +43,17 @@ const fallbackAuthorItems: DropdownMenuItem[] = [
   },
   { label: "Copyright & Licensing", href: "/for-authors/copyright-licensing" },
   { label: "Templates", href: "/for-authors/templates" },
+];
+
+const editorialItems: DropdownMenuItem[] = [
+  { label: "Chief Patron", href: "/editorial-board#chief-patron" },
+  { label: "Chief Editor", href: "/editorial-board#chief-editor" },
+  { label: "Editor", href: "/editorial-board#editor" },
+  { label: "Assistant Editors", href: "/editorial-board#assistant-editors" },
+  {
+    label: "Editorial Advisory Board",
+    href: "/editorial-board#editorial-advisory-board",
+  },
 ];
 
 const sortMenus = (items: PublicMenuItem[]) => {
@@ -107,6 +120,37 @@ const findMainMenu = (menus: PublicMenuItem[], label: string) => {
   );
 };
 
+const getIssueDateValue = (issue: Issue) => {
+  const dateText = issue.publishDateLabel || issue.createdAt || issue.updatedAt || "";
+  const parsedDate = Date.parse(dateText);
+
+  return Number.isNaN(parsedDate) ? 0 : parsedDate;
+};
+
+const sortIssuesLatestToOld = (issues: Issue[]) => {
+  return [...issues].sort((a, b) => {
+    const orderA = Number(a.order ?? 9999);
+    const orderB = Number(b.order ?? 9999);
+
+    if (orderA !== orderB) return orderA - orderB;
+
+    const dateDifference = getIssueDateValue(b) - getIssueDateValue(a);
+    if (dateDifference !== 0) return dateDifference;
+
+    return (b.createdAt || "").localeCompare(a.createdAt || "");
+  });
+};
+
+const getIssueDropdownLabel = (issue: Issue) => {
+  const volumeText = issue.volume ? `Volume ${issue.volume}` : "";
+  const issueText = issue.issueNumber ? `Issue ${issue.issueNumber}` : "";
+  const dateText = issue.publishDateLabel || "";
+
+  const label = [volumeText, issueText, dateText].filter(Boolean).join(", ");
+
+  return label || issue.title || "View Issue";
+};
+
 function SmartLink({
   href,
   label,
@@ -151,19 +195,30 @@ export default function PublicNavbar() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [menus, setMenus] = useState<PublicMenuItem[]>([]);
+  const [publicIssues, setPublicIssues] = useState<Issue[]>([]);
   const [searchText, setSearchText] = useState("");
 
   useEffect(() => {
-    const fetchMenus = async () => {
-      try {
-        const data = await getPublicMenus();
-        setMenus(data);
-      } catch {
+    const fetchNavbarData = async () => {
+      const [menusResult, issuesResult] = await Promise.allSettled([
+        getPublicMenus(),
+        getPublicIssues(),
+      ]);
+
+      if (menusResult.status === "fulfilled") {
+        setMenus(menusResult.value);
+      } else {
         setMenus([]);
+      }
+
+      if (issuesResult.status === "fulfilled") {
+        setPublicIssues(issuesResult.value);
+      } else {
+        setPublicIssues([]);
       }
     };
 
-    fetchMenus();
+    fetchNavbarData();
   }, []);
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
@@ -177,20 +232,34 @@ export default function PublicNavbar() {
     router.push(`/search?q=${encodeURIComponent(cleanSearch)}`);
   };
 
-const aboutItems = useMemo(() => {
-  const apiItems = toDropdownItems(getItemsByLocation(menus, "about"));
-  return mergeDropdownItems(apiItems, fallbackAboutItems);
-}, [menus]);
+  const aboutItems = useMemo(() => {
+    const apiItems = toDropdownItems(getItemsByLocation(menus, "about"));
+    return mergeDropdownItems(apiItems, fallbackAboutItems);
+  }, [menus]);
 
-const issueItems = useMemo(() => {
-  const apiItems = toDropdownItems(getItemsByLocation(menus, "issues"));
-  return mergeDropdownItems(apiItems, fallbackIssueItems);
-}, [menus]);
+  const issueItems = useMemo(() => {
+    const dynamicIssueItems = sortIssuesLatestToOld(publicIssues).map(
+      (issue) => ({
+        label: getIssueDropdownLabel(issue),
+        href: `/issues/${issue.slug}`,
+      })
+    );
 
-const authorItems = useMemo(() => {
-  const apiItems = toDropdownItems(getItemsByLocation(menus, "for-authors"));
-  return mergeDropdownItems(apiItems, fallbackAuthorItems);
-}, [menus]);
+    if (dynamicIssueItems.length > 0) {
+      return [
+        ...dynamicIssueItems,
+        { label: "All Issues / Archive", href: "/issues/archive" },
+      ];
+    }
+
+    const apiItems = toDropdownItems(getItemsByLocation(menus, "issues"));
+    return mergeDropdownItems(apiItems, fallbackIssueItems);
+  }, [menus, publicIssues]);
+
+  const authorItems = useMemo(() => {
+    const apiItems = toDropdownItems(getItemsByLocation(menus, "for-authors"));
+    return mergeDropdownItems(apiItems, fallbackAuthorItems);
+  }, [menus]);
 
   const homeMenu = findMainMenu(menus, "Home");
   const aboutMenu = findMainMenu(menus, "About");
@@ -237,12 +306,9 @@ const authorItems = useMemo(() => {
               items={aboutItems}
             />
 
-            <SmartLink
-              href={normalizeUrl(issuesMenu?.url || "/issues/current")}
+            <JournalDropdownMenu
               label={issuesMenu?.label || "Issues"}
-              isExternal={issuesMenu?.isExternal}
-              openInNewTab={issuesMenu?.openInNewTab}
-              className="nav-link"
+              items={issueItems}
             />
 
             <JournalDropdownMenu
@@ -250,12 +316,9 @@ const authorItems = useMemo(() => {
               items={authorItems}
             />
 
-            <SmartLink
-              href={normalizeUrl(editorialMenu?.url || "/editorial-board")}
+            <JournalDropdownMenu
               label={editorialMenu?.label || "Editorial Board"}
-              isExternal={editorialMenu?.isExternal}
-              openInNewTab={editorialMenu?.openInNewTab}
-              className="nav-link"
+              items={editorialItems}
             />
 
             <SmartLink
@@ -337,11 +400,9 @@ const authorItems = useMemo(() => {
                 onClick={() => setMenuOpen(false)}
               />
 
-              <MobileLink
-                href={normalizeUrl(editorialMenu?.url || "/editorial-board")}
-                label={editorialMenu?.label || "Editorial Board"}
-                isExternal={editorialMenu?.isExternal}
-                openInNewTab={editorialMenu?.openInNewTab}
+              <MobileGroup
+                title={editorialMenu?.label || "Editorial Board"}
+                items={editorialItems}
                 onClick={() => setMenuOpen(false)}
               />
 

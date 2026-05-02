@@ -11,6 +11,11 @@ type RecentIssuesResponse = {
   data: Issue[];
 };
 
+type PublicIssuesResponse = {
+  success: boolean;
+  data: Issue[];
+};
+
 type SingleIssueResponse = {
   success: boolean;
   data: IssueDetailsResponse;
@@ -55,6 +60,11 @@ export type IssuePayload = {
 
 export const getRecentIssues = async (): Promise<Issue[]> => {
   const res = await api.get<RecentIssuesResponse>("/issues/recent");
+  return res.data.data || [];
+};
+
+export const getPublicIssues = async (): Promise<Issue[]> => {
+  const res = await api.get<PublicIssuesResponse>("/issues/public/all");
   return res.data.data || [];
 };
 

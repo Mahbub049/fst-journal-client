@@ -21,7 +21,7 @@ type EditorialSection = {
   id: string;
   label: string;
   title: string;
-  category: string;
+  acceptedCategories: string[];
   members: EditorialBoardMember[];
 };
 
@@ -33,31 +33,37 @@ const sectionConfig = [
     id: "chief-patron",
     label: "Chief Patron",
     title: "Chief Patron",
-    category: "Chief Patron",
+    acceptedCategories: ["Chief Patron"],
   },
   {
     id: "chief-editor",
     label: "Chief Editor",
     title: "Chief Editor",
-    category: "Chief Editor",
+    acceptedCategories: ["Chief Editor"],
   },
   {
     id: "editor",
     label: "Editor",
     title: "Editor",
-    category: "Editor",
+    acceptedCategories: ["Editor"],
   },
   {
     id: "assistant-editors",
     label: "Assistant Editors",
     title: "Assistant Editors",
-    category: "Assistant Editor",
+    acceptedCategories: ["Assistant Editor", "Assistant Editors"],
   },
   {
     id: "editorial-advisory-board",
     label: "Editorial Advisory Board",
     title: "Editorial Advisory Board",
-    category: "Editorial Advisory Board",
+    acceptedCategories: [
+      "Editorial Advisory Board",
+      "Editorial Advisory Board Member",
+      "Editorial Advisory Board Members",
+      "Advisory Board Member",
+      "Advisory Board Members",
+    ],
   },
 ];
 
@@ -109,17 +115,25 @@ function buildEditorialSections(
   const configuredSections = sectionConfig.map((section) => ({
     ...section,
     members: sortMembers(
-      members.filter((member) => member.category === section.category)
+      members.filter((member) =>
+        isCategoryMatch(member.category, section.acceptedCategories)
+      )
     ),
   }));
 
-  const knownCategories = sectionConfig.map((section) => section.category);
+  const knownCategories = sectionConfig
+    .flatMap((section) => section.acceptedCategories)
+    .map((category) => normalizeCategory(category));
 
   const extraCategories = Array.from(
     new Set(
       members
         .map((member) => member.category)
-        .filter((category) => category && !knownCategories.includes(category))
+        .filter(
+          (category): category is string =>
+            Boolean(category) &&
+            !knownCategories.includes(normalizeCategory(category))
+        )
     )
   );
 
@@ -130,9 +144,9 @@ function buildEditorialSections(
       .replace(/(^-|-$)/g, ""),
     label: category,
     title: category,
-    category,
+    acceptedCategories: [category],
     members: sortMembers(
-      members.filter((member) => member.category === category)
+      members.filter((member) => isCategoryMatch(member.category, [category]))
     ),
   }));
 
@@ -140,7 +154,6 @@ function buildEditorialSections(
     (section) => section.members.length > 0
   );
 }
-
 function getInitials(name: string) {
   return name
     .replace(/Dr\.|Professor|Prof\.|Major General|Brigadier General/gi, "")
@@ -363,7 +376,11 @@ export default async function EditorialBoardPage() {
             <section className="space-y-10">
               {editorialSections.length > 0 ? (
                 editorialSections.map((section) => (
-                  <section key={section.id}>
+                  <section
+                    key={section.id}
+                    id={section.id}
+                    className="scroll-mt-32"
+                  >
                     <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                       <p className="journal-subheading">{section.label}</p>
 

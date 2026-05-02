@@ -49,7 +49,7 @@ export default function RecentIssuesSection({ homepage }: Props) {
           href="/issues/archive"
           className="inline-flex h-11 w-fit items-center justify-center rounded-full border border-slate-200 bg-white px-5 text-[14px] font-medium text-slate-700 hover:border-[#1e2557]/30 hover:text-[#1e2557]"
         >
-          View Archive
+          View All Issues
         </Link>
       </div>
 

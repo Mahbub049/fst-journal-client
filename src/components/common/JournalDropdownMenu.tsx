@@ -34,7 +34,7 @@ function MenuAnchor({ item }: { item: DropdownMenuItem }) {
   return (
     <Link
       href={item.href}
-      scroll={false}
+      scroll={item.href.includes("#")}
       className="block rounded-xl px-4 py-3 text-[14px] font-medium text-slate-600 hover:bg-[#eef8fc] hover:text-[#22b8e8]"
     >
       {item.label}
@@ -45,7 +45,7 @@ function MenuAnchor({ item }: { item: DropdownMenuItem }) {
 export default function JournalDropdownMenu({ label, items }: Props) {
   return (
     <div className="group relative">
-      <button className="nav-link inline-flex items-center gap-1.5">
+      <button type="button" className="nav-link inline-flex items-center gap-1.5">
         <span>{label}</span>
         <span className="text-[10px] text-slate-400 transition group-hover:text-slate-700">
           ▼
