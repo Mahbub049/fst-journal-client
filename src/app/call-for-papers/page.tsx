@@ -329,7 +329,7 @@ export default function CallForPapersPage() {
               </div>
 
               {/* Poster */}
-              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+              {/* <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                 <p className="journal-subheading">Poster</p>
 
                 <h2
@@ -348,7 +348,7 @@ export default function CallForPapersPage() {
                     className="h-auto w-full object-cover"
                   />
                 </div>
-              </div>
+              </div> */}
 
               {/* Contact */}
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">

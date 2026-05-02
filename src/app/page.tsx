@@ -33,9 +33,17 @@ export default function HomePage() {
     <PublicLayout homepage={homepage}>
       <main className="bg-[#f7f8fb]">
         <Container className="py-10 md:py-14">
-          <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_390px]">
+          <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_390px]">
             <OverviewSection homepage={homepage} />
-            <JournalInfoSidebar homepage={homepage} />
+
+            {/*
+              The sticky behavior belongs to this wrapper, not inside the card.
+              This keeps the full Journal Information card visible while scrolling
+              and prevents the card header from being clipped/hidden.
+            */}
+            <div className="self-start lg:sticky lg:top-[104px]">
+              <JournalInfoSidebar homepage={homepage} />
+            </div>
           </div>
         </Container>
 

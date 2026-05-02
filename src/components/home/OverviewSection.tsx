@@ -1,4 +1,5 @@
 import { PublicHomepageContent } from "@/services/publicHomepageService";
+import MotionSection from "@/components/common/MotionSection";
 
 type Props = {
   homepage?: PublicHomepageContent | null;
@@ -17,26 +18,41 @@ export default function OverviewSection({ homepage }: Props) {
     .filter(Boolean);
 
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-8">
-      <div className="max-w-3xl">
-        <p className="journal-subheading">About the Journal</p>
+    <MotionSection direction="left">
+      <section className="journal-surface relative overflow-hidden p-7 md:p-8">
+        <div className="absolute right-[-110px] top-[-110px] h-64 w-64 rounded-full bg-[#0ea5b7]/10 blur-3xl" />
 
-        <h2 className="journal-heading mt-3">{title}</h2>
+        <div className="relative max-w-4xl">
+          <div className="inline-flex rounded-full border border-[#d9e4ea] bg-[#f8fbfc] px-4 py-2">
+            <p className="journal-subheading">About the Journal</p>
+          </div>
 
-        <div className="mt-6 space-y-5 text-[15px] leading-8 text-slate-600">
-          {paragraphs.map((paragraph, index) => (
-            <p key={index}>{paragraph}</p>
-          ))}
+          <h2
+            className="mt-5 text-[34px] font-semibold leading-tight text-[#0b1f3a] md:text-[42px]"
+            style={{ fontFamily: "var(--font-source-serif)" }}
+          >
+            {title}
+          </h2>
 
-          {paragraphs.length === 0 ? (
-            <p>
-              BUP Faculty of Science & Technology Journal publishes scholarly
-              research in science, technology, engineering, and interdisciplinary
-              areas.
-            </p>
-          ) : null}
+          <div className="mt-4 journal-gold-line" />
+
+          <div className="mt-7 space-y-5 text-[15px] leading-8 text-slate-700">
+            {paragraphs.map((paragraph, index) => (
+              <p key={index} className="text-justify text-slate-700">
+                {paragraph}
+              </p>
+            ))}
+
+            {paragraphs.length === 0 ? (
+              <p className="text-slate-700">
+                BUP Faculty of Science & Technology Journal publishes scholarly
+                research in science, technology, engineering, and interdisciplinary
+                areas.
+              </p>
+            ) : null}
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </MotionSection>
   );
 }

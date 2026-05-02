@@ -197,7 +197,7 @@ export default async function ForAuthorsInnerPage({
         <PageTransition>
           <section
             id="page-start"
-            className="scroll-mt-[92px] border-b border-slate-200 bg-white"
+            className="scroll-mt-[118px] border-b border-slate-200 bg-white"
           >
             <Container className="py-12 md:py-16">
               <p className="journal-subheading">For Authors</p>
@@ -217,7 +217,7 @@ export default async function ForAuthorsInnerPage({
 
           <Container className="py-10 md:py-14">
             <div className="grid gap-8 lg:grid-cols-[300px_minmax(0,1fr)]">
-              <aside className="h-fit rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-28">
+              <aside className="h-fit self-start rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-[106px] lg:max-h-[calc(100vh-126px)] lg:overflow-y-auto">
                 <p className="px-3 text-[12px] font-semibold uppercase tracking-[0.18em] text-[#111433]">
                   Author Menu
                 </p>

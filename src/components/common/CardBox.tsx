@@ -6,9 +6,5 @@ type CardBoxProps = {
 };
 
 export default function CardBox({ children, className = "" }: CardBoxProps) {
-  return (
-    <div className={`rounded-2xl border border-slate-200 bg-white p-6 shadow-sm ${className}`}>
-      {children}
-    </div>
-  );
+  return <div className={`journal-surface p-6 ${className}`}>{children}</div>;
 }

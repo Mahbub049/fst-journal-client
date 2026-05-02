@@ -18,9 +18,9 @@ export const metadata: Metadata = {
   title: "Journal of FST",
   description: "BUP Faculty of Science & Technology Journal",
   icons: {
-    icon: "/images/bup.jpg",
-    shortcut: "/images/bup.jpg",
-    apple: "/images/bup.jpg",
+    icon: "/images/bup.png",
+    shortcut: "/images/bup.png",
+    apple: "/images/bup.png",
   },
 };
 

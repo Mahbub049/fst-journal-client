@@ -195,7 +195,7 @@ export default async function ArticleDetailsPage({
             </div>
 
             {/* Right Sidebar */}
-            <aside className="space-y-6 lg:sticky lg:top-28 lg:self-start">
+            <aside className="space-y-6 lg:sticky lg:top-[106px] lg:self-start">
               <div className="rounded-3xl bg-[#1f6fb2] p-6 text-white shadow-sm">
                 <h3 className="text-[18px] font-bold">Article Download</h3>
 

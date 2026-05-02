@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -192,11 +192,13 @@ function SmartLink({
 
 export default function PublicNavbar() {
   const router = useRouter();
+  const navbarRef = useRef<HTMLElement | null>(null);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [menus, setMenus] = useState<PublicMenuItem[]>([]);
   const [publicIssues, setPublicIssues] = useState<Issue[]>([]);
   const [searchText, setSearchText] = useState("");
+  const [isNavbarStuck, setIsNavbarStuck] = useState(false);
 
   useEffect(() => {
     const fetchNavbarData = async () => {
@@ -219,6 +221,27 @@ export default function PublicNavbar() {
     };
 
     fetchNavbarData();
+  }, []);
+
+  useEffect(() => {
+    const checkNavbarPosition = () => {
+      const navbar = navbarRef.current;
+      if (!navbar) return;
+
+      const navbarTop = navbar.getBoundingClientRect().top;
+
+      setIsNavbarStuck(navbarTop <= 0 && window.scrollY > 40);
+    };
+
+    checkNavbarPosition();
+
+    window.addEventListener("scroll", checkNavbarPosition, { passive: true });
+    window.addEventListener("resize", checkNavbarPosition);
+
+    return () => {
+      window.removeEventListener("scroll", checkNavbarPosition);
+      window.removeEventListener("resize", checkNavbarPosition);
+    };
   }, []);
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
@@ -277,11 +300,17 @@ export default function PublicNavbar() {
     findMainMenu(menus, "Submission Guidelines");
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
+    <header
+      ref={navbarRef}
+      className={`journal-navbar sticky top-0 z-[100] border-b backdrop-blur-xl transition-all duration-300 ${isNavbarStuck
+          ? "journal-navbar-stuck border-[#15395e]/70 bg-[#071a33]/95 shadow-[0_16px_40px_rgba(2,8,23,0.22)]"
+          : "border-slate-200 bg-white/95 shadow-sm"
+        }`}
+    >
       <Container>
         <nav className="flex min-h-[78px] items-center justify-between gap-6">
           <Link href="/" className="flex min-w-0 items-center gap-4">
-            <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm">
+            <div className="journal-logo-wrap relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm transition-all duration-300">
               <Image
                 src="/images/bup.png"
                 alt="Bangladesh University of Professionals"
@@ -326,25 +355,25 @@ export default function PublicNavbar() {
               label={cfpMenu?.label || "Call for Papers"}
               isExternal={cfpMenu?.isExternal}
               openInNewTab={cfpMenu?.openInNewTab}
-              className="inline-flex items-center rounded-full border border-[#111433] bg-[#111433] px-4 py-2 text-[14px] font-semibold text-white hover:border-[#f5c84b] hover:bg-[#f5c84b] hover:text-[#111433]"
+              className="journal-cfp-button inline-flex items-center rounded-full border border-[#111433] bg-[#111433] px-4 py-2 text-[14px] font-semibold text-white transition-all duration-300 hover:border-[#f5c84b] hover:bg-[#f5c84b] hover:text-[#111433]"
             />
           </div>
 
           <div className="hidden items-center gap-3 lg:flex">
             <form
               onSubmit={handleSearch}
-              className="flex h-11 w-[250px] overflow-hidden rounded-full border border-slate-200 bg-slate-50 focus-within:border-[#22b8e8]"
+              className="journal-search-form flex h-11 w-[250px] overflow-hidden rounded-full border border-slate-200 bg-slate-50 transition-all duration-300 focus-within:border-[#22b8e8]"
             >
               <input
                 value={searchText}
                 onChange={(event) => setSearchText(event.target.value)}
                 placeholder="Search journal"
-                className="min-w-0 flex-1 bg-transparent px-4 text-[14px] text-slate-700 outline-none placeholder:text-slate-400"
+                className="journal-search-input min-w-0 flex-1 bg-transparent px-4 text-[14px] text-slate-700 outline-none transition-all duration-300 placeholder:text-slate-400"
               />
 
               <button
                 type="submit"
-                className="px-4 text-[13px] font-medium text-[#111433] hover:text-[#22b8e8]"
+                className="journal-search-button px-4 text-[13px] font-medium text-[#111433] transition-all duration-300 hover:text-[#22b8e8]"
               >
                 Search
               </button>
@@ -357,7 +386,7 @@ export default function PublicNavbar() {
               label={submitMenu?.label || "Submit Manuscript"}
               isExternal={submitMenu?.isExternal}
               openInNewTab={submitMenu?.openInNewTab}
-              className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-[#111433] px-5 text-[14px] font-semibold text-white shadow-sm hover:bg-[#1e2557]"
+              className="journal-submit-button inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-[#111433] bg-[#111433] px-5 text-[14px] font-semibold text-white shadow-sm transition-all duration-300 hover:bg-[#1e2557]"
             />
           </div>
 
@@ -434,12 +463,12 @@ export default function PublicNavbar() {
                   value={searchText}
                   onChange={(event) => setSearchText(event.target.value)}
                   placeholder="Search journal"
-                  className="min-w-0 flex-1 bg-transparent px-4 text-[14px] text-slate-700 outline-none placeholder:text-slate-400"
+                  className="journal-search-input min-w-0 flex-1 bg-transparent px-4 text-[14px] text-slate-700 outline-none transition-all duration-300 placeholder:text-slate-400"
                 />
 
                 <button
                   type="submit"
-                  className="px-4 text-[13px] font-medium text-[#111433] hover:text-[#22b8e8]"
+                  className="journal-search-button px-4 text-[13px] font-medium text-[#111433] transition-all duration-300 hover:text-[#22b8e8]"
                 >
                   Search
                 </button>

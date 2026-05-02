@@ -185,7 +185,7 @@ export default async function IssuesInnerPage({
     <PublicLayout>
       <main className="bg-[#f7f8fb]">
         <section className="border-b border-slate-200 bg-white">
-          <Container className="py-12 md:py-16">
+          {/* <Container className="py-12 md:py-16">
             <p className="journal-subheading">Published Issue</p>
 
             <h1
@@ -203,12 +203,12 @@ export default async function IssuesInnerPage({
             <p className="mt-2 text-[14px] font-semibold text-[#111433]">
               ISSN {issue.issn}
             </p>
-          </Container>
+          </Container> */}
         </section>
 
         <Container className="py-10 md:py-14">
           <div className="grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
-            <aside className="h-fit rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-28">
+            <aside className="h-fit rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-[106px]">
               <div className="relative aspect-[0.72] overflow-hidden rounded-2xl bg-slate-100">
                 <Image
                   src={issue.coverImage || "/images/journal-cover.jpg"}

@@ -293,7 +293,7 @@ export default async function EditorialBoardPage() {
 
         <Container className="py-10 md:py-14">
           <div className="grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
-            <aside className="h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-28">
+            <aside className="h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-[106px]">
               <p className="journal-subheading">Board Summary</p>
 
               <h2
