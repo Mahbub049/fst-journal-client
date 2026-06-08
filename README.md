@@ -145,8 +145,6 @@ ADMIN_OTP_COOLDOWN_SECONDS=60
 ADMIN_OTP_MAX_ATTEMPTS=5
 ```
 
-### Important admin password note
-
 Use `ADMIN_INITIAL_PASSWORD` only for creating the first admin account.
 
 After the first admin is created in MongoDB, remove this line from `.env`:
