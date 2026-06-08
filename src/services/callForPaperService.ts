@@ -8,42 +8,59 @@ export type ImportantDate = {
   isActive: boolean;
 };
 
-export type CallForPaperTopic = {
-  _id?: string;
-  title: string;
-  description: string;
-  order: number;
-  isActive: boolean;
-};
-
-export type CallForPaperInstruction = {
-  _id?: string;
-  text: string;
-  order: number;
-  isActive: boolean;
-};
-
 export type CallForPaperContent = {
   _id?: string;
 
+  invitationLabel: string;
   title: string;
   subtitle: string;
   description: string;
 
   posterImage: string;
   pdfUrl: string;
+  pdfTitle: string;
+  pdfSubtitle: string;
 
+  submissionFormatLabel: string;
+  submissionFormatTitle: string;
+  submissionFormatDescription: string;
+  submissionTypes: string[];
+
+  scopeLabel: string;
+  scopeTitle: string;
+  scopeDescription: string;
+  engineeringTitle: string;
+  engineeringTopics: string[];
+  environmentalTitle: string;
+  environmentalTopics: string[];
+
+  finalSectionLabel: string;
+  finalSectionTitle: string;
+  finalSectionDescription: string;
+
+  importantInfoLabel: string;
+  timelineTitle: string;
   importantDates: ImportantDate[];
 
+  submitSectionLabel: string;
+  submitTitle: string;
+  submitDescription: string;
   submissionButtonLabel: string;
   submissionButtonLink: string;
+  guidelinesButtonLabel: string;
+  guidelinesButtonLink: string;
 
+  contactSectionLabel: string;
+  contactTitle: string;
+  contactEditorLabel: string;
+  contactEditorName: string;
+  publishedByLabel: string;
+  publishedBy: string;
+  publisherName: string;
+  publisherAddress: string;
   contactEmail: string;
   contactPhone: string;
   publisherInfo: string;
-
-  topics: CallForPaperTopic[];
-  instructions: CallForPaperInstruction[];
 
   isPublished: boolean;
 

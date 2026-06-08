@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Edit,
+  ExternalLink,
   FileText,
   ImageIcon,
   LinkIcon,
@@ -11,6 +13,7 @@ import {
   Plus,
   Save,
   Trash2,
+  Upload,
   X,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -25,6 +28,7 @@ import {
   PagePayload,
   updateAdminPage,
 } from "@/services/pageService";
+import { uploadMedia } from "@/services/mediaService";
 
 const pageGroups: { label: string; value: PageGroup | "" }[] = [
   { label: "All Groups", value: "" },
@@ -82,6 +86,17 @@ const groupLabel = (group: string) => {
   return "Custom";
 };
 
+const getPublicPageHref = (page: CmsPage) => {
+  if (page.group === "about") return `/about/${page.slug}`;
+  if (page.group === "for-authors") return `/for-authors/${page.slug}`;
+  if (page.group === "issues") return `/issues/${page.slug}`;
+  return `/${page.slug}`;
+};
+
+const imageAccept = "image/jpeg,image/jpg,image/png,image/webp,image/gif";
+const documentAccept =
+  "application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.pdf,.doc,.docx";
+
 export default function AdminPagesPage() {
   const [pages, setPages] = useState<CmsPage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,6 +108,7 @@ export default function AdminPagesPage() {
 
   const [form, setForm] = useState<PagePayload>(emptyForm);
   const [message, setMessage] = useState("");
+  const [uploadingTarget, setUploadingTarget] = useState("");
 
   const fetchPages = async () => {
     try {
@@ -204,6 +220,46 @@ export default function AdminPagesPage() {
     updateBlock(index, "items", items);
   };
 
+  const handleUpload = async (
+    file: File | undefined,
+    target: "banner" | "blockImage" | "blockFile",
+    blockIndex?: number
+  ) => {
+    if (!file) return;
+
+    const uploadKey =
+      target === "banner" ? "banner" : `${target}-${blockIndex ?? 0}`;
+
+    try {
+      setUploadingTarget(uploadKey);
+      setMessage("");
+
+      const uploaded = await uploadMedia({
+        file,
+        title: file.name,
+        folder: "pages",
+      });
+
+      if (target === "banner") {
+        updateField("bannerImage", uploaded.fileUrl);
+      }
+
+      if (target === "blockImage" && typeof blockIndex === "number") {
+        updateBlock(blockIndex, "imageUrl", uploaded.fileUrl);
+      }
+
+      if (target === "blockFile" && typeof blockIndex === "number") {
+        updateBlock(blockIndex, "fileUrl", uploaded.fileUrl);
+      }
+
+      setMessage("File uploaded successfully. Save the page to publish this change.");
+    } catch (error: any) {
+      setMessage(error?.response?.data?.message || "File upload failed.");
+    } finally {
+      setUploadingTarget("");
+    }
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -295,7 +351,7 @@ export default function AdminPagesPage() {
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#005A78]">
-              Dynamic Pages CMS
+              Content Pages
             </p>
 
             <h1 className="mt-2 text-3xl font-bold text-slate-950">
@@ -305,7 +361,7 @@ export default function AdminPagesPage() {
             <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
               Manage About pages, For Authors pages, issue-related pages, and
               custom content pages. You can add text, lists, cards, images, PDFs,
-              and buttons.
+              and action buttons.
             </p>
           </div>
 
@@ -355,8 +411,8 @@ export default function AdminPagesPage() {
                 {editingPage ? "Edit Page" : "Create New Page"}
               </h2>
               <p className="mt-1 text-sm text-slate-500">
-                Add content blocks and connect images/PDFs by pasting URLs from
-                the media library.
+                Add content blocks, paste existing URLs, or upload images and
+                documents directly to Cloudinary.
               </p>
             </div>
 
@@ -448,15 +504,44 @@ export default function AdminPagesPage() {
                 <label className="mb-2 block text-sm font-semibold text-slate-700">
                   Banner Image URL
                 </label>
-                <input
-                  type="text"
-                  value={form.bannerImage}
-                  onChange={(event) =>
-                    updateField("bannerImage", event.target.value)
-                  }
-                  className="h-12 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none transition focus:border-[#005A78] focus:ring-4 focus:ring-[#005A78]/10"
-                  placeholder="Paste image URL from media library"
-                />
+                <div className="flex flex-col gap-3 lg:flex-row">
+                  <input
+                    type="text"
+                    value={form.bannerImage}
+                    onChange={(event) =>
+                      updateField("bannerImage", event.target.value)
+                    }
+                    className="h-12 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none transition focus:border-[#005A78] focus:ring-4 focus:ring-[#005A78]/10"
+                    placeholder="Paste image URL or upload a new image"
+                  />
+
+                  <label className="inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#005A78]/20 bg-[#005A78]/5 px-5 text-sm font-bold text-[#005A78] transition hover:bg-[#005A78]/10">
+                    {uploadingTarget === "banner" ? (
+                      <Loader2 size={17} className="animate-spin" />
+                    ) : (
+                      <Upload size={17} />
+                    )}
+                    Upload Image
+                    <input
+                      type="file"
+                      accept={imageAccept}
+                      className="hidden"
+                      onChange={(event) =>
+                        handleUpload(event.target.files?.[0], "banner")
+                      }
+                    />
+                  </label>
+                </div>
+
+                {form.bannerImage && (
+                  <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                    <img
+                      src={form.bannerImage}
+                      alt="Page banner preview"
+                      className="max-h-48 w-full rounded-xl object-cover"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="lg:col-span-2">
@@ -631,19 +716,52 @@ export default function AdminPagesPage() {
                             <label className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
                               Image URL
                             </label>
-                            <input
-                              type="text"
-                              value={block.imageUrl || ""}
-                              onChange={(event) =>
-                                updateBlock(
-                                  index,
-                                  "imageUrl",
-                                  event.target.value
-                                )
-                              }
-                              className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-[#005A78]"
-                              placeholder="Paste image URL from Media Library"
-                            />
+                            <div className="flex flex-col gap-3 lg:flex-row">
+                              <input
+                                type="text"
+                                value={block.imageUrl || ""}
+                                onChange={(event) =>
+                                  updateBlock(
+                                    index,
+                                    "imageUrl",
+                                    event.target.value
+                                  )
+                                }
+                                className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-[#005A78]"
+                                placeholder="Paste image URL or upload a new image"
+                              />
+
+                              <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#005A78]/20 bg-[#005A78]/5 px-4 text-xs font-bold text-[#005A78] transition hover:bg-[#005A78]/10">
+                                {uploadingTarget === `blockImage-${index}` ? (
+                                  <Loader2 size={15} className="animate-spin" />
+                                ) : (
+                                  <Upload size={15} />
+                                )}
+                                Upload
+                                <input
+                                  type="file"
+                                  accept={imageAccept}
+                                  className="hidden"
+                                  onChange={(event) =>
+                                    handleUpload(
+                                      event.target.files?.[0],
+                                      "blockImage",
+                                      index
+                                    )
+                                  }
+                                />
+                              </label>
+                            </div>
+
+                            {block.imageUrl && (
+                              <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                <img
+                                  src={block.imageUrl}
+                                  alt={block.title || "Content image preview"}
+                                  className="max-h-56 w-full rounded-xl object-cover"
+                                />
+                              </div>
+                            )}
                           </div>
                         )}
 
@@ -652,19 +770,54 @@ export default function AdminPagesPage() {
                             <label className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
                               PDF / File URL
                             </label>
-                            <input
-                              type="text"
-                              value={block.fileUrl || ""}
-                              onChange={(event) =>
-                                updateBlock(
-                                  index,
-                                  "fileUrl",
-                                  event.target.value
-                                )
-                              }
-                              className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-[#005A78]"
-                              placeholder="Paste PDF URL from Media Library"
-                            />
+                            <div className="flex flex-col gap-3 lg:flex-row">
+                              <input
+                                type="text"
+                                value={block.fileUrl || ""}
+                                onChange={(event) =>
+                                  updateBlock(
+                                    index,
+                                    "fileUrl",
+                                    event.target.value
+                                  )
+                                }
+                                className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-[#005A78]"
+                                placeholder="Paste PDF/DOC URL or upload a file"
+                              />
+
+                              <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#005A78]/20 bg-[#005A78]/5 px-4 text-xs font-bold text-[#005A78] transition hover:bg-[#005A78]/10">
+                                {uploadingTarget === `blockFile-${index}` ? (
+                                  <Loader2 size={15} className="animate-spin" />
+                                ) : (
+                                  <Upload size={15} />
+                                )}
+                                Upload
+                                <input
+                                  type="file"
+                                  accept={documentAccept}
+                                  className="hidden"
+                                  onChange={(event) =>
+                                    handleUpload(
+                                      event.target.files?.[0],
+                                      "blockFile",
+                                      index
+                                    )
+                                  }
+                                />
+                              </label>
+                            </div>
+
+                            {block.fileUrl && (
+                              <a
+                                href={block.fileUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="mt-3 inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                              >
+                                <ExternalLink size={14} />
+                                Open uploaded file
+                              </a>
+                            )}
                           </div>
                         )}
 
@@ -905,6 +1058,17 @@ export default function AdminPagesPage() {
 
                       <td className="px-5 py-4">
                         <div className="flex justify-end gap-2">
+                          {page.isPublished && (
+                            <Link
+                              href={getPublicPageHref(page)}
+                              target="_blank"
+                              className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
+                            >
+                              <ExternalLink size={14} />
+                              View
+                            </Link>
+                          )}
+
                           <button
                             type="button"
                             onClick={() => openEditForm(page)}

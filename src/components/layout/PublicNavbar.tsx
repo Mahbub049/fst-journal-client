@@ -56,7 +56,7 @@ const editorialItems: DropdownMenuItem[] = [
   },
 ];
 
-const sortMenus = (items: PublicMenuItem[]) => {
+const sortMenus = <T extends { order?: number; label: string }>(items: T[]) => {
   return [...items].sort((a, b) => {
     const orderA = Number(a.order || 0);
     const orderB = Number(b.order || 0);
@@ -67,41 +67,18 @@ const sortMenus = (items: PublicMenuItem[]) => {
   });
 };
 
-const normalizeUrl = (url: string) => {
-  if (!url) return "#";
-  return url;
+const normalizeText = (value: string) => value.trim().toLowerCase();
+
+const normalizeUrl = (url?: string) => {
+  const cleanUrl = (url || "").trim();
+  return cleanUrl || "#";
 };
 
-const toDropdownItems = (items: PublicMenuItem[]): DropdownMenuItem[] => {
-  return sortMenus(items)
-    .filter((item) => item.isActive)
-    .map((item) => ({
-      label: item.label,
-      href: normalizeUrl(item.url),
-      isExternal: item.isExternal,
-      openInNewTab: item.openInNewTab,
-    }));
-};
+const isInternalUrl = (url: string) => url.startsWith("/");
 
-const mergeDropdownItems = (
-  apiItems: DropdownMenuItem[],
-  fallbackItems: DropdownMenuItem[]
-) => {
-  const merged = [...apiItems];
-
-  fallbackItems.forEach((fallbackItem) => {
-    const alreadyExists = merged.some(
-      (item) =>
-        item.label.toLowerCase() === fallbackItem.label.toLowerCase() ||
-        item.href === fallbackItem.href
-    );
-
-    if (!alreadyExists) {
-      merged.push(fallbackItem);
-    }
-  });
-
-  return merged;
+const getParentId = (item: PublicMenuItem) => {
+  if (!item.parentId) return "";
+  return String(item.parentId);
 };
 
 const getItemsByLocation = (
@@ -111,13 +88,87 @@ const getItemsByLocation = (
   return menus.filter((item) => item.location === location && item.isActive);
 };
 
-const findMainMenu = (menus: PublicMenuItem[], label: string) => {
-  return menus.find(
-    (item) =>
+const findMainMenu = (menus: PublicMenuItem[], checks: string[]) => {
+  const normalizedChecks = checks.map(normalizeText);
+
+  return sortMenus(menus).find((item) => {
+    const label = normalizeText(item.label);
+
+    return (
       item.location === "main" &&
       item.isActive &&
-      item.label.toLowerCase() === label.toLowerCase()
+      !getParentId(item) &&
+      normalizedChecks.some((check) => label === check || label.includes(check))
+    );
+  });
+};
+
+const toDropdownItems = (
+  items: PublicMenuItem[],
+  isAllowedUrl: (href: string) => boolean
+): DropdownMenuItem[] => {
+  const seen = new Set<string>();
+
+  return sortMenus(items)
+    .filter((item) => item.isActive && item.type !== "dropdown")
+    .map((item) => ({
+      label: item.label.trim(),
+      href: normalizeUrl(item.url),
+      isExternal: item.isExternal,
+      openInNewTab: item.openInNewTab,
+    }))
+    .filter((item) => {
+      if (!item.label || item.href === "#") return false;
+
+      const allowedExternal = item.isExternal && !isInternalUrl(item.href);
+      const allowedInternal = isAllowedUrl(item.href);
+
+      if (!allowedExternal && !allowedInternal) return false;
+
+      const key = `${normalizeText(item.label)}::${item.href}`;
+      if (seen.has(key)) return false;
+
+      seen.add(key);
+      return true;
+    });
+};
+
+const mergeWithFallback = (
+  apiItems: DropdownMenuItem[],
+  fallbackItems: DropdownMenuItem[]
+) => {
+  const result: DropdownMenuItem[] = [];
+  const hrefs = new Set<string>();
+  const labels = new Set<string>();
+
+  [...apiItems, ...fallbackItems].forEach((item) => {
+    const cleanLabel = item.label.trim();
+    const cleanHref = normalizeUrl(item.href);
+    const labelKey = normalizeText(cleanLabel);
+
+    if (!cleanLabel || cleanHref === "#") return;
+    if (hrefs.has(cleanHref) || labels.has(labelKey)) return;
+
+    result.push({ ...item, label: cleanLabel, href: cleanHref });
+    hrefs.add(cleanHref);
+    labels.add(labelKey);
+  });
+
+  return result;
+};
+
+const getSafeDropdownItems = (
+  menus: PublicMenuItem[],
+  location: PublicMenuLocation,
+  fallbackItems: DropdownMenuItem[],
+  isAllowedUrl: (href: string) => boolean
+) => {
+  const apiItems = toDropdownItems(
+    getItemsByLocation(menus, location),
+    isAllowedUrl
   );
+
+  return mergeWithFallback(apiItems, fallbackItems);
 };
 
 const getIssueDateValue = (issue: Issue) => {
@@ -207,17 +258,10 @@ export default function PublicNavbar() {
         getPublicIssues(),
       ]);
 
-      if (menusResult.status === "fulfilled") {
-        setMenus(menusResult.value);
-      } else {
-        setMenus([]);
-      }
-
-      if (issuesResult.status === "fulfilled") {
-        setPublicIssues(issuesResult.value);
-      } else {
-        setPublicIssues([]);
-      }
+      setMenus(menusResult.status === "fulfilled" ? menusResult.value : []);
+      setPublicIssues(
+        issuesResult.status === "fulfilled" ? issuesResult.value : []
+      );
     };
 
     fetchNavbarData();
@@ -255,10 +299,16 @@ export default function PublicNavbar() {
     router.push(`/search?q=${encodeURIComponent(cleanSearch)}`);
   };
 
+  const activeMenus = useMemo(() => menus.filter((menu) => menu.isActive), [menus]);
+
   const aboutItems = useMemo(() => {
-    const apiItems = toDropdownItems(getItemsByLocation(menus, "about"));
-    return mergeDropdownItems(apiItems, fallbackAboutItems);
-  }, [menus]);
+    return getSafeDropdownItems(
+      activeMenus,
+      "about",
+      fallbackAboutItems,
+      (href) => href.startsWith("/about/") || href === "/contact"
+    );
+  }, [activeMenus]);
 
   const issueItems = useMemo(() => {
     const dynamicIssueItems = sortIssuesLatestToOld(publicIssues).map(
@@ -269,43 +319,44 @@ export default function PublicNavbar() {
     );
 
     if (dynamicIssueItems.length > 0) {
-      return [
-        ...dynamicIssueItems,
+      return mergeWithFallback(dynamicIssueItems, [
         { label: "All Issues / Archive", href: "/issues/archive" },
-      ];
+      ]);
     }
 
-    const apiItems = toDropdownItems(getItemsByLocation(menus, "issues"));
-    return mergeDropdownItems(apiItems, fallbackIssueItems);
-  }, [menus, publicIssues]);
+    return getSafeDropdownItems(
+      activeMenus,
+      "issues",
+      fallbackIssueItems,
+      (href) => href.startsWith("/issues/")
+    );
+  }, [activeMenus, publicIssues]);
 
   const authorItems = useMemo(() => {
-    const apiItems = toDropdownItems(getItemsByLocation(menus, "for-authors"));
-    return mergeDropdownItems(apiItems, fallbackAuthorItems);
-  }, [menus]);
+    return getSafeDropdownItems(
+      activeMenus,
+      "for-authors",
+      fallbackAuthorItems,
+      (href) => href.startsWith("/for-authors/")
+    );
+  }, [activeMenus]);
 
-  const homeMenu = findMainMenu(menus, "Home");
-  const aboutMenu = findMainMenu(menus, "About");
-  const issuesMenu = findMainMenu(menus, "Issues");
-  const authorsMenu =
-    findMainMenu(menus, "For Authors") || findMainMenu(menus, "Authors");
-  const editorialMenu =
-    findMainMenu(menus, "Editorial Board") ||
-    findMainMenu(menus, "Editorial");
-  const cfpMenu =
-    findMainMenu(menus, "Call for Papers") ||
-    findMainMenu(menus, "Call For Papers");
-  const submitMenu =
-    findMainMenu(menus, "Submit Manuscript") ||
-    findMainMenu(menus, "Submission Guidelines");
+  const homeMenu = findMainMenu(activeMenus, ["home"]);
+  const aboutMenu = findMainMenu(activeMenus, ["about"]);
+  const issuesMenu = findMainMenu(activeMenus, ["issues"]);
+  const authorsMenu = findMainMenu(activeMenus, ["for authors", "authors"]);
+  const editorialMenu = findMainMenu(activeMenus, ["editorial board", "editorial"]);
+  const cfpMenu = findMainMenu(activeMenus, ["call for papers", "call for paper"]);
+  const submitMenu = findMainMenu(activeMenus, ["submit manuscript", "submission"]);
 
   return (
     <header
       ref={navbarRef}
-      className={`journal-navbar sticky top-0 z-[100] border-b backdrop-blur-xl transition-all duration-300 ${isNavbarStuck
+      className={`journal-navbar sticky top-0 z-[100] border-b backdrop-blur-xl transition-all duration-300 ${
+        isNavbarStuck
           ? "journal-navbar-stuck border-[#15395e]/70 bg-[#071a33]/95 shadow-[0_16px_40px_rgba(2,8,23,0.22)]"
           : "border-slate-200 bg-white/95 shadow-sm"
-        }`}
+      }`}
     >
       <Container>
         <nav className="flex min-h-[78px] items-center justify-between gap-6">
@@ -341,13 +392,13 @@ export default function PublicNavbar() {
             />
 
             <JournalDropdownMenu
-              label={authorsMenu?.label || "For Authors"}
-              items={authorItems}
+              label={editorialMenu?.label || "Editorial Board"}
+              items={editorialItems}
             />
 
             <JournalDropdownMenu
-              label={editorialMenu?.label || "Editorial Board"}
-              items={editorialItems}
+              label={authorsMenu?.label || "For Authors"}
+              items={authorItems}
             />
 
             <SmartLink
@@ -373,7 +424,7 @@ export default function PublicNavbar() {
 
               <button
                 type="submit"
-                className="journal-search-button px-4 text-[13px] font-medium text-[#111433] transition-all duration-300 hover:text-[#22b8e8]"
+                className="journal-search-button cursor-pointer px-4 text-[13px] font-medium text-[#111433] transition-all duration-300 hover:text-[#22b8e8]"
               >
                 Search
               </button>
@@ -424,14 +475,14 @@ export default function PublicNavbar() {
               />
 
               <MobileGroup
-                title={authorsMenu?.label || "For Authors"}
-                items={authorItems}
+                title={editorialMenu?.label || "Editorial Board"}
+                items={editorialItems}
                 onClick={() => setMenuOpen(false)}
               />
 
               <MobileGroup
-                title={editorialMenu?.label || "Editorial Board"}
-                items={editorialItems}
+                title={authorsMenu?.label || "For Authors"}
+                items={authorItems}
                 onClick={() => setMenuOpen(false)}
               />
 
@@ -468,7 +519,7 @@ export default function PublicNavbar() {
 
                 <button
                   type="submit"
-                  className="journal-search-button px-4 text-[13px] font-medium text-[#111433] transition-all duration-300 hover:text-[#22b8e8]"
+                  className="journal-search-button cursor-pointer px-4 text-[13px] font-medium text-[#111433] transition-all duration-300 hover:text-[#22b8e8]"
                 >
                   Search
                 </button>

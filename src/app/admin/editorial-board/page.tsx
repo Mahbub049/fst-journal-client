@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import {
   Edit,
+  ExternalLink,
   Eye,
   EyeOff,
   Loader2,
@@ -10,6 +11,7 @@ import {
   RefreshCw,
   Search,
   Trash2,
+  Upload,
   UserRound,
   X,
 } from "lucide-react";
@@ -22,6 +24,7 @@ import {
   getAdminEditorialBoard,
   updateAdminEditorialBoard,
 } from "@/services/editorialBoardService";
+import { uploadMedia } from "@/services/mediaService";
 
 type StatusFilter = "all" | "active" | "inactive";
 
@@ -89,6 +92,7 @@ export default function AdminEditorialBoardPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [message, setMessage] = useState("");
 
   const fetchEditors = async () => {
@@ -173,22 +177,22 @@ export default function AdminEditorialBoardPage() {
     };
   };
 
-const handleCategoryChange = (category: string) => {
-  setForm((prev) => ({
-    ...prev,
-    category,
-    editorialArea:
-      category === "Chief Patron" ||
-      category === "Chief Editor" ||
-      category === "Editor"
-        ? "Journal Leadership"
-        : category === "Assistant Editor"
-          ? "Assistant Editorial Team"
-          : category === "Editorial Advisory Board"
-            ? "Editorial Advisory Board"
-            : prev.editorialArea,
-  }));
-};
+  const handleCategoryChange = (category: string) => {
+    setForm((prev) => ({
+      ...prev,
+      category,
+      editorialArea:
+        category === "Chief Patron" ||
+        category === "Chief Editor" ||
+        category === "Editor"
+          ? "Journal Leadership"
+          : category === "Assistant Editor"
+            ? "Assistant Editorial Team"
+            : category === "Editorial Advisory Board"
+              ? "Editorial Advisory Board"
+              : prev.editorialArea,
+    }));
+  };
 
   const handleEdit = (editor: EditorialBoardMember) => {
     setEditingId(editor._id);
@@ -210,6 +214,83 @@ const handleCategoryChange = (category: string) => {
 
     setMessage("");
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const buildPayloadFromEditor = (
+    editor: EditorialBoardMember,
+    overrides: Partial<EditorialBoardPayload> = {},
+  ): EditorialBoardPayload => ({
+    category: editor.category || "Editorial Board Member",
+    editorialArea: editor.editorialArea || "General",
+    name: editor.name || "",
+    designation: editor.designation || "",
+    institution: editor.institution || "",
+    department: editor.department || "",
+    expertise: editor.expertise || [],
+    profileImage: editor.profileImage || "",
+    bio: editor.bio || "",
+    email: editor.email || "",
+    order: Number(editor.order || 0),
+    isActive: editor.isActive ?? true,
+    ...overrides,
+  });
+
+  const handleToggleActive = async (editor: EditorialBoardMember) => {
+    try {
+      const nextStatus = !(editor.isActive ?? true);
+
+      await updateAdminEditorialBoard(
+        editor._id,
+        buildPayloadFromEditor(editor, { isActive: nextStatus }),
+      );
+
+      setMessage(
+        nextStatus
+          ? "Member is now visible on the public editorial board page."
+          : "Member is now hidden from the public editorial board page.",
+      );
+
+      await fetchEditors();
+    } catch (error: any) {
+      setMessage(
+        error?.response?.data?.message || "Failed to update member status.",
+      );
+    }
+  };
+
+  const handleProfileImageUpload = async (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    try {
+      setUploadingImage(true);
+      setMessage("");
+
+      const media = await uploadMedia({
+        file,
+        title: file.name,
+        folder: "editorial-board",
+      });
+
+      setForm((prev) => ({
+        ...prev,
+        profileImage: media.fileUrl,
+      }));
+
+      setMessage(
+        "Profile image uploaded successfully. Save the member to apply it.",
+      );
+    } catch (error: any) {
+      setMessage(
+        error?.response?.data?.message || "Failed to upload profile image.",
+      );
+    } finally {
+      setUploadingImage(false);
+      event.target.value = "";
+    }
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -234,7 +315,7 @@ const handleCategoryChange = (category: string) => {
     } catch (error: any) {
       setMessage(
         error?.response?.data?.message ||
-          "Failed to save editorial board member."
+          "Failed to save editorial board member.",
       );
     } finally {
       setSaving(false);
@@ -243,7 +324,7 @@ const handleCategoryChange = (category: string) => {
 
   const handleDelete = async (editor: EditorialBoardMember) => {
     const confirmed = window.confirm(
-      `Are you sure you want to delete "${editor.name}"?`
+      `Are you sure you want to delete "${editor.name}"?`,
     );
 
     if (!confirmed) return;
@@ -260,7 +341,7 @@ const handleCategoryChange = (category: string) => {
     } catch (error: any) {
       setMessage(
         error?.response?.data?.message ||
-          "Failed to delete editorial board member."
+          "Failed to delete editorial board member.",
       );
     }
   };
@@ -277,7 +358,7 @@ const handleCategoryChange = (category: string) => {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#005A78]">
-                Scrum 18
+                Editorial Board
               </p>
               <h1 className="mt-2 text-2xl font-bold text-slate-950">
                 Editorial Board Management
@@ -289,9 +370,15 @@ const handleCategoryChange = (category: string) => {
               </p>
             </div>
 
-            {/* <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
-              Public editorial page will be connected later.
-            </div> */}
+            <a
+              href="/editorial-board"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+            >
+              <ExternalLink className="h-4 w-4" />
+              View Public Page
+            </a>
           </div>
         </div>
 
@@ -371,8 +458,8 @@ const handleCategoryChange = (category: string) => {
                 </select>
 
                 <p className="mt-1.5 text-xs text-slate-500">
-                  Use Core Editorial Team for executive editors. Use academic
-                  area names for board members.
+                  Category controls the public section. Editorial area is used
+                  for internal grouping and filtering.
                 </p>
               </div>
 
@@ -467,19 +554,47 @@ const handleCategoryChange = (category: string) => {
 
               <div>
                 <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                  Profile Image URL
+                  Profile Image
                 </label>
-                <input
-                  value={form.profileImage}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      profileImage: event.target.value,
-                    }))
-                  }
-                  placeholder="Paste Cloudinary or image URL"
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
-                />
+
+                <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                  <input
+                    value={form.profileImage}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        profileImage: event.target.value,
+                      }))
+                    }
+                    placeholder="Paste Cloudinary or image URL"
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
+                  />
+
+                  <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
+                    {uploadingImage ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    {uploadingImage ? "Uploading..." : "Upload"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProfileImageUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {form.profileImage ? (
+                  <div className="mt-3 h-24 w-24 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                    <img
+                      src={form.profileImage}
+                      alt="Profile preview"
+                      className="h-full w-full object-cover object-top"
+                    />
+                  </div>
+                ) : null}
               </div>
 
               <div>
@@ -548,7 +663,7 @@ const handleCategoryChange = (category: string) => {
                     }
                     className="h-4 w-4"
                   />
-                  Active / visible through public editorial board API
+                  Active / visible on public editorial board page
                 </label>
               </div>
 
@@ -634,9 +749,7 @@ const handleCategoryChange = (category: string) => {
 
               <select
                 value={editorialAreaFilter}
-                onChange={(event) =>
-                  setEditorialAreaFilter(event.target.value)
-                }
+                onChange={(event) => setEditorialAreaFilter(event.target.value)}
                 className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
               >
                 <option value="all">All Areas</option>
@@ -713,13 +826,16 @@ const handleCategoryChange = (category: string) => {
                               {editor.name}
                             </h3>
 
-                            <span
+                            <button
+                              type="button"
+                              onClick={() => handleToggleActive(editor)}
                               className={[
-                                "inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold",
+                                "inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold transition",
                                 editor.isActive
-                                  ? "bg-emerald-50 text-emerald-700"
-                                  : "bg-rose-50 text-rose-700",
+                                  ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                  : "bg-rose-50 text-rose-700 hover:bg-rose-100",
                               ].join(" ")}
+                              title="Click to toggle public visibility"
                             >
                               {editor.isActive ? (
                                 <Eye className="h-3 w-3" />
@@ -727,7 +843,7 @@ const handleCategoryChange = (category: string) => {
                                 <EyeOff className="h-3 w-3" />
                               )}
                               {editor.isActive ? "Active" : "Inactive"}
-                            </span>
+                            </button>
                           </div>
 
                           <p className="mt-1 text-sm font-semibold text-[#005A78]">

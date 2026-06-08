@@ -24,7 +24,7 @@ function MenuAnchor({ item }: { item: DropdownMenuItem }) {
         href={item.href}
         target={target}
         rel={rel}
-        className="block rounded-xl px-4 py-3 text-[14px] font-medium text-slate-600 hover:bg-[#eef8fc] hover:text-[#22b8e8]"
+        className="block rounded-xl px-4 py-3 text-[14px] font-semibold text-[#26364d] transition-all duration-200 hover:bg-[#071a33] hover:text-white"
       >
         {item.label}
       </a>
@@ -35,7 +35,7 @@ function MenuAnchor({ item }: { item: DropdownMenuItem }) {
     <Link
       href={item.href}
       scroll={item.href.includes("#")}
-      className="block rounded-xl px-4 py-3 text-[14px] font-medium text-slate-600 hover:bg-[#eef8fc] hover:text-[#22b8e8]"
+      className="block rounded-xl px-4 py-3 text-[14px] font-semibold text-[#26364d] transition-all duration-200 hover:bg-[#071a33] hover:text-white"
     >
       {item.label}
     </Link>

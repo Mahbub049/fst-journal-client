@@ -2,8 +2,16 @@ import Container from "@/components/common/Container";
 import PageTransition from "@/components/common/PageTransition";
 import PublicLayout from "@/components/layout/PublicLayout";
 import Link from "next/link";
+import {
+  getPublicPageByGroupAndSlug,
+  getPublicPagesByGroup,
+  PublicCmsPage,
+  PublicContentBlock,
+} from "@/services/publicPageService";
 
-const pageData: Record<
+export const dynamic = "force-dynamic";
+
+const fallbackPageData: Record<
   string,
   {
     title: string;
@@ -63,7 +71,7 @@ const pageData: Record<
   },
 };
 
-const sideLinks = [
+const fallbackSideLinks = [
   { label: "About the Journal", href: "/about/about-the-journal" },
   { label: "Aims & Scope", href: "/about/aims-scope" },
   { label: "Policies & Ethics", href: "/about/policies-ethics" },
@@ -71,13 +79,184 @@ const sideLinks = [
   { label: "Abstracting & Indexing", href: "/about/abstracting-indexing" },
 ];
 
+const getFallbackBlocks = (content: string[]): PublicContentBlock[] => {
+  return content.map((paragraph, index) => ({
+    type: "paragraph",
+    content: paragraph,
+    order: index + 1,
+    isActive: true,
+  }));
+};
+
+const splitContent = (content?: string) => {
+  return (content || "")
+    .split("\n")
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+};
+
+const ContentBlockView = ({ block }: { block: PublicContentBlock }) => {
+  if (!block.isActive) return null;
+
+  if (block.type === "heading") {
+    return (
+      <h2
+        className="mb-4 mt-6 text-[28px] font-semibold leading-tight text-slate-950 first:mt-0"
+        style={{ fontFamily: "var(--font-source-serif)" }}
+      >
+        {block.title || block.content}
+      </h2>
+    );
+  }
+
+  if (block.type === "paragraph") {
+    const paragraphs = splitContent(block.content);
+
+    return (
+      <div>
+        {block.title && (
+          <h3 className="mb-3 text-xl font-bold text-slate-950">
+            {block.title}
+          </h3>
+        )}
+
+        {paragraphs.map((paragraph, index) => (
+          <p
+            key={index}
+            className="text-justify text-[16px] leading-8 text-slate-600"
+          >
+            {paragraph}
+          </p>
+        ))}
+      </div>
+    );
+  }
+
+  if (block.type === "list") {
+    return (
+      <div>
+        {block.title && (
+          <h3 className="mb-4 text-xl font-bold text-slate-950">
+            {block.title}
+          </h3>
+        )}
+        <ul className="space-y-3 text-[16px] leading-8 text-slate-600">
+          {(block.items || []).map((item) => (
+            <li key={item} className="flex gap-3 text-justify">
+              <span className="mt-3 h-2 w-2 shrink-0 rounded-full bg-[#22b8e8]" />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
+  if (block.type === "card") {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+        {block.title && (
+          <h3 className="text-xl font-bold text-slate-950">{block.title}</h3>
+        )}
+        {splitContent(block.content).map((paragraph, index) => (
+          <p
+            key={index}
+            className="mt-3 text-justify text-[15px] leading-7 text-slate-600"
+          >
+            {paragraph}
+          </p>
+        ))}
+      </div>
+    );
+  }
+
+  if (block.type === "image" && block.imageUrl) {
+    return (
+      <figure className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-3">
+        <img
+          src={block.imageUrl}
+          alt={block.title || "Page image"}
+          className="w-full rounded-xl object-cover"
+        />
+        {block.title && (
+          <figcaption className="mt-3 text-center text-sm text-slate-500">
+            {block.title}
+          </figcaption>
+        )}
+      </figure>
+    );
+  }
+
+  if (block.type === "pdf" && block.fileUrl) {
+    return (
+      <a
+        href={block.fileUrl}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex items-center justify-center rounded-full bg-[#111433] px-6 py-3 text-sm font-semibold text-white hover:bg-[#1b204a]"
+      >
+        {block.title || "Open Document"}
+      </a>
+    );
+  }
+
+  if (block.type === "button" && block.buttonUrl) {
+    return (
+      <a
+        href={block.buttonUrl}
+        target={block.buttonUrl.startsWith("http") ? "_blank" : undefined}
+        rel={block.buttonUrl.startsWith("http") ? "noreferrer" : undefined}
+        className="inline-flex items-center justify-center rounded-full bg-[#111433] px-6 py-3 text-sm font-semibold text-white hover:bg-[#1b204a]"
+      >
+        {block.buttonLabel || block.title || "Learn More"}
+      </a>
+    );
+  }
+
+  return null;
+};
+
 export default async function AboutInnerPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const data = pageData[slug] || pageData["about-the-journal"];
+
+  let cmsPage: PublicCmsPage | null = null;
+  let cmsPages: PublicCmsPage[] = [];
+
+  try {
+    const [pageResponse, pagesResponse] = await Promise.all([
+      getPublicPageByGroupAndSlug("about", slug),
+      getPublicPagesByGroup("about"),
+    ]);
+
+    cmsPage = pageResponse;
+    cmsPages = pagesResponse;
+  } catch {
+    cmsPage = null;
+    cmsPages = [];
+  }
+
+  const fallback = fallbackPageData[slug] || fallbackPageData["about-the-journal"];
+  const data = {
+    title: cmsPage?.title || fallback.title,
+    subtitle: cmsPage?.subtitle || fallback.subtitle,
+    bannerImage: cmsPage?.bannerImage || "",
+    contentBlocks:
+      cmsPage?.contentBlocks && cmsPage.contentBlocks.length > 0
+        ? [...cmsPage.contentBlocks].sort((a, b) => a.order - b.order)
+        : getFallbackBlocks(fallback.content),
+  };
+
+  const sideLinks =
+    cmsPages.length > 0
+      ? cmsPages.map((page) => ({
+          label: page.title,
+          href: `/about/${page.slug}`,
+        }))
+      : fallbackSideLinks;
 
   return (
     <PublicLayout>
@@ -85,7 +264,7 @@ export default async function AboutInnerPage({
         <PageTransition>
           <section
             id="page-start"
-            className="scroll-mt-[118px] border-b border-slate-200 bg-white"
+            className="scroll-mt-[78px] border-b border-slate-200 bg-white"
           >
             <Container className="py-12 md:py-16">
               <p className="journal-subheading">About</p>
@@ -100,6 +279,16 @@ export default async function AboutInnerPage({
               <p className="mt-5 max-w-3xl text-[16px] leading-8 text-slate-600">
                 {data.subtitle}
               </p>
+
+              {data.bannerImage && (
+                <div className="mt-8 overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
+                  <img
+                    src={data.bannerImage}
+                    alt={data.title}
+                    className="max-h-[360px] w-full rounded-2xl object-cover"
+                  />
+                </div>
+              )}
             </Container>
           </section>
 
@@ -129,24 +318,11 @@ export default async function AboutInnerPage({
               </aside>
 
               <section className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-9">
-                <div className="prose prose-slate max-w-none">
-                  {data.content.map((paragraph, index) => (
-                    <p
-                      key={index}
-                      className="text-[16px] leading-8 text-slate-600 text-justify"
-                    >
-                      {paragraph}
-                    </p>
+                <div className="space-y-5">
+                  {data.contentBlocks.map((block, index) => (
+                    <ContentBlockView key={block._id || index} block={block} />
                   ))}
                 </div>
-
-                {/* <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                  <p className="text-[14px] leading-7 text-slate-600">
-                    This content can later be connected to the admin dashboard,
-                    so the journal authority can update the page without
-                    changing the code.
-                  </p>
-                </div> */}
               </section>
             </div>
           </Container>

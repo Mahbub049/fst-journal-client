@@ -1,148 +1,306 @@
 import Container from "@/components/common/Container";
 import PublicLayout from "@/components/layout/PublicLayout";
-import Image from "next/image";
 import Link from "next/link";
 
-const importantDates = [
-  {
-    label: "Manuscript Submission Deadline",
-    value: "30 November 2026",
-  },
-  {
-    label: "Issue",
-    value: "Volume 4, Issue 1",
-  },
-  {
-    label: "Publication Year",
-    value: "2026",
-  },
-  {
-    label: "Submission Email",
-    value: "journal.fst@bup.edu.bd",
-  },
-];
+const apiBaseUrl =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
-const submissionTypes = [
-  "Full research articles",
-  "Short communications",
-  "Book reviews",
-  "Policy analysis",
-  "Review articles",
-];
+type ImportantDate = {
+  _id?: string;
+  label: string;
+  date: string;
+  order?: number;
+  isActive?: boolean;
+};
 
-const engineeringTopics = [
-  "Electric Power Engineering",
-  "Electric Machinery and Power Electronics",
-  "Electro Physics and Applications",
-  "Electric Material and Semiconductor",
-  "High Power, High Voltage and Discharge",
-  "Micro-Electro-Mechanical Systems (MEMS)",
-  "Nanotechnology",
-  "Microwave Engineering",
-  "Radar and Satellite Communications",
-  "Optical Fiber Communication",
-  "Optical and EM Wave",
-  "Sensors and Systems",
-  "Signal Processing",
-  "Robotics, Automation and Control",
-  "Application of AI in Smart Education System",
-  "Industrial Internet of Things (IIoT)",
-  "Mobile Computing for Industry",
-  "IoT and WSN for Smart City Applications",
-  "Cloud Computing and Networking",
-  "Grid and Metering Infrastructure",
-  "Smart Transportation System",
-  "Big Data and Machine Learning",
-  "Natural Language Processing and Text Mining",
-  "Data Mining for Biomedical Engineering",
-  "Electronic Health Records and Standards",
-  "Wearable and Body Implant Technologies",
-  "ICT in Telemedicine",
-  "Collaborative and Cooperative Education System",
-  "Smart Learning System",
-  "Cloud-IoT Platforms for Small to Large Scale Farming",
-];
+type CallForPaperContent = {
+  invitationLabel: string;
+  title: string;
+  subtitle: string;
+  description: string;
 
-const environmentalTopics = [
-  "Environmental Management",
-  "Environmental Pollution and Mitigation",
-  "Environmental Chemistry",
-  "Environmental Engineering",
-  "Environmental Modelling",
-  "Environmental Economics",
-  "Environmental Technology",
-  "Biological Pollution in Environment",
-  "Ecology and Biodiversity",
-  "Earth Science",
-  "Oceanography",
-  "Environmental Policy and Governance",
-  "Occupational Health and Safety",
-  "Integrated Coastal Zone and Floodplain Management",
-  "Climate Change Adaptation and Mitigation",
-  "Disaster Risk Reduction and Disaster Management",
-  "Sustainable Urban Planning and Development",
-  "Sustainable Energy Management",
-  "Agriculture and Environment",
-];
+  posterImage: string;
+  pdfUrl: string;
+  pdfTitle: string;
+  pdfSubtitle: string;
 
-export default function CallForPapersPage() {
+  submissionFormatLabel: string;
+  submissionFormatTitle: string;
+  submissionFormatDescription: string;
+  submissionTypes: string[];
+
+  scopeLabel: string;
+  scopeTitle: string;
+  scopeDescription: string;
+  engineeringTitle: string;
+  engineeringTopics: string[];
+  environmentalTitle: string;
+  environmentalTopics: string[];
+
+  finalSectionLabel: string;
+  finalSectionTitle: string;
+  finalSectionDescription: string;
+
+  importantInfoLabel: string;
+  timelineTitle: string;
+  importantDates: ImportantDate[];
+
+  submitSectionLabel: string;
+  submitTitle: string;
+  submitDescription: string;
+  submissionButtonLabel: string;
+  submissionButtonLink: string;
+  guidelinesButtonLabel: string;
+  guidelinesButtonLink: string;
+
+  contactSectionLabel: string;
+  contactTitle: string;
+  contactEditorLabel: string;
+  contactEditorName: string;
+  publishedByLabel: string;
+  publishedBy: string;
+  publisherName: string;
+  publisherAddress: string;
+  contactEmail: string;
+  contactPhone: string;
+  publisherInfo: string;
+};
+
+type CallForPaperResponse = {
+  success: boolean;
+  data?: CallForPaperContent;
+};
+
+const fallbackContent: CallForPaperContent = {
+  invitationLabel: "Publication Invitation",
+  title: "Call for Papers",
+  subtitle: "",
+  description:
+    "The Faculty of Science and Technology, Bangladesh University of Professionals, invites authors to submit original and high-quality manuscripts for the upcoming issue of the Journal of FST. The journal welcomes research contributions in engineering, computer science, communication technology, environmental science, management, and related interdisciplinary fields.",
+
+  posterImage: "",
+  pdfUrl: "/pdfs/call-for-papers.pdf",
+  pdfTitle: "Call for Papers Document",
+  pdfSubtitle: "Volume 4, Issue 1",
+
+  submissionFormatLabel: "Submission Format",
+  submissionFormatTitle: "Types of Manuscripts Accepted",
+  submissionFormatDescription:
+    "The journal welcomes different types of academic submissions. Manuscripts should present original contribution, clear methodology, proper academic writing, and relevance to the scope of the Faculty of Science and Technology.",
+  submissionTypes: [
+    "Full research articles",
+    "Short communications",
+    "Book reviews",
+    "Policy analysis",
+    "Review articles",
+  ],
+
+  scopeLabel: "Scope of Submission",
+  scopeTitle: "Suggested Research Areas",
+  scopeDescription:
+    "Authors are encouraged to submit high-quality articles in the areas listed below. The scope covers Electrical and Electronic Engineering, Computer Science and Engineering, Information and Communication Technology, Environmental Science and Management, and other related areas.",
+  engineeringTitle: "Engineering, ICT and Computing Areas",
+  engineeringTopics: [
+    "Electric Power Engineering",
+    "Electric Machinery and Power Electronics",
+    "Electro Physics and Applications",
+    "Electric Material and Semiconductor",
+    "High Power, High Voltage and Discharge",
+    "Micro-Electro-Mechanical Systems (MEMS)",
+    "Nanotechnology",
+    "Microwave Engineering",
+    "Radar and Satellite Communications",
+    "Optical Fiber Communication",
+    "Optical and EM Wave",
+    "Sensors and Systems",
+    "Signal Processing",
+    "Robotics, Automation and Control",
+    "Application of AI in Smart Education System",
+    "Industrial Internet of Things (IIoT)",
+    "Mobile Computing for Industry",
+    "IoT and WSN for Smart City Applications",
+    "Cloud Computing and Networking",
+    "Grid and Metering Infrastructure",
+    "Smart Transportation System",
+    "Big Data and Machine Learning",
+    "Natural Language Processing and Text Mining",
+    "Data Mining for Biomedical Engineering",
+    "Electronic Health Records and Standards",
+    "Wearable and Body Implant Technologies",
+    "ICT in Telemedicine",
+    "Collaborative and Cooperative Education System",
+    "Smart Learning System",
+    "Cloud-IoT Platforms for Small to Large Scale Farming",
+  ],
+  environmentalTitle: "Environmental Science and Management Areas",
+  environmentalTopics: [
+    "Environmental Management",
+    "Environmental Pollution and Mitigation",
+    "Environmental Chemistry",
+    "Environmental Engineering",
+    "Environmental Modelling",
+    "Environmental Economics",
+    "Environmental Technology",
+    "Biological Pollution in Environment",
+    "Ecology and Biodiversity",
+    "Earth Science",
+    "Oceanography",
+    "Environmental Policy and Governance",
+    "Occupational Health and Safety",
+    "Integrated Coastal Zone and Floodplain Management",
+    "Climate Change Adaptation and Mitigation",
+    "Disaster Risk Reduction and Disaster Management",
+    "Sustainable Urban Planning and Development",
+    "Sustainable Energy Management",
+    "Agriculture and Environment",
+  ],
+
+  finalSectionLabel: "Final Accepted Papers",
+  finalSectionTitle: "Final Submission Requirements",
+  finalSectionDescription:
+    "Authors must submit the final accepted article in both Word and LaTeX format. All figures should be submitted separately in both colour and grayscale versions. All finally accepted articles will be provided with a DOI.",
+
+  importantInfoLabel: "Important Information",
+  timelineTitle: "Current Issue Timeline",
+  importantDates: [
+    {
+      label: "Manuscript Submission Deadline",
+      date: "30 November 2026",
+      order: 1,
+      isActive: true,
+    },
+    {
+      label: "Issue",
+      date: "Volume 4, Issue 1",
+      order: 2,
+      isActive: true,
+    },
+    {
+      label: "Publication Year",
+      date: "2026",
+      order: 3,
+      isActive: true,
+    },
+    {
+      label: "Submission Email",
+      date: "journal.fst@bup.edu.bd",
+      order: 4,
+      isActive: true,
+    },
+  ],
+
+  submitSectionLabel: "Submit Manuscript",
+  submitTitle: "Ready to submit?",
+  submitDescription:
+    "Please review the author guidelines, manuscript structure, word limit, plagiarism requirement, and formatting rules before submission.",
+  submissionButtonLabel: "Email Manuscript",
+  submissionButtonLink: "mailto:journal.fst@bup.edu.bd",
+  guidelinesButtonLabel: "View Submission Guidelines",
+  guidelinesButtonLink: "/for-authors/submission-guidelines",
+
+  contactSectionLabel: "Contact",
+  contactTitle: "Editorial Office",
+  contactEditorLabel: "Chief Editor",
+  contactEditorName: "Brigadier General Sufi Md Ataur Rahman, ndc, psc",
+  publishedByLabel: "Published By",
+  publishedBy: "Faculty of Science and Technology",
+  publisherName: "Bangladesh University of Professionals",
+  publisherAddress: "Mirpur Cantonment, Dhaka - 1216",
+  contactEmail: "journal.fst@bup.edu.bd",
+  contactPhone: "",
+  publisherInfo: "Bangladesh University of Professionals",
+};
+
+const getPublicCallForPaper = async () => {
+  try {
+    const response = await fetch(`${apiBaseUrl}/call-for-papers`, {
+      cache: "no-store",
+    });
+
+    if (!response.ok) return fallbackContent;
+
+    const result = (await response.json()) as CallForPaperResponse;
+
+    if (!result.success || !result.data) return fallbackContent;
+
+    return {
+      ...fallbackContent,
+      ...result.data,
+      importantDates: result.data.importantDates?.length
+        ? result.data.importantDates
+        : fallbackContent.importantDates,
+      submissionTypes: result.data.submissionTypes?.length
+        ? result.data.submissionTypes
+        : fallbackContent.submissionTypes,
+      engineeringTopics: result.data.engineeringTopics?.length
+        ? result.data.engineeringTopics
+        : fallbackContent.engineeringTopics,
+      environmentalTopics: result.data.environmentalTopics?.length
+        ? result.data.environmentalTopics
+        : fallbackContent.environmentalTopics,
+    };
+  } catch (error) {
+    console.error("Failed to load call for papers:", error);
+    return fallbackContent;
+  }
+};
+
+const normalizeHref = (url: string) => {
+  if (!url) return "#";
+  return url;
+};
+
+export default async function CallForPapersPage() {
+  const content = await getPublicCallForPaper();
+
+  const activeImportantDates = [...content.importantDates]
+    .filter((item) => item.isActive !== false)
+    .sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
+
+  const pdfUrl = content.pdfUrl || fallbackContent.pdfUrl;
+  const pdfViewerSrc = `${pdfUrl}#toolbar=0&navpanes=0&scrollbar=1`;
+
   return (
     <PublicLayout>
       <main className="bg-[#f7f8fb]">
         <Container className="py-10 md:py-14">
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
             <section className="space-y-8">
-              {/* Main Call for Papers Card */}
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
                 <div className="border-b border-slate-200 pb-6">
                   <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
                     <div>
                       <p className="journal-subheading">
-                        Publication Invitation
+                        {content.invitationLabel}
                       </p>
 
                       <h1
                         className="mt-3 text-[34px] font-semibold leading-tight text-slate-950 md:text-[42px]"
                         style={{ fontFamily: "var(--font-source-serif)" }}
                       >
-                        Call for Papers
+                        {content.title}
                       </h1>
 
                       <p className="mt-4 max-w-3xl text-[15px] text-justify leading-8 text-slate-600">
-                        The Faculty of Science and Technology, Bangladesh
-                        University of Professionals, invites authors to submit
-                        original and high-quality manuscripts for the upcoming
-                        issue of the Journal of FST. The journal welcomes
-                        research contributions in engineering, computer science,
-                        communication technology, environmental science,
-                        management, and related interdisciplinary fields.
+                        {content.description}
                       </p>
                     </div>
-
-                    {/* <Link
-                      href="/pdfs/call-for-papers.pdf"
-                      target="_blank"
-                      className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-[#111433] px-6 text-[14px] font-semibold text-white hover:bg-[#1b1f4a]"
-                    >
-                      Open PDF
-                    </Link> */}
                   </div>
                 </div>
 
-                {/* PDF Viewer */}
                 <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm">
                   <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-3">
                     <div>
                       <p className="text-[13px] font-semibold text-slate-900">
-                        Call for Papers Document
+                        {content.pdfTitle}
                       </p>
                       <p className="text-[12px] text-slate-500">
-                        Volume 4, Issue 1
+                        {content.pdfSubtitle}
                       </p>
                     </div>
 
                     <a
-                      href="/pdfs/call-for-papers.pdf"
+                      href={pdfUrl}
                       target="_blank"
                       className="rounded-full border border-slate-300 bg-white px-4 py-2 text-[12px] font-semibold text-slate-700 hover:border-[#111433]/40 hover:text-[#111433]"
                     >
@@ -151,33 +309,31 @@ export default function CallForPapersPage() {
                   </div>
 
                   <iframe
-                    src="/pdfs/call-for-papers.pdf#toolbar=0&navpanes=0&scrollbar=1"
+                    src={pdfViewerSrc}
                     title="Call for Papers PDF"
                     className="block h-[720px] w-full bg-white"
                   />
                 </div>
               </div>
 
-              {/* Submission Types */}
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-                <p className="journal-subheading">Submission Format</p>
+                <p className="journal-subheading">
+                  {content.submissionFormatLabel}
+                </p>
 
                 <h2
                   className="mt-3 text-[30px] font-semibold leading-tight text-slate-950"
                   style={{ fontFamily: "var(--font-source-serif)" }}
                 >
-                  Types of Manuscripts Accepted
+                  {content.submissionFormatTitle}
                 </h2>
 
                 <p className="mt-4 text-[15px] leading-8 text-slate-600">
-                  The journal welcomes different types of academic submissions.
-                  Manuscripts should present original contribution, clear
-                  methodology, proper academic writing, and relevance to the
-                  scope of the Faculty of Science and Technology.
+                  {content.submissionFormatDescription}
                 </p>
 
                 <div className="mt-6 grid gap-3 md:grid-cols-2">
-                  {submissionTypes.map((type) => (
+                  {content.submissionTypes.map((type) => (
                     <div
                       key={type}
                       className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-[14px] font-medium leading-6 text-slate-700"
@@ -188,33 +344,28 @@ export default function CallForPapersPage() {
                 </div>
               </div>
 
-              {/* Scope */}
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-                <p className="journal-subheading">Scope of Submission</p>
+                <p className="journal-subheading">{content.scopeLabel}</p>
 
                 <h2
                   className="mt-3 text-[30px] font-semibold leading-tight text-slate-950"
                   style={{ fontFamily: "var(--font-source-serif)" }}
                 >
-                  Suggested Research Areas
+                  {content.scopeTitle}
                 </h2>
 
                 <p className="mt-4 text-[15px] leading-8 text-slate-600">
-                  Authors are encouraged to submit high-quality articles in the
-                  areas listed below. The scope covers Electrical and Electronic
-                  Engineering, Computer Science and Engineering, Information and
-                  Communication Technology, Environmental Science and Management,
-                  and other related areas.
+                  {content.scopeDescription}
                 </p>
 
                 <div className="mt-8 space-y-8">
                   <div>
                     <h3 className="text-[20px] font-semibold text-slate-950">
-                      Engineering, ICT and Computing Areas
+                      {content.engineeringTitle}
                     </h3>
 
                     <div className="mt-4 grid gap-3 md:grid-cols-2">
-                      {engineeringTopics.map((topic) => (
+                      {content.engineeringTopics.map((topic) => (
                         <div
                           key={topic}
                           className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-[14px] font-medium leading-6 text-slate-700"
@@ -227,11 +378,11 @@ export default function CallForPapersPage() {
 
                   <div>
                     <h3 className="text-[20px] font-semibold text-slate-950">
-                      Environmental Science and Management Areas
+                      {content.environmentalTitle}
                     </h3>
 
                     <div className="mt-4 grid gap-3 md:grid-cols-2">
-                      {environmentalTopics.map((topic) => (
+                      {content.environmentalTopics.map((topic) => (
                         <div
                           key={topic}
                           className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-[14px] font-medium leading-6 text-slate-700"
@@ -244,40 +395,37 @@ export default function CallForPapersPage() {
                 </div>
               </div>
 
-              {/* Final Requirements */}
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-                <p className="journal-subheading">Final Accepted Papers</p>
+                <p className="journal-subheading">
+                  {content.finalSectionLabel}
+                </p>
 
                 <h2
                   className="mt-3 text-[30px] font-semibold leading-tight text-slate-950"
                   style={{ fontFamily: "var(--font-source-serif)" }}
                 >
-                  Final Submission Requirements
+                  {content.finalSectionTitle}
                 </h2>
 
                 <p className="mt-4 text-[15px] leading-8 text-slate-600">
-                  Authors must submit the final accepted article in both Word and
-                  LaTeX format. All figures should be submitted separately in
-                  both colour and grayscale versions. All finally accepted
-                  articles will be provided with a DOI.
+                  {content.finalSectionDescription}
                 </p>
               </div>
             </section>
 
             <aside className="space-y-6">
-              {/* Important Dates */}
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <p className="journal-subheading">Important Information</p>
+                <p className="journal-subheading">{content.importantInfoLabel}</p>
 
                 <h2
                   className="mt-3 text-[26px] font-semibold leading-tight text-slate-950"
                   style={{ fontFamily: "var(--font-source-serif)" }}
                 >
-                  Current Issue Timeline
+                  {content.timelineTitle}
                 </h2>
 
                 <div className="mt-6 space-y-3">
-                  {importantDates.map((date) => (
+                  {activeImportantDates.map((date) => (
                     <div
                       key={date.label}
                       className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
@@ -287,106 +435,80 @@ export default function CallForPapersPage() {
                       </p>
 
                       <p className="mt-1 break-words text-[15px] font-semibold text-slate-900">
-                        {date.value}
+                        {date.date}
                       </p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Submit Card */}
               <div className="rounded-3xl border border-slate-200 bg-[#111433] p-6 text-white shadow-sm">
                 <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-white/70">
-                  Submit Manuscript
+                  {content.submitSectionLabel}
                 </p>
 
                 <h2
                   className="mt-3 text-[26px] font-semibold leading-tight text-white"
                   style={{ fontFamily: "var(--font-source-serif)" }}
                 >
-                  Ready to submit?
+                  {content.submitTitle}
                 </h2>
 
                 <p className="mt-4 text-[14px] leading-7 text-white/80">
-                  Please review the author guidelines, manuscript structure,
-                  word limit, plagiarism requirement, and formatting rules before
-                  submission.
+                  {content.submitDescription}
                 </p>
 
                 <a
-                  href="mailto:journal.fst@bup.edu.bd"
+                  href={normalizeHref(content.submissionButtonLink)}
                   className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-full bg-white px-5 text-[14px] font-medium text-[#111433] hover:bg-slate-100"
                 >
-                  Email Manuscript
+                  {content.submissionButtonLabel}
                 </a>
 
                 <Link
-                  href="/for-authors/submission-guidelines"
+                  href={normalizeHref(content.guidelinesButtonLink)}
                   className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-full border border-white/30 px-5 text-[14px] font-medium text-white hover:bg-white/10"
                 >
-                  View Submission Guidelines
+                  {content.guidelinesButtonLabel}
                 </Link>
               </div>
 
-              {/* Poster */}
-              {/* <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <p className="journal-subheading">Poster</p>
-
-                <h2
-                  className="mt-3 text-[26px] font-semibold leading-tight text-slate-950"
-                  style={{ fontFamily: "var(--font-source-serif)" }}
-                >
-                  Announcement Poster
-                </h2>
-
-                <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
-                  <Image
-                    src="/images/call-for-papers-poster.jpg"
-                    alt="Call for Papers Poster"
-                    width={500}
-                    height={700}
-                    className="h-auto w-full object-cover"
-                  />
-                </div>
-              </div> */}
-
-              {/* Contact */}
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <p className="journal-subheading">Contact</p>
+                <p className="journal-subheading">{content.contactSectionLabel}</p>
 
                 <h2
                   className="mt-3 text-[26px] font-semibold leading-tight text-slate-950"
                   style={{ fontFamily: "var(--font-source-serif)" }}
                 >
-                  Editorial Office
+                  {content.contactTitle}
                 </h2>
 
                 <div className="mt-5 space-y-3 text-[14px] leading-7 text-slate-600">
                   <p>
                     <span className="font-semibold text-slate-900">
-                      Chief Editor
+                      {content.contactEditorLabel}
                     </span>
                     <br />
-                    Brigadier General Sufi Md Ataur Rahman, ndc, psc
+                    {content.contactEditorName}
                   </p>
 
                   <p>
                     <span className="font-semibold text-slate-900">
-                      Published By
+                      {content.publishedByLabel}
                     </span>
                     <br />
-                    Faculty of Science and Technology
+                    {content.publishedBy}
                   </p>
 
-                  <p>Bangladesh University of Professionals</p>
+                  <p>{content.publisherName}</p>
 
-                  <p>Mirpur Cantonment, Dhaka - 1216</p>
+                  <p>{content.publisherAddress}</p>
 
                   <p>
                     <span className="font-semibold text-slate-900">
                       Email:
                     </span>{" "}
-                    journal.fst@bup.edu.bd
+                    {content.contactEmail}
                   </p>
                 </div>
               </div>

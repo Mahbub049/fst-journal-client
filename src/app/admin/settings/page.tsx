@@ -2,9 +2,9 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import {
+  Eye,
   Link2,
   Loader2,
-  Plus,
   Save,
   Share2,
   Trash2,
@@ -19,17 +19,24 @@ import {
 } from "@/services/siteSettingsService";
 
 const emptySettings: SiteSettingsContent = {
-  footerDescription: "",
-  contactEmail: "",
+  footerJournalTitle: "Journal of FST",
+  footerJournalSubtitle: "Bangladesh University of Professionals",
+  footerDescription:
+    "A scholarly journal platform dedicated to publishing quality research in science, technology, engineering, and related interdisciplinary fields.",
+  publisherLabel: "Publisher",
+  publisherName: "Faculty of Science & Technology, BUP",
+  contactEmail: "journal.fst@bup.edu.bd",
   contactPhone: "",
-  address: "",
-  copyrightText: "",
+  address:
+    "Bangladesh University of Professionals, Mirpur Cantonment, Dhaka - 1216",
+  copyrightText: "Copyright © 2026 Journal of FST. All rights reserved.",
+  footerCreditText: "Designed for academic publishing and research visibility.",
+  footerCreditUrl: "",
 
   journalInfoTitle: "Journal Information",
-  publisherName: "",
-  publishingModel: "",
-  language: "",
-  publicationFrequency: "",
+  publishingModel: "Hybrid",
+  language: "English",
+  publicationFrequency: "Annual",
 
   usefulLinks: [],
   socialLinks: [],
@@ -40,7 +47,7 @@ const emptySettings: SiteSettingsContent = {
 const createUsefulLink = (order: number): UsefulLink => ({
   label: "",
   url: "",
-  group: "General",
+  group: "Journal",
   order,
   isActive: true,
 });
@@ -56,7 +63,6 @@ export default function AdminSettingsPage() {
   const [form, setForm] = useState<SiteSettingsContent>(emptySettings);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
   const [message, setMessage] = useState("");
 
   const fetchSettings = async () => {
@@ -184,6 +190,8 @@ export default function AdminSettingsPage() {
       setForm({
         ...emptySettings,
         ...updated,
+        usefulLinks: updated.usefulLinks || [],
+        socialLinks: updated.socialLinks || [],
       });
 
       setMessage("Site settings updated successfully.");
@@ -203,20 +211,26 @@ export default function AdminSettingsPage() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#005A78]">
-                Scrum 20
+                Site Settings
               </p>
               <h1 className="mt-2 text-2xl font-bold text-slate-950">
-                Site Settings / Footer CMS
+                Footer CMS
               </h1>
               <p className="mt-2 max-w-3xl text-sm text-slate-600">
-                Manage footer description, contact details, journal information,
-                useful links, social links, and copyright text.
+                Manage the public footer identity, description, publisher block,
+                grouped links, contact details, and copyright text.
               </p>
             </div>
 
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
-              Public footer connection will be done later.
-            </div>
+            <a
+              href="/"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex w-fit items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-[#005A78] hover:text-[#005A78]"
+            >
+              <Eye className="h-4 w-4" />
+              View Public Site
+            </a>
           </div>
         </div>
 
@@ -237,10 +251,36 @@ export default function AdminSettingsPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-bold text-slate-950">
-                Footer & Contact Information
+                Footer Identity
               </h2>
 
               <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                    Footer Journal Title
+                  </label>
+                  <input
+                    value={form.footerJournalTitle}
+                    onChange={(event) =>
+                      updateField("footerJournalTitle", event.target.value)
+                    }
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                    Footer Subtitle
+                  </label>
+                  <input
+                    value={form.footerJournalSubtitle}
+                    onChange={(event) =>
+                      updateField("footerJournalSubtitle", event.target.value)
+                    }
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"
+                  />
+                </div>
+
                 <div className="lg:col-span-2">
                   <label className="mb-1.5 block text-sm font-semibold text-slate-700">
                     Footer Description
@@ -250,11 +290,45 @@ export default function AdminSettingsPage() {
                     onChange={(event) =>
                       updateField("footerDescription", event.target.value)
                     }
-                    rows={5}
+                    rows={4}
                     className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
                   />
                 </div>
 
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                    Publisher Label
+                  </label>
+                  <input
+                    value={form.publisherLabel}
+                    onChange={(event) =>
+                      updateField("publisherLabel", event.target.value)
+                    }
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                    Publisher Name
+                  </label>
+                  <input
+                    value={form.publisherName}
+                    onChange={(event) =>
+                      updateField("publisherName", event.target.value)
+                    }
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-bold text-slate-950">
+                Contact & Copyright Information
+              </h2>
+
+              <div className="mt-5 grid gap-4 lg:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-sm font-semibold text-slate-700">
                     Contact Email
@@ -296,7 +370,7 @@ export default function AdminSettingsPage() {
                   />
                 </div>
 
-                <div className="lg:col-span-2">
+                <div>
                   <label className="mb-1.5 block text-sm font-semibold text-slate-700">
                     Copyright Text
                   </label>
@@ -307,6 +381,37 @@ export default function AdminSettingsPage() {
                     }
                     className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"
                   />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                    Footer Credit Text
+                  </label>
+                  <input
+                    value={form.footerCreditText}
+                    onChange={(event) =>
+                      updateField("footerCreditText", event.target.value)
+                    }
+                    placeholder="Example: Developed By: Mahbub Sarwar"
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                    Footer Credit Link <span className="font-normal text-slate-400">(Optional)</span>
+                  </label>
+                  <input
+                    value={form.footerCreditUrl || ""}
+                    onChange={(event) =>
+                      updateField("footerCreditUrl", event.target.value)
+                    }
+                    placeholder="Example: https://developer-portfolio.com"
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"
+                  />
+                  <p className="mt-1.5 text-xs text-slate-500">
+                    If this field is filled, the footer credit text will become clickable on the public footer.
+                  </p>
                 </div>
 
                 <div>
@@ -342,19 +447,6 @@ export default function AdminSettingsPage() {
                     value={form.journalInfoTitle}
                     onChange={(event) =>
                       updateField("journalInfoTitle", event.target.value)
-                    }
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                    Publisher Name
-                  </label>
-                  <input
-                    value={form.publisherName}
-                    onChange={(event) =>
-                      updateField("publisherName", event.target.value)
                     }
                     className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"
                   />
@@ -405,10 +497,11 @@ export default function AdminSettingsPage() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <h2 className="text-lg font-bold text-slate-950">
-                    Useful Links
+                    Footer Links
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    Footer grouped links such as About, For Authors, Browse.
+                    Group links by Journal, For Authors, Browse, or any custom
+                    footer column name.
                   </p>
                 </div>
 
@@ -425,7 +518,7 @@ export default function AdminSettingsPage() {
               <div className="mt-5 space-y-4">
                 {form.usefulLinks.map((link, index) => (
                   <div
-                    key={index}
+                    key={link._id || index}
                     className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
                   >
                     <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr_180px_auto]">
@@ -452,7 +545,7 @@ export default function AdminSettingsPage() {
                         onChange={(event) =>
                           updateUsefulLink(index, "group", event.target.value)
                         }
-                        placeholder="About"
+                        placeholder="Journal"
                         className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"
                       />
 
@@ -460,6 +553,7 @@ export default function AdminSettingsPage() {
                         type="button"
                         onClick={() => removeUsefulLink(index)}
                         className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700"
+                        aria-label="Remove link"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -491,7 +585,8 @@ export default function AdminSettingsPage() {
                     Social Links
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    Optional social media or external links.
+                    Optional social media or external links. These appear only if
+                    active links are added.
                   </p>
                 </div>
 
@@ -508,7 +603,7 @@ export default function AdminSettingsPage() {
               <div className="mt-5 space-y-4">
                 {form.socialLinks.map((link, index) => (
                   <div
-                    key={index}
+                    key={link._id || index}
                     className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
                   >
                     <div className="grid gap-4 lg:grid-cols-[1fr_1.5fr_auto]">
@@ -538,6 +633,7 @@ export default function AdminSettingsPage() {
                         type="button"
                         onClick={() => removeSocialLink(index)}
                         className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700"
+                        aria-label="Remove social link"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>

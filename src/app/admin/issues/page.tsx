@@ -11,6 +11,7 @@ import {
   Save,
   Search,
   Trash2,
+  Upload,
   X,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -22,6 +23,7 @@ import {
   updateAdminIssue,
 } from "@/services/issues.service";
 import { Issue } from "@/types/issue";
+import { uploadMedia } from "@/services/mediaService";
 
 type IssueStatusFilter = "all" | "published" | "draft" | "recent";
 
@@ -74,6 +76,8 @@ export default function AdminIssuesPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
 
   const [message, setMessage] = useState("");
 
@@ -188,6 +192,49 @@ export default function AdminIssuesPage() {
     }
   };
 
+
+  const handleMediaUpload = async (
+    field: "coverImage" | "pdfUrl",
+    file: File | undefined
+  ) => {
+    if (!file) return;
+
+    try {
+      if (field === "coverImage") {
+        setUploadingCover(true);
+      } else {
+        setUploadingPdf(true);
+      }
+
+      setMessage("");
+
+      const media = await uploadMedia({
+        file,
+        title: file.name,
+        folder: "issues",
+      });
+
+      setForm((prev) => ({
+        ...prev,
+        [field]: media.fileUrl,
+      }));
+
+      setMessage(
+        field === "coverImage"
+          ? "Cover image uploaded successfully."
+          : "Issue PDF uploaded successfully."
+      );
+    } catch (error: any) {
+      setMessage(error?.response?.data?.message || "Failed to upload file.");
+    } finally {
+      if (field === "coverImage") {
+        setUploadingCover(false);
+      } else {
+        setUploadingPdf(false);
+      }
+    }
+  };
+
   const handleDelete = async (issue: Issue) => {
     const confirmed = window.confirm(
       `Are you sure you want to delete "${issue.title}"?`
@@ -221,20 +268,19 @@ export default function AdminIssuesPage() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#005A78]">
-                Scrum 16
+                Issues CMS
               </p>
               <h1 className="mt-2 text-2xl font-bold text-slate-950">
                 Issues Management
               </h1>
               <p className="mt-2 max-w-3xl text-sm text-slate-600">
-                Create and manage journal issues. These records will later
-                control current issue, archive, recent issue, and issue details
-                sections.
+                Create and manage published issues, current issue visibility,
+                archive records, cover images, and issue PDF links.
               </p>
             </div>
 
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
-              Public issue pages are not redesigned here.
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+              Connected to the public issue pages.
             </div>
           </div>
         </div>
@@ -409,6 +455,37 @@ export default function AdminIssuesPage() {
                   className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
                   required
                 />
+
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
+                    {uploadingCover ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    {uploadingCover ? "Uploading..." : "Upload Cover"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploadingCover}
+                      onChange={(event) =>
+                        handleMediaUpload("coverImage", event.target.files?.[0])
+                      }
+                    />
+                  </label>
+
+                  {form.coverImage && (
+                    <a
+                      href={form.coverImage}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-semibold text-[#005A78] hover:underline"
+                    >
+                      Preview cover
+                    </a>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -426,6 +503,37 @@ export default function AdminIssuesPage() {
                   placeholder="Optional PDF URL"
                   className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
                 />
+
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
+                    {uploadingPdf ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    {uploadingPdf ? "Uploading..." : "Upload PDF"}
+                    <input
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      className="hidden"
+                      disabled={uploadingPdf}
+                      onChange={(event) =>
+                        handleMediaUpload("pdfUrl", event.target.files?.[0])
+                      }
+                    />
+                  </label>
+
+                  {form.pdfUrl && (
+                    <a
+                      href={form.pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-semibold text-[#005A78] hover:underline"
+                    >
+                      Open PDF
+                    </a>
+                  )}
+                </div>
               </div>
 
               <div>

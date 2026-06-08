@@ -179,7 +179,10 @@ function EditorCard({ member }: { member: EditorialBoardMember }) {
   const imageUrl = member.profileImage?.trim();
 
   return (
-    <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+    <article
+      id={`member-${member._id}`}
+      className="scroll-mt-32 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+    >
       <div className="flex flex-col gap-6 md:flex-row md:items-start">
         <div className="shrink-0">
           <div className="h-[220px] w-[170px] overflow-hidden rounded-2xl border border-slate-200 bg-[#f1f5f9] shadow-sm">
@@ -382,10 +385,8 @@ export default async function EditorialBoardPage() {
                     className="scroll-mt-32"
                   >
                     <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                      <p className="journal-subheading">{section.label}</p>
-
                       <h2
-                        className="mt-3 text-[28px] font-semibold leading-tight text-slate-950"
+                        className="text-[28px] font-semibold leading-tight text-slate-950"
                         style={{ fontFamily: "var(--font-source-serif)" }}
                       >
                         {section.title}

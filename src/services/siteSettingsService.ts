@@ -20,14 +20,19 @@ export type SocialLink = {
 export type SiteSettingsContent = {
   _id?: string;
 
+  footerJournalTitle: string;
+  footerJournalSubtitle: string;
   footerDescription: string;
+  publisherLabel: string;
+  publisherName: string;
   contactEmail: string;
   contactPhone: string;
   address: string;
   copyrightText: string;
+  footerCreditText: string;
+  footerCreditUrl: string;
 
   journalInfoTitle: string;
-  publisherName: string;
   publishingModel: string;
   language: string;
   publicationFrequency: string;
@@ -44,6 +49,11 @@ export type SiteSettingsContent = {
 type SiteSettingsResponse = {
   success: boolean;
   data: SiteSettingsContent;
+};
+
+export const getPublicSiteSettings = async () => {
+  const { data } = await api.get<SiteSettingsResponse>("/site-settings");
+  return data.data;
 };
 
 export const getAdminSiteSettings = async () => {

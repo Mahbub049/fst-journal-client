@@ -1,10 +1,11 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import {
   Edit,
   Eye,
   EyeOff,
+  ExternalLink,
   FileText,
   Loader2,
   Plus,
@@ -12,8 +13,10 @@ import {
   Save,
   Search,
   Trash2,
+  Upload,
   X,
 } from "lucide-react";
+import Link from "next/link";
 import AdminLayout from "@/components/admin/AdminLayout";
 import {
   ArticlePayload,
@@ -24,6 +27,7 @@ import {
   updateAdminArticle,
 } from "@/services/articleAdminService";
 import { getAdminIssues } from "@/services/issues.service";
+import { uploadMedia } from "@/services/mediaService";
 import { Article, Issue, PopulatedIssue } from "@/types/issue";
 
 type PublicationFilter = "all" | "published" | "draft";
@@ -109,6 +113,16 @@ const getIssueIdValue = (issueId: string | PopulatedIssue) => {
   return issueId._id;
 };
 
+const getIssueObject = (
+  issueId: string | PopulatedIssue,
+  issues: Issue[]
+): PopulatedIssue | Issue | null => {
+  if (!issueId) return null;
+  if (typeof issueId !== "string") return issueId;
+
+  return issues.find((issue) => issue._id === issueId) || null;
+};
+
 export default function AdminArticlesPage() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
@@ -124,6 +138,7 @@ export default function AdminArticlesPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
 
   const [message, setMessage] = useState("");
 
@@ -298,6 +313,87 @@ export default function AdminArticlesPage() {
     }
   };
 
+  const handlePdfUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    try {
+      setUploadingPdf(true);
+      setMessage("");
+
+      const media = await uploadMedia({
+        file,
+        title: form.title ? `${form.title} PDF` : file.name,
+        folder: "articles",
+      });
+
+      setForm((prev) => ({
+        ...prev,
+        pdfUrl: media.fileUrl,
+      }));
+
+      setMessage("PDF uploaded successfully. Save the article to publish this PDF link.");
+    } catch (error: any) {
+      setMessage(error?.response?.data?.message || "Failed to upload PDF.");
+    } finally {
+      setUploadingPdf(false);
+      event.target.value = "";
+    }
+  };
+
+  const handleToggleVisibility = async (article: Article) => {
+    try {
+      const payload: ArticlePayload = {
+        issueId: getIssueIdValue(article.issueId),
+        title: article.title || "",
+        slug: makeSlug(article.slug || article.title),
+        authors: article.authors || [],
+        abstract: article.abstract || "",
+        keywords: article.keywords || [],
+        pages: article.pages || "",
+        pdfUrl: article.pdfUrl || "",
+
+        articleId: article.articleId || "",
+        articleUrl: article.articleUrl || "",
+        doi: article.doi || "",
+        publishDate: article.publishDate || "",
+
+        views: Number(article.views || 0),
+        downloads: Number(article.downloads || 0),
+        citations: Number(article.citations || 0),
+
+        status: article.status || "published",
+        articleType: article.articleType || "Research Article",
+        accessType: article.accessType || "Open Access",
+
+        order: Number(article.order || 0),
+        isPublished: !(article.isPublished ?? true),
+      };
+
+      await updateAdminArticle(article._id, payload);
+      setMessage(
+        article.isPublished
+          ? "Article hidden from the public website."
+          : "Article made visible on the public website."
+      );
+
+      await fetchArticles();
+    } catch (error: any) {
+      setMessage(
+        error?.response?.data?.message || "Failed to update article visibility."
+      );
+    }
+  };
+
+  const getArticlePublicHref = (article: Article) => {
+    const issue = getIssueObject(article.issueId, issues);
+
+    if (!issue?.slug || !article.slug) return "";
+
+    return `/issues/${issue.slug}/articles/${article.slug}`;
+  };
+
   const handleSearchSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     await fetchArticles();
@@ -310,19 +406,20 @@ export default function AdminArticlesPage() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#005A78]">
-                Scrum 17
+                Article Management
               </p>
               <h1 className="mt-2 text-2xl font-bold text-slate-950">
                 Articles / Papers Management
               </h1>
               <p className="mt-2 max-w-3xl text-sm text-slate-600">
-                Add and manage papers under journal issues. This removes the
-                need to manually insert article JSON in MongoDB.
+                Create and manage journal articles under specific issues. Saved
+                changes will appear in the selected issue page, article detail
+                page, homepage article section, and search results.
               </p>
             </div>
 
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
-              Public article pages are not redesigned here.
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+              Connected with public article pages
             </div>
           </div>
         </div>
@@ -518,6 +615,36 @@ export default function AdminArticlesPage() {
                   className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
                   required
                 />
+
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
+                    {uploadingPdf ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    {uploadingPdf ? "Uploading..." : "Upload PDF"}
+                    <input
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      onChange={handlePdfUpload}
+                      disabled={uploadingPdf}
+                      className="hidden"
+                    />
+                  </label>
+
+                  {form.pdfUrl ? (
+                    <a
+                      href={form.pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Open PDF
+                    </a>
+                  ) : null}
+                </div>
               </div>
 
               <div>
@@ -893,13 +1020,16 @@ export default function AdminArticlesPage() {
                               ? "In Press"
                               : "Published"}
                           </span>
-                          <span
+                          <button
+                            type="button"
+                            onClick={() => handleToggleVisibility(article)}
                             className={[
-                              "inline-flex items-center gap-1 rounded-full px-3 py-1",
+                              "inline-flex items-center gap-1 rounded-full px-3 py-1 transition hover:brightness-95",
                               article.isPublished
                                 ? "bg-emerald-50 text-emerald-700"
                                 : "bg-rose-50 text-rose-700",
                             ].join(" ")}
+                            title="Click to toggle public visibility"
                           >
                             {article.isPublished ? (
                               <Eye className="h-3 w-3" />
@@ -907,7 +1037,7 @@ export default function AdminArticlesPage() {
                               <EyeOff className="h-3 w-3" />
                             )}
                             {article.isPublished ? "Visible" : "Hidden"}
-                          </span>
+                          </button>
                         </div>
 
                         <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
@@ -936,6 +1066,17 @@ export default function AdminArticlesPage() {
                       </div>
 
                       <div className="flex flex-wrap justify-end gap-2">
+                        {article.isPublished && getArticlePublicHref(article) ? (
+                          <Link
+                            href={getArticlePublicHref(article)}
+                            target="_blank"
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-100"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            View
+                          </Link>
+                        ) : null}
+
                         <button
                           type="button"
                           onClick={() => handleEdit(article)}

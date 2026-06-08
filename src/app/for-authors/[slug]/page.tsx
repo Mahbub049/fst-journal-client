@@ -2,6 +2,14 @@ import Container from "@/components/common/Container";
 import PageTransition from "@/components/common/PageTransition";
 import PublicLayout from "@/components/layout/PublicLayout";
 import Link from "next/link";
+import {
+  getPublicPageByGroupAndSlug,
+  getPublicPagesByGroup,
+  PublicCmsPage,
+  PublicContentBlock,
+} from "@/services/publicPageService";
+
+export const dynamic = "force-dynamic";
 
 const pageData: Record<
   string,
@@ -168,7 +176,8 @@ const pageData: Record<
   },
 };
 
-const sideLinks = [
+
+const fallbackSideLinks = [
   { label: "Author Guidelines", href: "/for-authors/author-guidelines" },
   { label: "Submission Guidelines", href: "/for-authors/submission-guidelines" },
   { label: "Peer Review Process", href: "/for-authors/peer-review-process" },
@@ -183,13 +192,214 @@ const sideLinks = [
   { label: "Templates", href: "/for-authors/templates" },
 ];
 
+
+const splitContent = (content?: string) => {
+  return (content || "")
+    .split("\n")
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+};
+
+const getFallbackBlocks = (
+  sections: { heading: string; body: string | string[] }[]
+): PublicContentBlock[] => {
+  return sections.map((section, index) => {
+    if (Array.isArray(section.body)) {
+      return {
+        type: "list",
+        title: section.heading,
+        items: section.body,
+        order: index + 1,
+        isActive: true,
+      };
+    }
+
+    return {
+      type: "paragraph",
+      title: section.heading,
+      content: section.body,
+      order: index + 1,
+      isActive: true,
+    };
+  });
+};
+
+const ContentBlockCard = ({ block }: { block: PublicContentBlock }) => {
+  if (!block.isActive) return null;
+
+  if (block.type === "heading") {
+    return (
+      <article className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-8">
+        <h2
+          className="text-[28px] font-semibold leading-tight text-slate-950"
+          style={{ fontFamily: "var(--font-source-serif)" }}
+        >
+          {block.title || block.content}
+        </h2>
+      </article>
+    );
+  }
+
+  if (block.type === "paragraph" || block.type === "card") {
+    const paragraphs = splitContent(block.content);
+
+    return (
+      <article className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-8">
+        {block.title && (
+          <h2
+            className="text-[28px] font-semibold leading-tight text-slate-950"
+            style={{ fontFamily: "var(--font-source-serif)" }}
+          >
+            {block.title}
+          </h2>
+        )}
+
+        {paragraphs.map((paragraph, index) => (
+          <p
+            key={index}
+            className="mt-4 text-justify text-[16px] leading-8 text-slate-600"
+          >
+            {paragraph}
+          </p>
+        ))}
+      </article>
+    );
+  }
+
+  if (block.type === "list") {
+    return (
+      <article className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-8">
+        {block.title && (
+          <h2
+            className="text-[28px] font-semibold leading-tight text-slate-950"
+            style={{ fontFamily: "var(--font-source-serif)" }}
+          >
+            {block.title}
+          </h2>
+        )}
+
+        <ul className="mt-5 space-y-3 text-[16px] leading-8 text-slate-600">
+          {(block.items || []).map((item) => (
+            <li key={item} className="flex gap-3 text-justify">
+              <span className="mt-3 h-2 w-2 shrink-0 rounded-full bg-[#22b8e8]" />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </article>
+    );
+  }
+
+  if (block.type === "image" && block.imageUrl) {
+    return (
+      <article className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-8">
+        {block.title && (
+          <h2
+            className="text-[28px] font-semibold leading-tight text-slate-950"
+            style={{ fontFamily: "var(--font-source-serif)" }}
+          >
+            {block.title}
+          </h2>
+        )}
+        <img
+          src={block.imageUrl}
+          alt={block.title || "Page image"}
+          className="mt-5 w-full rounded-2xl border border-slate-200 object-cover"
+        />
+      </article>
+    );
+  }
+
+  if (block.type === "pdf" && block.fileUrl) {
+    return (
+      <article className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-8">
+        <h2
+          className="text-[28px] font-semibold leading-tight text-slate-950"
+          style={{ fontFamily: "var(--font-source-serif)" }}
+        >
+          {block.title || "Document"}
+        </h2>
+
+        <a
+          href={block.fileUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-5 inline-flex h-11 items-center justify-center rounded-full bg-[#111433] px-6 text-[14px] font-medium text-white hover:bg-[#1b204a]"
+        >
+          Open Document
+        </a>
+      </article>
+    );
+  }
+
+  if (block.type === "button" && block.buttonUrl) {
+    return (
+      <article className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-8">
+        {block.title && (
+          <h2
+            className="text-[28px] font-semibold leading-tight text-slate-950"
+            style={{ fontFamily: "var(--font-source-serif)" }}
+          >
+            {block.title}
+          </h2>
+        )}
+
+        <a
+          href={block.buttonUrl}
+          target={block.buttonUrl.startsWith("http") ? "_blank" : undefined}
+          rel={block.buttonUrl.startsWith("http") ? "noreferrer" : undefined}
+          className="mt-5 inline-flex h-11 items-center justify-center rounded-full bg-[#111433] px-6 text-[14px] font-medium text-white hover:bg-[#1b204a]"
+        >
+          {block.buttonLabel || "Open Link"}
+        </a>
+      </article>
+    );
+  }
+
+  return null;
+};
+
 export default async function ForAuthorsInnerPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const data = pageData[slug] || pageData["author-guidelines"];
+
+  let cmsPage: PublicCmsPage | null = null;
+  let cmsPages: PublicCmsPage[] = [];
+
+  try {
+    const [pageResponse, pagesResponse] = await Promise.all([
+      getPublicPageByGroupAndSlug("for-authors", slug),
+      getPublicPagesByGroup("for-authors"),
+    ]);
+
+    cmsPage = pageResponse;
+    cmsPages = pagesResponse;
+  } catch {
+    cmsPage = null;
+    cmsPages = [];
+  }
+
+  const fallback = pageData[slug] || pageData["author-guidelines"];
+  const data = {
+    title: cmsPage?.title || fallback.title,
+    subtitle: cmsPage?.subtitle || fallback.subtitle,
+    bannerImage: cmsPage?.bannerImage || "",
+    contentBlocks:
+      cmsPage?.contentBlocks && cmsPage.contentBlocks.length > 0
+        ? [...cmsPage.contentBlocks].sort((a, b) => a.order - b.order)
+        : getFallbackBlocks(fallback.sections),
+  };
+
+  const sideLinks =
+    cmsPages.length > 0
+      ? cmsPages.map((page) => ({
+          label: page.title,
+          href: `/for-authors/${page.slug}`,
+        }))
+      : fallbackSideLinks;
 
   return (
     <PublicLayout>
@@ -197,7 +407,7 @@ export default async function ForAuthorsInnerPage({
         <PageTransition>
           <section
             id="page-start"
-            className="scroll-mt-[118px] border-b border-slate-200 bg-white"
+            className="scroll-mt-[78px] border-b border-slate-200 bg-white"
           >
             <Container className="py-12 md:py-16">
               <p className="journal-subheading">For Authors</p>
@@ -212,6 +422,16 @@ export default async function ForAuthorsInnerPage({
               <p className="mt-5 max-w-3xl text-justify text-[16px] leading-8 text-slate-600">
                 {data.subtitle}
               </p>
+
+              {data.bannerImage && (
+                <div className="mt-8 overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
+                  <img
+                    src={data.bannerImage}
+                    alt={data.title}
+                    className="max-h-[360px] w-full rounded-2xl object-cover"
+                  />
+                </div>
+              )}
             </Container>
           </section>
 
@@ -241,33 +461,8 @@ export default async function ForAuthorsInnerPage({
               </aside>
 
               <section className="space-y-5">
-                {data.sections.map((section) => (
-                  <article
-                    key={section.heading}
-                    className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-8"
-                  >
-                    <h2
-                      className="text-[28px] font-semibold leading-tight text-slate-950"
-                      style={{ fontFamily: "var(--font-source-serif)" }}
-                    >
-                      {section.heading}
-                    </h2>
-
-                    {Array.isArray(section.body) ? (
-                      <ul className="mt-5 space-y-3 text-[16px] leading-8 text-slate-600">
-                        {section.body.map((item) => (
-                          <li key={item} className="flex gap-3 text-justify">
-                            <span className="mt-3 h-2 w-2 shrink-0 rounded-full bg-[#22b8e8]" />
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="mt-4 text-justify text-[16px] leading-8 text-slate-600">
-                        {section.body}
-                      </p>
-                    )}
-                  </article>
+                {data.contentBlocks.map((block, index) => (
+                  <ContentBlockCard key={block._id || index} block={block} />
                 ))}
 
                 <div className="rounded-3xl border border-slate-200 bg-[#111433] p-7 text-white shadow-sm">

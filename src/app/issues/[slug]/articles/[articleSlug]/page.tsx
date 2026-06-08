@@ -69,7 +69,7 @@ export default async function ArticleDetailsPage({
 
           {/* Article Title */}
           <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-            <p className="journal-subheading">Research Article</p>
+            <p className="journal-subheading">{article.articleType || "Research Article"}</p>
 
             <h1
               className="mt-4 text-[28px] font-semibold leading-tight text-slate-950 md:text-[38px]"
@@ -156,8 +156,7 @@ export default async function ArticleDetailsPage({
 </p>
                 ) : (
                   <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-[14px] leading-7 text-slate-500">
-                    Abstract has not been added yet. You can update this article
-                    later from MongoDB or admin panel.
+                    Abstract has not been added yet.
                   </div>
                 )}
               </div>

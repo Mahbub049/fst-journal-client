@@ -1,7 +1,15 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { Loader2, Plus, Save, Trash2 } from "lucide-react";
+import {
+  ImageIcon,
+  Loader2,
+  Plus,
+  Save,
+  Trash2,
+  UploadCloud,
+  X,
+} from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import {
   getAdminHomepage,
@@ -11,6 +19,7 @@ import {
   HomepageMetric,
   updateAdminHomepage,
 } from "@/services/homepageService";
+import { uploadMedia } from "@/services/mediaService";
 
 const emptyHomepage: HomepageContent = {
   heroTitle: "",
@@ -69,7 +78,9 @@ export default function AdminHomepagePage() {
   const [form, setForm] = useState<HomepageContent>(emptyHomepage);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
   const [message, setMessage] = useState("");
+  const [coverUploadMessage, setCoverUploadMessage] = useState("");
 
   const fetchHomepage = async () => {
     try {
@@ -96,7 +107,7 @@ export default function AdminHomepagePage() {
 
   const updateField = <K extends keyof HomepageContent>(
     field: K,
-    value: HomepageContent[K]
+    value: HomepageContent[K],
   ) => {
     setForm((prev) => ({
       ...prev,
@@ -104,10 +115,41 @@ export default function AdminHomepagePage() {
     }));
   };
 
+  const handleCoverImageUpload = async (file?: File | null) => {
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setCoverUploadMessage("Please upload an image file only.");
+      return;
+    }
+
+    try {
+      setCoverUploading(true);
+      setCoverUploadMessage("");
+
+      const uploaded = await uploadMedia({
+        file,
+        title: file.name,
+        folder: "homepage",
+      });
+
+      updateField("journalCoverImage", uploaded.fileUrl);
+      setCoverUploadMessage(
+        "Cover image uploaded successfully. Save the homepage content to publish this change.",
+      );
+    } catch (error: any) {
+      setCoverUploadMessage(
+        error?.response?.data?.message || "Failed to upload cover image.",
+      );
+    } finally {
+      setCoverUploading(false);
+    }
+  };
+
   const updateMetric = (
     index: number,
     field: keyof HomepageMetric,
-    value: any
+    value: any,
   ) => {
     const updated = [...form.metrics];
     updated[index] = {
@@ -133,14 +175,14 @@ export default function AdminHomepagePage() {
         .map((item, itemIndex) => ({
           ...item,
           order: itemIndex + 1,
-        }))
+        })),
     );
   };
 
   const updateInfoItem = (
     index: number,
     field: keyof HomepageInfoItem,
-    value: any
+    value: any,
   ) => {
     const updated = [...form.journalInfoItems];
     updated[index] = {
@@ -166,14 +208,14 @@ export default function AdminHomepagePage() {
         .map((item, itemIndex) => ({
           ...item,
           order: itemIndex + 1,
-        }))
+        })),
     );
   };
 
   const updateButton = (
     index: number,
     field: keyof HomepageButton,
-    value: any
+    value: any,
   ) => {
     const updated = [...form.buttons];
     updated[index] = {
@@ -199,7 +241,7 @@ export default function AdminHomepagePage() {
         .map((item, itemIndex) => ({
           ...item,
           order: itemIndex + 1,
-        }))
+        })),
     );
   };
 
@@ -240,7 +282,7 @@ export default function AdminHomepagePage() {
       setMessage("Homepage content updated successfully.");
     } catch (error: any) {
       setMessage(
-        error?.response?.data?.message || "Failed to update homepage content."
+        error?.response?.data?.message || "Failed to update homepage content.",
       );
     } finally {
       setSaving(false);
@@ -254,7 +296,7 @@ export default function AdminHomepagePage() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#005A78]">
-                Scrum 15
+                Homepage CMS
               </p>
               <h1 className="mt-2 text-2xl font-bold text-slate-950">
                 Homepage Management
@@ -266,8 +308,8 @@ export default function AdminHomepagePage() {
               </p>
             </div>
 
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
-              Public homepage connection will be done later.
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+              Public homepage updates from this content.
             </div>
           </div>
         </div>
@@ -309,16 +351,82 @@ export default function AdminHomepagePage() {
 
                 <div>
                   <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                    Journal Cover Image URL
+                    Journal Cover Image
                   </label>
-                  <input
-                    value={form.journalCoverImage}
-                    onChange={(event) =>
-                      updateField("journalCoverImage", event.target.value)
-                    }
-                    placeholder="/images/journal-cover.jpg or Cloudinary URL"
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
-                  />
+
+                  <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                    <input
+                      value={form.journalCoverImage}
+                      onChange={(event) =>
+                        updateField("journalCoverImage", event.target.value)
+                      }
+                      placeholder="Paste image URL or upload an image below"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
+                    />
+
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#005A78]/20 bg-white px-4 py-2.5 text-sm font-bold text-[#005A78] transition hover:bg-[#005A78]/5">
+                        {coverUploading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <UploadCloud className="h-4 w-4" />
+                        )}
+                        {coverUploading ? "Uploading..." : "Upload Image"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={coverUploading}
+                          onChange={(event) => {
+                            handleCoverImageUpload(event.target.files?.[0]);
+                            event.target.value = "";
+                          }}
+                        />
+                      </label>
+
+                      {form.journalCoverImage ? (
+                        <button
+                          type="button"
+                          onClick={() => updateField("journalCoverImage", "")}
+                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-bold text-rose-700 transition hover:bg-rose-50"
+                        >
+                          <X className="h-4 w-4" />
+                          Clear Image
+                        </button>
+                      ) : null}
+                    </div>
+
+                    {coverUploadMessage ? (
+                      <p className="text-xs font-semibold text-slate-600">
+                        {coverUploadMessage}
+                      </p>
+                    ) : null}
+
+                    {form.journalCoverImage ? (
+                      <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-3">
+                        <div className="flex h-20 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                          <img
+                            src={form.journalCoverImage}
+                            alt="Journal cover preview"
+                            className="h-full w-full object-cover"
+                            onError={(event) => {
+                              event.currentTarget.style.display = "none";
+                            }}
+                          />
+                          <ImageIcon className="hidden h-5 w-5 text-slate-400" />
+                        </div>
+
+                        <div className="min-w-0 text-xs text-slate-500">
+                          <p className="font-semibold text-slate-700">
+                            Current cover URL
+                          </p>
+                          <p className="mt-1 break-all leading-5">
+                            {form.journalCoverImage}
+                          </p>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className="lg:col-span-2">
@@ -401,7 +509,7 @@ export default function AdminHomepagePage() {
                     Metric / Stat Cards
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    These will later control homepage score/stat boxes.
+                    These values control the homepage score/stat boxes.
                   </p>
                 </div>
 
@@ -515,7 +623,8 @@ export default function AdminHomepagePage() {
                     Journal Information Sidebar
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    These values will later control the journal information box.
+                    These values control the journal information box on the
+                    public homepage.
                   </p>
                 </div>
 
@@ -581,7 +690,11 @@ export default function AdminHomepagePage() {
                         type="checkbox"
                         checked={item.isActive}
                         onChange={(event) =>
-                          updateInfoItem(index, "isActive", event.target.checked)
+                          updateInfoItem(
+                            index,
+                            "isActive",
+                            event.target.checked,
+                          )
                         }
                       />
                       Active
@@ -619,7 +732,7 @@ export default function AdminHomepagePage() {
                     onChange={(event) =>
                       updateField(
                         "executiveEditorsSubtitle",
-                        event.target.value
+                        event.target.value,
                       )
                     }
                     className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"
@@ -687,7 +800,7 @@ export default function AdminHomepagePage() {
                     Homepage Buttons
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    These will later control homepage action buttons.
+                    These buttons control homepage action links.
                   </p>
                 </div>
 
@@ -732,7 +845,7 @@ export default function AdminHomepagePage() {
                           updateButton(
                             index,
                             "variant",
-                            event.target.value as "primary" | "secondary"
+                            event.target.value as "primary" | "secondary",
                           )
                         }
                         className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"

@@ -60,11 +60,15 @@ const emptyForm: MenuFormState = {
   isActive: true,
 };
 
+const getParentId = (menu: MenuItem) => {
+  if (!menu.parentId) return "";
+  if (typeof menu.parentId === "string") return menu.parentId;
+  return menu.parentId._id;
+};
+
 const getParentLabel = (menu: MenuItem) => {
   if (!menu.parentId) return "Root";
-
   if (typeof menu.parentId === "string") return "Parent selected";
-
   return menu.parentId.label;
 };
 
@@ -75,8 +79,32 @@ const getLocationLabel = (location: MenuLocation) => {
   );
 };
 
+const getSuggestedLocationForParent = (parent?: MenuItem) => {
+  if (!parent) return undefined;
+
+  const label = parent.label.toLowerCase();
+
+  if (label.includes("about")) return "about";
+  if (label.includes("issue")) return "issues";
+  if (label.includes("author")) return "for-authors";
+
+  return parent.location;
+};
+
+const sortMenus = (items: MenuItem[]) => {
+  return [...items].sort((a, b) => {
+    const orderA = Number(a.order || 0);
+    const orderB = Number(b.order || 0);
+
+    if (orderA !== orderB) return orderA - orderB;
+
+    return a.label.localeCompare(b.label);
+  });
+};
+
 export default function AdminMenusPage() {
   const [menus, setMenus] = useState<MenuItem[]>([]);
+  const [allMenus, setAllMenus] = useState<MenuItem[]>([]);
   const [form, setForm] = useState<MenuFormState>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [locationFilter, setLocationFilter] = useState<MenuLocation | "all">(
@@ -89,10 +117,14 @@ export default function AdminMenusPage() {
   const fetchMenus = async () => {
     try {
       setLoading(true);
-      const data = await getAdminMenus({
-        location: locationFilter,
-      });
-      setMenus(data);
+
+      const [filteredMenus, completeMenus] = await Promise.all([
+        getAdminMenus({ location: locationFilter }),
+        getAdminMenus({ location: "all" }),
+      ]);
+
+      setMenus(sortMenus(filteredMenus));
+      setAllMenus(sortMenus(completeMenus));
     } catch (error) {
       setMessage("Failed to load menu items.");
     } finally {
@@ -102,15 +134,22 @@ export default function AdminMenusPage() {
 
   useEffect(() => {
     fetchMenus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locationFilter]);
 
   const parentOptions = useMemo(() => {
-    return menus.filter((menu) => {
+    return allMenus.filter((menu) => {
       const isDropdown = menu.type === "dropdown";
       const isNotCurrentItem = editingId ? menu._id !== editingId : true;
+
       return isDropdown && isNotCurrentItem;
     });
-  }, [menus, editingId]);
+  }, [allMenus, editingId]);
+
+  const selectedParent = useMemo(() => {
+    if (!form.parentId) return undefined;
+    return allMenus.find((menu) => menu._id === form.parentId);
+  }, [allMenus, form.parentId]);
 
   const resetForm = () => {
     setForm(emptyForm);
@@ -119,27 +158,34 @@ export default function AdminMenusPage() {
   };
 
   const handleEdit = (menu: MenuItem) => {
-    let parentId = "";
-
-    if (typeof menu.parentId === "string") {
-      parentId = menu.parentId;
-    } else if (menu.parentId?._id) {
-      parentId = menu.parentId._id;
-    }
-
     setEditingId(menu._id);
     setForm({
       label: menu.label,
       location: menu.location,
       type: menu.type,
       url: menu.url || "",
-      parentId,
+      parentId: getParentId(menu),
       isExternal: menu.isExternal,
       openInNewTab: menu.openInNewTab,
       order: String(menu.order ?? 0),
       isActive: menu.isActive,
     });
     setMessage("");
+
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const handleParentChange = (parentId: string) => {
+    const parent = allMenus.find((menu) => menu._id === parentId);
+    const suggestedLocation = getSuggestedLocationForParent(parent);
+
+    setForm((prev) => ({
+      ...prev,
+      parentId,
+      location: suggestedLocation || prev.location,
+    }));
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -152,7 +198,7 @@ export default function AdminMenusPage() {
         label: form.label.trim(),
         location: form.location,
         type: form.type,
-        url: form.type === "dropdown" ? form.url.trim() : form.url.trim(),
+        url: form.url.trim(),
         parentId: form.parentId || null,
         isExternal: form.isExternal,
         openInNewTab: form.openInNewTab,
@@ -201,6 +247,44 @@ export default function AdminMenusPage() {
     }
   };
 
+  const handleToggleStatus = async (menu: MenuItem) => {
+    try {
+      await updateAdminMenu(menu._id, {
+        label: menu.label,
+        location: menu.location,
+        type: menu.type,
+        url: menu.url || "",
+        parentId: getParentId(menu) || null,
+        isExternal: menu.isExternal,
+        openInNewTab: menu.openInNewTab,
+        order: menu.order,
+        isActive: !menu.isActive,
+      });
+
+      setMessage(
+        !menu.isActive
+          ? "Menu item activated successfully."
+          : "Menu item hidden from public navbar."
+      );
+      await fetchMenus();
+    } catch (error: any) {
+      setMessage(
+        error?.response?.data?.message || "Failed to update menu status."
+      );
+    }
+  };
+
+  const handleView = (url: string, isExternal: boolean) => {
+    if (!url) return;
+
+    if (isExternal) {
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -208,20 +292,19 @@ export default function AdminMenusPage() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#005A78]">
-                Scrum 14
+                Navigation Control
               </p>
               <h1 className="mt-2 text-2xl font-bold text-slate-950">
                 Menu Management
               </h1>
               <p className="mt-2 max-w-3xl text-sm text-slate-600">
-                Manage navbar items, dropdown items, button labels, URLs,
-                display order, and active status. This admin module does not
-                change the public navbar design yet.
+                Manage public navbar labels, dropdown items, button links,
+                display order, and active status from one place.
               </p>
             </div>
 
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
-              Public connection will be done later.
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+              Active menu items are shown on the public website.
             </div>
           </div>
         </div>
@@ -242,8 +325,8 @@ export default function AdminMenusPage() {
                 {editingId ? "Edit Menu Item" : "Create Menu Item"}
               </h2>
               <p className="mt-1 text-sm text-slate-500">
-                Add main menu links, dropdown parents, dropdown child links, or
-                button-style links.
+                Create main navbar items, dropdown parents, dropdown child links,
+                footer links, or button-style links.
               </p>
             </div>
 
@@ -299,8 +382,6 @@ export default function AdminMenusPage() {
                       setForm((prev) => ({
                         ...prev,
                         type: event.target.value as MenuItemType,
-                        url:
-                          event.target.value === "dropdown" ? prev.url : prev.url,
                       }))
                     }
                     className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
@@ -334,6 +415,10 @@ export default function AdminMenusPage() {
                   className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
                   required={form.type !== "dropdown"}
                 />
+                <p className="mt-1.5 text-xs text-slate-500">
+                  Internal URLs can be written like /about/about-the-journal.
+                  External links should start with https://.
+                </p>
               </div>
 
               <div>
@@ -342,12 +427,7 @@ export default function AdminMenusPage() {
                 </label>
                 <select
                   value={form.parentId}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      parentId: event.target.value,
-                    }))
-                  }
+                  onChange={(event) => handleParentChange(event.target.value)}
                   className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
                 >
                   <option value="">Root menu item</option>
@@ -361,6 +441,11 @@ export default function AdminMenusPage() {
                   Select a dropdown parent only when this item should appear
                   inside a dropdown.
                 </p>
+                {selectedParent && (
+                  <p className="mt-1.5 rounded-xl bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
+                    This item will appear under: {selectedParent.label}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -423,7 +508,7 @@ export default function AdminMenusPage() {
                     }
                     className="h-4 w-4"
                   />
-                  Active
+                  Show on public website
                 </label>
               </div>
 
@@ -494,7 +579,7 @@ export default function AdminMenusPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[900px] border-separate border-spacing-y-2 text-left text-sm">
+                <table className="w-full min-w-[980px] border-separate border-spacing-y-2 text-left text-sm">
                   <thead>
                     <tr className="text-xs uppercase tracking-wide text-slate-500">
                       <th className="px-4 py-2">Label</th>
@@ -532,19 +617,30 @@ export default function AdminMenusPage() {
                           {menu.order}
                         </td>
                         <td className="px-4 py-4">
-                          <span
+                          <button
+                            type="button"
+                            onClick={() => handleToggleStatus(menu)}
                             className={[
-                              "rounded-full px-3 py-1 text-xs font-bold",
+                              "rounded-full px-3 py-1 text-xs font-bold transition",
                               menu.isActive
-                                ? "bg-emerald-50 text-emerald-700"
-                                : "bg-rose-50 text-rose-700",
+                                ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                : "bg-rose-50 text-rose-700 hover:bg-rose-100",
                             ].join(" ")}
                           >
                             {menu.isActive ? "Active" : "Inactive"}
-                          </span>
+                          </button>
                         </td>
                         <td className="rounded-r-2xl px-4 py-4">
                           <div className="flex justify-end gap-2">
+                            {menu.url && (
+                              <button
+                                type="button"
+                                onClick={() => handleView(menu.url, menu.isExternal)}
+                                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
+                              >
+                                View
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => handleEdit(menu)}
