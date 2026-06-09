@@ -91,3 +91,21 @@ export const updateAdminCallForPaper = async (
 
   return data.data;
 };
+
+
+export const uploadAdminCallForPaperPdf = async (file: File) => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const { data } = await api.put<CallForPaperResponse>(
+    "/call-for-papers/admin/pdf",
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+
+  return data.data;
+};

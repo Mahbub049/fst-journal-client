@@ -4,6 +4,8 @@ import Link from "next/link";
 
 const apiBaseUrl =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const serverFileBaseUrl = apiBaseUrl.replace(/\/api\/?$/, "");
+const submitManuscriptUrl = "https://jfst.bup.edu.bd/index.php/jfst/login";
 
 type ImportantDate = {
   _id?: string;
@@ -193,8 +195,8 @@ const fallbackContent: CallForPaperContent = {
   submitTitle: "Ready to submit?",
   submitDescription:
     "Please review the author guidelines, manuscript structure, word limit, plagiarism requirement, and formatting rules before submission.",
-  submissionButtonLabel: "Email Manuscript",
-  submissionButtonLink: "mailto:journal.fst@bup.edu.bd",
+  submissionButtonLabel: "Submit Manuscript",
+  submissionButtonLink: submitManuscriptUrl,
   guidelinesButtonLabel: "View Submission Guidelines",
   guidelinesButtonLink: "/for-authors/submission-guidelines",
 
@@ -250,6 +252,13 @@ const normalizeHref = (url: string) => {
   return url;
 };
 
+const resolvePdfUrl = (url: string) => {
+  if (!url) return "#";
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith("/pdfs/")) return `${serverFileBaseUrl}${url}`;
+  return url;
+};
+
 export default async function CallForPapersPage() {
   const content = await getPublicCallForPaper();
 
@@ -257,7 +266,7 @@ export default async function CallForPapersPage() {
     .filter((item) => item.isActive !== false)
     .sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
 
-  const pdfUrl = content.pdfUrl || fallbackContent.pdfUrl;
+  const pdfUrl = resolvePdfUrl(content.pdfUrl || fallbackContent.pdfUrl);
   const pdfViewerSrc = `${pdfUrl}#toolbar=0&navpanes=0&scrollbar=1`;
 
   return (
@@ -459,10 +468,10 @@ export default async function CallForPapersPage() {
                 </p>
 
                 <a
-                  href={normalizeHref(content.submissionButtonLink)}
+                  href={submitManuscriptUrl}
                   className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-full bg-white px-5 text-[14px] font-medium text-[#111433] hover:bg-slate-100"
                 >
-                  {content.submissionButtonLabel}
+                  {content.submissionButtonLabel || "Submit Manuscript"}
                 </a>
 
                 <Link

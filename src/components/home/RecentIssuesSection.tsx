@@ -13,6 +13,7 @@ type Props = {
 };
 
 const DEFAULT_COVER = "/images/cover.jpg";
+const HOME_ISSUE_LIMIT = 3;
 
 export default function RecentIssuesSection({ homepage }: Props) {
   const [issues, setIssues] = useState<Issue[]>([]);
@@ -22,7 +23,7 @@ export default function RecentIssuesSection({ homepage }: Props) {
     const loadIssues = async () => {
       try {
         const data = await getRecentIssues();
-        setIssues(data);
+        setIssues(Array.isArray(data) ? data.slice(0, HOME_ISSUE_LIMIT) : []);
       } catch (error) {
         console.error("Failed to load recent issues:", error);
       } finally {

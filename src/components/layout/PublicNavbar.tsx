@@ -56,6 +56,8 @@ const editorialItems: DropdownMenuItem[] = [
   },
 ];
 
+const submitManuscriptUrl = "https://jfst.bup.edu.bd/index.php/jfst/login";
+
 const sortMenus = <T extends { order?: number; label: string }>(items: T[]) => {
   return [...items].sort((a, b) => {
     const orderA = Number(a.order || 0);
@@ -431,12 +433,10 @@ export default function PublicNavbar() {
             </form>
 
             <SmartLink
-              href={normalizeUrl(
-                submitMenu?.url || "/for-authors/submission-guidelines"
-              )}
+              href={submitManuscriptUrl}
               label={submitMenu?.label || "Submit Manuscript"}
-              isExternal={submitMenu?.isExternal}
-              openInNewTab={submitMenu?.openInNewTab}
+              isExternal
+              openInNewTab={false}
               className="journal-submit-button inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-[#111433] bg-[#111433] px-5 text-[14px] font-semibold text-white shadow-sm transition-all duration-300 hover:bg-[#1e2557]"
             />
           </div>
@@ -496,12 +496,10 @@ export default function PublicNavbar() {
               />
 
               <SmartLink
-                href={normalizeUrl(
-                  submitMenu?.url || "/for-authors/submission-guidelines"
-                )}
+                href={submitManuscriptUrl}
                 label={submitMenu?.label || "Submit Manuscript"}
-                isExternal={submitMenu?.isExternal}
-                openInNewTab={submitMenu?.openInNewTab}
+                isExternal
+                openInNewTab={false}
                 onClick={() => setMenuOpen(false)}
                 className="inline-flex h-11 items-center justify-center rounded-full bg-[#111433] px-4 text-[14px] font-semibold text-white hover:bg-[#1e2557]"
               />

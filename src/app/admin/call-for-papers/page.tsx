@@ -8,6 +8,7 @@ import {
   ImportantDate,
   getAdminCallForPaper,
   updateAdminCallForPaper,
+  uploadAdminCallForPaperPdf,
 } from "@/services/callForPaperService";
 import { uploadMedia } from "@/services/mediaService";
 
@@ -160,6 +161,17 @@ const createImportantDate = (order: number): ImportantDate => ({
   isActive: true,
 });
 
+const apiBaseUrl =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const serverFileBaseUrl = apiBaseUrl.replace(/\/api\/?$/, "");
+
+const resolveUploadedFileUrl = (url: string) => {
+  if (!url) return "#";
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith("/pdfs/")) return `${serverFileBaseUrl}${url}`;
+  return url;
+};
+
 export default function AdminCallForPapersPage() {
   const [form, setForm] = useState<CallForPaperContent>(defaultForm);
   const [loading, setLoading] = useState(true);
@@ -268,14 +280,36 @@ export default function AdminCallForPapersPage() {
       setUploading(type);
       setMessage("");
 
+      if (type === "pdf") {
+        const updated = await uploadAdminCallForPaperPdf(file);
+        setForm({
+          ...defaultForm,
+          ...updated,
+          importantDates: updated.importantDates?.length
+            ? updated.importantDates
+            : defaultForm.importantDates,
+          submissionTypes: updated.submissionTypes?.length
+            ? updated.submissionTypes
+            : defaultForm.submissionTypes,
+          engineeringTopics: updated.engineeringTopics?.length
+            ? updated.engineeringTopics
+            : defaultForm.engineeringTopics,
+          environmentalTopics: updated.environmentalTopics?.length
+            ? updated.environmentalTopics
+            : defaultForm.environmentalTopics,
+        });
+        setMessage("PDF uploaded and replaced successfully in /pdfs/call-for-papers.pdf.");
+        return;
+      }
+
       const media = await uploadMedia({
         file,
         title: file.name,
-        folder: type === "pdf" ? "call-for-papers/pdfs" : "call-for-papers/images",
+        folder: "call-for-papers/images",
       });
 
-      updateField(type === "pdf" ? "pdfUrl" : "posterImage", media.fileUrl);
-      setMessage(`${type === "pdf" ? "PDF" : "Poster image"} uploaded successfully.`);
+      updateField("posterImage", media.fileUrl);
+      setMessage("Poster image uploaded successfully.");
     } catch {
       setMessage("Upload failed. Please try again.");
     } finally {
@@ -472,7 +506,7 @@ export default function AdminCallForPapersPage() {
                   </label>
                   {form.pdfUrl && (
                     <a
-                      href={form.pdfUrl}
+                      href={resolveUploadedFileUrl(form.pdfUrl)}
                       target="_blank"
                       className="ml-3 inline-flex items-center gap-2 text-sm font-bold text-[#005A78]"
                     >

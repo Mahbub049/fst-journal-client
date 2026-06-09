@@ -177,14 +177,17 @@ export default function AdminIssuesPage() {
 
       if (editingId) {
         await updateAdminIssue(editingId, payload);
-        setMessage("Issue updated successfully.");
+        await fetchIssues();
+        setEditingId(null);
+        setForm(emptyForm);
+        setMessage("Issue updated successfully and the list has been refreshed.");
       } else {
         await createAdminIssue(payload);
-        setMessage("Issue created successfully.");
+        await fetchIssues();
+        setEditingId(null);
+        setForm(emptyForm);
+        setMessage("Issue created successfully and the list has been refreshed.");
       }
-
-      resetForm();
-      await fetchIssues();
     } catch (error: any) {
       setMessage(error?.response?.data?.message || "Failed to save issue.");
     } finally {
