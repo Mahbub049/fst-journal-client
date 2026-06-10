@@ -176,6 +176,7 @@ export default async function SearchPage({
                     <Link
                       key={article._id}
                       href={getArticleHref(article)}
+                      prefetch={false}
                       className="block rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-[#22b8e8] hover:shadow-md"
                     >
                       <p className="text-[12px] font-bold uppercase tracking-[0.25em] text-[#22b8e8]">

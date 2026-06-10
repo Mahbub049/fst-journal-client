@@ -181,10 +181,10 @@ function EditorCard({ member }: { member: EditorialBoardMember }) {
   return (
     <article
       id={`member-${member._id}`}
-      className="scroll-mt-32 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+      className="scroll-mt-32 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md sm:p-6"
     >
-      <div className="flex flex-col gap-6 md:flex-row md:items-start">
-        <div className="shrink-0">
+      <div className="flex flex-col items-center gap-6 text-center md:flex-row md:items-start md:text-left">
+        <div className="shrink-0 self-center md:self-start">
           <div className="h-[220px] w-[170px] overflow-hidden rounded-2xl border border-slate-200 bg-[#f1f5f9] shadow-sm">
             {imageUrl ? (
               <img
@@ -200,7 +200,7 @@ function EditorCard({ member }: { member: EditorialBoardMember }) {
           </div>
         </div>
 
-        <div className="min-w-0 flex-1 pt-1">
+        <div className="min-w-0 w-full flex-1 pt-1">
           <h3 className="text-[20px] font-semibold leading-8 text-slate-950">
             {member.name}
           </h3>
@@ -222,7 +222,7 @@ function EditorCard({ member }: { member: EditorialBoardMember }) {
           </div>
 
           {member.expertise && member.expertise.length > 0 ? (
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-wrap justify-center gap-2 md:justify-start">
               {member.expertise.map((item) => (
                 <span
                   key={item}
@@ -386,7 +386,7 @@ export default async function EditorialBoardPage() {
                   >
                     <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                       <h2
-                        className="text-[28px] font-semibold leading-tight text-slate-950"
+                        className="text-center text-[28px] font-semibold leading-tight text-slate-950 md:text-left"
                         style={{ fontFamily: "var(--font-source-serif)" }}
                       >
                         {section.title}

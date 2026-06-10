@@ -16,6 +16,8 @@ import {
 } from "@/services/publicMenuService";
 import type { Issue } from "@/types/issue";
 
+const submitManuscriptUrl = "https://jfst.bup.edu.bd/index.php/jfst/login";
+
 const fallbackAboutItems: DropdownMenuItem[] = [
   { label: "About the Journal", href: "/about/about-the-journal" },
   { label: "Aims & Scope", href: "/about/aims-scope" },
@@ -26,11 +28,19 @@ const fallbackAboutItems: DropdownMenuItem[] = [
 ];
 
 const fallbackIssueItems: DropdownMenuItem[] = [
-  { label: "Current Issue", href: "/issues/current" },
+  {
+    label: "Volume 03, Issue 01, July 2025",
+    href: "/issues/volume-03-issue-01-july-2025",
+  },
+  {
+    label: "Volume 02, Issue 01, July 2023",
+    href: "/issues/volume-02-issue-01-july-2023",
+  },
+  {
+    label: "Volume 01, Issue 01, July 2022",
+    href: "/issues/volume-01-issue-01-july-2022",
+  },
   { label: "All Issues / Archive", href: "/issues/archive" },
-  { label: "Special Issues", href: "/issues/special" },
-  { label: "Most Cited", href: "/issues/most-cited" },
-  { label: "Most Read", href: "/issues/most-read" },
 ];
 
 const fallbackAuthorItems: DropdownMenuItem[] = [
@@ -56,8 +66,6 @@ const editorialItems: DropdownMenuItem[] = [
   },
 ];
 
-const submitManuscriptUrl = "https://jfst.bup.edu.bd/index.php/jfst/login";
-
 const sortMenus = <T extends { order?: number; label: string }>(items: T[]) => {
   return [...items].sort((a, b) => {
     const orderA = Number(a.order || 0);
@@ -74,6 +82,10 @@ const normalizeText = (value: string) => value.trim().toLowerCase();
 const normalizeUrl = (url?: string) => {
   const cleanUrl = (url || "").trim();
   return cleanUrl || "#";
+};
+
+const isAbsoluteUrl = (href: string) => {
+  return /^(https?:\/\/|mailto:|tel:)/i.test(href);
 };
 
 const isInternalUrl = (url: string) => url.startsWith("/");
@@ -219,13 +231,15 @@ function SmartLink({
   openInNewTab?: boolean;
   onClick?: () => void;
 }) {
+  const cleanHref = normalizeUrl(href);
   const target = openInNewTab ? "_blank" : undefined;
   const rel = openInNewTab ? "noopener noreferrer" : undefined;
+  const shouldUseAnchor = isExternal || isAbsoluteUrl(cleanHref);
 
-  if (isExternal) {
+  if (shouldUseAnchor) {
     return (
       <a
-        href={href}
+        href={cleanHref}
         target={target}
         rel={rel}
         onClick={onClick}
@@ -237,7 +251,12 @@ function SmartLink({
   }
 
   return (
-    <Link href={href} onClick={onClick} className={className}>
+    <Link
+      href={cleanHref}
+      scroll={cleanHref.includes("#")}
+      onClick={onClick}
+      className={className}
+    >
       {label}
     </Link>
   );
@@ -326,13 +345,8 @@ export default function PublicNavbar() {
       ]);
     }
 
-    return getSafeDropdownItems(
-      activeMenus,
-      "issues",
-      fallbackIssueItems,
-      (href) => href.startsWith("/issues/")
-    );
-  }, [activeMenus, publicIssues]);
+    return fallbackIssueItems;
+  }, [publicIssues]);
 
   const authorItems = useMemo(() => {
     return getSafeDropdownItems(
@@ -380,26 +394,38 @@ export default function PublicNavbar() {
               label={homeMenu?.label || "Home"}
               isExternal={homeMenu?.isExternal}
               openInNewTab={homeMenu?.openInNewTab}
-              className="nav-link"
+              className="nav-link whitespace-nowrap"
             />
 
             <JournalDropdownMenu
               label={aboutMenu?.label || "About"}
+              href={normalizeUrl(aboutMenu?.url || "/about/about-the-journal")}
+              isExternal={aboutMenu?.isExternal}
+              openInNewTab={aboutMenu?.openInNewTab}
               items={aboutItems}
             />
 
             <JournalDropdownMenu
               label={issuesMenu?.label || "Issues"}
+              href={normalizeUrl(issuesMenu?.url || "/issues/archive")}
+              isExternal={issuesMenu?.isExternal}
+              openInNewTab={issuesMenu?.openInNewTab}
               items={issueItems}
             />
 
             <JournalDropdownMenu
               label={editorialMenu?.label || "Editorial Board"}
+              href={normalizeUrl(editorialMenu?.url || "/editorial-board")}
+              isExternal={editorialMenu?.isExternal}
+              openInNewTab={editorialMenu?.openInNewTab}
               items={editorialItems}
             />
 
             <JournalDropdownMenu
               label={authorsMenu?.label || "For Authors"}
+              href={normalizeUrl(authorsMenu?.url || "/for-authors/author-guidelines")}
+              isExternal={authorsMenu?.isExternal}
+              openInNewTab={authorsMenu?.openInNewTab}
               items={authorItems}
             />
 
@@ -408,7 +434,7 @@ export default function PublicNavbar() {
               label={cfpMenu?.label || "Call for Papers"}
               isExternal={cfpMenu?.isExternal}
               openInNewTab={cfpMenu?.openInNewTab}
-              className="journal-cfp-button inline-flex items-center rounded-full border border-[#111433] bg-[#111433] px-4 py-2 text-[14px] font-semibold text-white transition-all duration-300 hover:border-[#f5c84b] hover:bg-[#f5c84b] hover:text-[#111433]"
+              className="journal-cfp-button inline-flex items-center whitespace-nowrap rounded-full border border-[#111433] bg-[#111433] px-4 py-2 text-[14px] font-semibold text-white transition-all duration-300 hover:border-[#f5c84b] hover:bg-[#f5c84b] hover:text-[#111433]"
             />
           </div>
 
@@ -433,27 +459,43 @@ export default function PublicNavbar() {
             </form>
 
             <SmartLink
-              href={submitManuscriptUrl}
+              href={normalizeUrl(submitMenu?.url || submitManuscriptUrl)}
               label={submitMenu?.label || "Submit Manuscript"}
-              isExternal
-              openInNewTab={false}
-              className="journal-submit-button inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-[#111433] bg-[#111433] px-5 text-[14px] font-semibold text-white shadow-sm transition-all duration-300 hover:bg-[#1e2557]"
+              isExternal={submitMenu?.isExternal ?? true}
+              openInNewTab={submitMenu?.openInNewTab ?? true}
+              className="journal-submit-button inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-[#111433] bg-[#111433] px-5 text-[14px] font-semibold text-white shadow-sm transition-all duration-300 hover:bg-[#1e2557]"
             />
           </div>
 
           <button
             type="button"
             onClick={() => setMenuOpen((prev) => !prev)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-[22px] font-semibold text-[#111433] shadow-sm xl:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-[22px] font-semibold text-[#111433] shadow-sm transition-all duration-300 hover:scale-105 xl:hidden"
             aria-label="Toggle menu"
+            aria-expanded={menuOpen}
           >
-            {menuOpen ? "×" : "☰"}
+            <span
+              className={`inline-block transition-transform duration-300 ease-out ${
+                menuOpen ? "rotate-90 scale-110" : "rotate-0 scale-100"
+              }`}
+            >
+              {menuOpen ? "×" : "☰"}
+            </span>
           </button>
         </nav>
 
-        {menuOpen && (
-          <div className="border-t border-slate-200 py-4 xl:hidden">
-            <div className="grid gap-2">
+        <div
+          className={`overflow-hidden border-t border-slate-200 transition-all duration-500 ease-in-out xl:hidden ${
+            menuOpen
+              ? "max-h-[85vh] translate-y-0 py-4 opacity-100"
+              : "max-h-0 -translate-y-2 border-transparent py-0 opacity-0"
+          }`}
+        >
+          <div
+            className={`grid gap-2 transition-all duration-500 ease-in-out ${
+              menuOpen ? "scale-100" : "scale-[0.98]"
+            }`}
+          >
               <MobileLink
                 href={normalizeUrl(homeMenu?.url || "/")}
                 label={homeMenu?.label || "Home"}
@@ -464,24 +506,36 @@ export default function PublicNavbar() {
 
               <MobileGroup
                 title={aboutMenu?.label || "About"}
+                href={normalizeUrl(aboutMenu?.url || "/about/about-the-journal")}
+                isExternal={aboutMenu?.isExternal}
+                openInNewTab={aboutMenu?.openInNewTab}
                 items={aboutItems}
                 onClick={() => setMenuOpen(false)}
               />
 
               <MobileGroup
                 title={issuesMenu?.label || "Issues"}
+                href={normalizeUrl(issuesMenu?.url || "/issues/archive")}
+                isExternal={issuesMenu?.isExternal}
+                openInNewTab={issuesMenu?.openInNewTab}
                 items={issueItems}
                 onClick={() => setMenuOpen(false)}
               />
 
               <MobileGroup
                 title={editorialMenu?.label || "Editorial Board"}
+                href={normalizeUrl(editorialMenu?.url || "/editorial-board")}
+                isExternal={editorialMenu?.isExternal}
+                openInNewTab={editorialMenu?.openInNewTab}
                 items={editorialItems}
                 onClick={() => setMenuOpen(false)}
               />
 
               <MobileGroup
                 title={authorsMenu?.label || "For Authors"}
+                href={normalizeUrl(authorsMenu?.url || "/for-authors/author-guidelines")}
+                isExternal={authorsMenu?.isExternal}
+                openInNewTab={authorsMenu?.openInNewTab}
                 items={authorItems}
                 onClick={() => setMenuOpen(false)}
               />
@@ -492,21 +546,21 @@ export default function PublicNavbar() {
                 isExternal={cfpMenu?.isExternal}
                 openInNewTab={cfpMenu?.openInNewTab}
                 onClick={() => setMenuOpen(false)}
-                className="mt-2 inline-flex h-11 items-center justify-center rounded-full border border-[#111433] bg-[#111433] px-4 text-[14px] font-semibold text-white hover:border-[#f5c84b] hover:bg-[#f5c84b] hover:text-[#111433]"
+                className="mt-2 inline-flex h-11 items-center justify-center rounded-full border border-[#111433] bg-[#111433] px-4 text-[14px] font-semibold text-white transition-all duration-300 hover:border-[#f5c84b] hover:bg-[#f5c84b] hover:text-[#111433]"
               />
 
               <SmartLink
-                href={submitManuscriptUrl}
+                href={normalizeUrl(submitMenu?.url || submitManuscriptUrl)}
                 label={submitMenu?.label || "Submit Manuscript"}
-                isExternal
-                openInNewTab={false}
+                isExternal={submitMenu?.isExternal ?? true}
+                openInNewTab={submitMenu?.openInNewTab ?? true}
                 onClick={() => setMenuOpen(false)}
-                className="inline-flex h-11 items-center justify-center rounded-full bg-[#111433] px-4 text-[14px] font-semibold text-white hover:bg-[#1e2557]"
+                className="inline-flex h-11 items-center justify-center rounded-full bg-[#111433] px-4 text-[14px] font-semibold text-white transition-all duration-300 hover:bg-[#1e2557]"
               />
 
               <form
                 onSubmit={handleSearch}
-                className="mt-3 flex h-11 overflow-hidden rounded-full border border-slate-200 bg-slate-50 focus-within:border-[#22b8e8]"
+                className="mt-3 flex h-11 overflow-hidden rounded-full border border-slate-200 bg-slate-50 transition-all duration-300 focus-within:border-[#22b8e8]"
               >
                 <input
                   value={searchText}
@@ -524,7 +578,6 @@ export default function PublicNavbar() {
               </form>
             </div>
           </div>
-        )}
       </Container>
     </header>
   );
@@ -550,20 +603,28 @@ function MobileLink({
       onClick={onClick}
       isExternal={isExternal}
       openInNewTab={openInNewTab}
-      className="rounded-2xl px-4 py-3 text-[14px] font-medium text-[#111433] hover:bg-[#eef8fc] hover:text-[#22b8e8]"
+      className="rounded-full border border-slate-200 bg-white px-4 py-3 text-[14px] font-semibold text-[#111433] shadow-sm transition-all duration-300 hover:bg-[#eef8fc] hover:text-[#22b8e8]"
     />
   );
 }
 
 function MobileGroup({
   title,
+  href,
+  isExternal,
+  openInNewTab,
   items,
   onClick,
 }: {
   title: string;
+  href: string;
+  isExternal?: boolean;
+  openInNewTab?: boolean;
   items: DropdownMenuItem[];
   onClick: () => void;
 }) {
+  const showParentLink = href && href !== "#";
+
   return (
     <details className="rounded-2xl border border-slate-200 bg-white">
       <summary className="cursor-pointer px-4 py-3 text-[14px] font-semibold text-[#111433]">
@@ -571,6 +632,17 @@ function MobileGroup({
       </summary>
 
       <div className="grid gap-1 border-t border-slate-200 bg-slate-50 p-2">
+        {showParentLink ? (
+          <SmartLink
+            href={href}
+            label={`Open ${title}`}
+            isExternal={isExternal}
+            openInNewTab={openInNewTab}
+            onClick={onClick}
+            className="rounded-xl bg-white px-4 py-2.5 text-[14px] font-semibold text-[#111433] hover:text-[#22b8e8]"
+          />
+        ) : null}
+
         {items.map((item) => (
           <SmartLink
             key={`${item.label}-${item.href}`}

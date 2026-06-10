@@ -480,17 +480,17 @@ export default async function ForAuthorsInnerPage({
                     journal.fst@bup.edu.bd.
                   </p>
 
-                  <div className="mt-6 flex flex-wrap gap-3">
+                  <div className="mt-6 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
                     <Link
                       href="/call-for-papers"
-                      className="inline-flex h-11 items-center justify-center rounded-full bg-white px-6 text-[14px] font-medium text-[#111433] hover:bg-slate-100"
+                      className="flex h-12 w-full items-center justify-center rounded-full bg-white px-2 text-center text-[12px] font-medium leading-tight text-[#111433] hover:bg-slate-100 sm:h-11 sm:w-auto sm:px-6 sm:text-[14px]"
                     >
                       View Call for Papers
                     </Link>
 
                     <a
                       href="mailto:journal.fst@bup.edu.bd"
-                      className="inline-flex h-11 items-center justify-center rounded-full border border-white/30 px-6 text-[14px] font-medium text-white hover:bg-white/10"
+                      className="flex h-12 w-full items-center justify-center rounded-full border border-white/30 px-2 text-center text-[12px] font-medium leading-tight text-white hover:bg-white/10 sm:h-11 sm:w-auto sm:px-6 sm:text-[14px]"
                     >
                       Email Editorial Office
                     </a>

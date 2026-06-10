@@ -34,7 +34,7 @@ const menuItems = [
     icon: FileText,
   },
   {
-    label: "Menus",
+    label: "Navbar Builder",
     href: "/admin/menus",
     icon: Menu,
   },

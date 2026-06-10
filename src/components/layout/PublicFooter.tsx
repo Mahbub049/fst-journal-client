@@ -184,10 +184,10 @@ export default function PublicFooter() {
       <div className="absolute right-[-90px] bottom-[-120px] h-80 w-80 rounded-full bg-[#c7a159]/10 blur-3xl" />
 
       <Container className="relative py-14">
-        <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
-          <div>
-            <div className="flex items-center gap-4">
-              <Link href="/" className="flex min-w-0 items-center gap-4">
+        <div className="grid grid-cols-2 gap-x-7 gap-y-10 lg:grid-cols-[1.4fr_1fr_1fr_1fr] lg:gap-10">
+          <div className="col-span-2 text-center lg:col-span-1 lg:text-left">
+            <div className="flex flex-col items-center gap-3 lg:flex-row lg:gap-4">
+              <Link href="/" className="flex min-w-0 items-center justify-center gap-4">
                 <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/15 bg-white shadow-[0_10px_28px_rgba(0,0,0,0.18)]">
                   <Image
                     src="/images/bup.png"
@@ -199,7 +199,7 @@ export default function PublicFooter() {
                 </div>
               </Link>
 
-              <div>
+              <div className="min-w-0">
                 <h3
                   className="text-[26px] font-semibold leading-none text-white"
                   style={{ fontFamily: "var(--font-source-serif)" }}
@@ -213,11 +213,11 @@ export default function PublicFooter() {
               </div>
             </div>
 
-            <p className="mt-5 max-w-md text-[15px] leading-7 text-white/66">
+            <p className="mx-auto mt-5 max-w-md text-[15px] leading-7 text-white/66 lg:mx-0">
               {settings.footerDescription || fallbackSettings.footerDescription}
             </p>
 
-            <div className="mt-6 rounded-3xl border border-white/12 bg-white/8 p-5 backdrop-blur-md">
+            <div className="mx-auto mt-6 max-w-md rounded-3xl border border-white/12 bg-white/8 p-5 backdrop-blur-md lg:mx-0">
               <p className="text-[12px] font-extrabold uppercase tracking-[0.18em] text-[#7de4ee]">
                 {settings.publisherLabel || fallbackSettings.publisherLabel}
               </p>
@@ -227,7 +227,7 @@ export default function PublicFooter() {
             </div>
 
             {activeSocialLinks.length > 0 && (
-              <div className="mt-5 flex flex-wrap gap-3">
+              <div className="mt-5 flex flex-wrap justify-center gap-3 lg:justify-start">
                 {activeSocialLinks.map((link) => (
                   <a
                     key={`${link.platform}-${link.url}`}
@@ -252,7 +252,7 @@ export default function PublicFooter() {
           ))}
         </div>
 
-        <div className="mt-12 flex flex-col gap-3 border-t border-white/10 pt-6 text-[13px] text-white/52 md:flex-row md:items-center md:justify-between">
+        <div className="mt-12 flex flex-col items-center justify-center gap-2 border-t border-white/10 pt-6 text-center text-[13px] text-white/52 lg:flex-row lg:items-center lg:justify-between lg:gap-3 lg:text-left">
           <p>{settings.copyrightText || fallbackSettings.copyrightText}</p>
 
           {creditUrl ? (
@@ -290,14 +290,14 @@ function FooterColumn({
   links: [string, string][];
 }) {
   return (
-    <div>
+    <div className="text-center lg:text-left">
       <h4
         className="text-[21px] font-semibold text-white"
         style={{ fontFamily: "var(--font-source-serif)" }}
       >
         {title}
       </h4>
-      <div className="mt-3 h-[3px] w-12 rounded-full bg-[#0ea5b7]" />
+      <div className="mx-auto mt-3 h-[3px] w-12 rounded-full bg-[#0ea5b7] lg:mx-0" />
       <ul className="mt-5 space-y-3">
         {links.map(([label, href]) => (
           <li key={`${label}-${href}`}>

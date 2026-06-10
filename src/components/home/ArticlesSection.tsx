@@ -162,6 +162,7 @@ export default function ArticlesSection({ homepage }: Props) {
                     {issue ? (
                       <Link
                         href={`/issues/${issue.slug}/articles/${article.slug}`}
+                        prefetch={false}
                         className="inline-flex rounded-full bg-[#0b1f3a] px-4 py-2 text-[13px] font-extrabold text-white hover:bg-[#0ea5b7]"
                       >
                         View article →

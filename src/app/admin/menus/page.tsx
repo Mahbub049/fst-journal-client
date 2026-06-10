@@ -19,6 +19,7 @@ const locationOptions: { label: string; value: MenuLocation | "all" }[] = [
   { label: "About Dropdown", value: "about" },
   { label: "Issues Dropdown", value: "issues" },
   { label: "For Authors Dropdown", value: "for-authors" },
+  { label: "Editorial Board Dropdown", value: "editorial-board" },
   { label: "Footer", value: "footer" },
 ];
 
@@ -27,6 +28,7 @@ const formLocationOptions: { label: string; value: MenuLocation }[] = [
   { label: "About Dropdown", value: "about" },
   { label: "Issues Dropdown", value: "issues" },
   { label: "For Authors Dropdown", value: "for-authors" },
+  { label: "Editorial Board Dropdown", value: "editorial-board" },
   { label: "Footer", value: "footer" },
 ];
 
@@ -87,6 +89,7 @@ const getSuggestedLocationForParent = (parent?: MenuItem) => {
   if (label.includes("about")) return "about";
   if (label.includes("issue")) return "issues";
   if (label.includes("author")) return "for-authors";
+  if (label.includes("editorial")) return "editorial-board";
 
   return parent.location;
 };
@@ -292,14 +295,14 @@ export default function AdminMenusPage() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#005A78]">
-                Navigation Control
+                Navbar Control
               </p>
               <h1 className="mt-2 text-2xl font-bold text-slate-950">
-                Menu Management
+                Navbar Builder
               </h1>
               <p className="mt-2 max-w-3xl text-sm text-slate-600">
-                Manage public navbar labels, dropdown items, button links,
-                display order, and active status from one place.
+                Manage public navbar labels, dropdown parents, dropdown child items,
+                button links, display order, and active status from one place.
               </p>
             </div>
 
@@ -326,7 +329,7 @@ export default function AdminMenusPage() {
               </h2>
               <p className="mt-1 text-sm text-slate-500">
                 Create main navbar items, dropdown parents, dropdown child links,
-                footer links, or button-style links.
+                footer links, or button-style links such as Submit Manuscript.
               </p>
             </div>
 

@@ -6,6 +6,10 @@ import { notFound } from "next/navigation";
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
+function getArticleDownloadUrl(issueSlug: string, articleSlug: string) {
+  return `${API_URL}/issues/${issueSlug}/articles/${articleSlug}/download`;
+}
+
 async function getArticleDetails(slug: string, articleSlug: string) {
   try {
     const res = await fetch(
@@ -204,7 +208,7 @@ export default async function ArticleDetailsPage({
 
                 {article.pdfUrl ? (
                   <a
-                    href={article.pdfUrl}
+                    href={getArticleDownloadUrl(issue.slug, article.slug)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-full bg-white px-5 text-[14px] font-bold text-[#111433] transition hover:bg-slate-100"

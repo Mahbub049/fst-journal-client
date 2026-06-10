@@ -85,11 +85,34 @@ export default function ExecutiveEditorsSection({ homepage }: Props) {
     loadEditors();
   }, []);
 
-  const visibleCount = 3;
+  const [visibleCount, setVisibleCount] = useState(1);
+
+  useEffect(() => {
+    const updateVisibleCount = () => {
+      if (window.innerWidth >= 1024) {
+        setVisibleCount(3);
+      } else if (window.innerWidth >= 768) {
+        setVisibleCount(2);
+      } else {
+        setVisibleCount(1);
+      }
+    };
+
+    updateVisibleCount();
+    window.addEventListener("resize", updateVisibleCount);
+
+    return () => window.removeEventListener("resize", updateVisibleCount);
+  }, []);
 
   const maxIndex = useMemo(() => {
     return Math.max(0, editors.length - visibleCount);
-  }, [editors.length]);
+  }, [editors.length, visibleCount]);
+
+  const slideStep = 100 / visibleCount;
+
+  useEffect(() => {
+    setActiveIndex((prev) => Math.min(prev, maxIndex));
+  }, [maxIndex]);
 
   useEffect(() => {
     if (editors.length <= visibleCount) return;
@@ -99,7 +122,7 @@ export default function ExecutiveEditorsSection({ homepage }: Props) {
     }, 3000);
 
     return () => clearInterval(timer);
-  }, [editors.length, maxIndex]);
+  }, [editors.length, visibleCount, maxIndex]);
 
   if (editors.length === 0) {
     return null;
@@ -145,7 +168,7 @@ export default function ExecutiveEditorsSection({ homepage }: Props) {
           <div
             className="flex transition-transform duration-700 ease-in-out"
             style={{
-              transform: `translateX(-${activeIndex * 33.3333}%)`,
+              transform: `translateX(-${activeIndex * slideStep}%)`,
             }}
           >
             {editors.map((editor) => (

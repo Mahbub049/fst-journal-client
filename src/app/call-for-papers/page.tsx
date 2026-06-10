@@ -4,8 +4,6 @@ import Link from "next/link";
 
 const apiBaseUrl =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-const serverFileBaseUrl = apiBaseUrl.replace(/\/api\/?$/, "");
-const submitManuscriptUrl = "https://jfst.bup.edu.bd/index.php/jfst/login";
 
 type ImportantDate = {
   _id?: string;
@@ -195,8 +193,8 @@ const fallbackContent: CallForPaperContent = {
   submitTitle: "Ready to submit?",
   submitDescription:
     "Please review the author guidelines, manuscript structure, word limit, plagiarism requirement, and formatting rules before submission.",
-  submissionButtonLabel: "Submit Manuscript",
-  submissionButtonLink: submitManuscriptUrl,
+  submissionButtonLabel: "Email Manuscript",
+  submissionButtonLink: "mailto:journal.fst@bup.edu.bd",
   guidelinesButtonLabel: "View Submission Guidelines",
   guidelinesButtonLink: "/for-authors/submission-guidelines",
 
@@ -252,13 +250,6 @@ const normalizeHref = (url: string) => {
   return url;
 };
 
-const resolvePdfUrl = (url: string) => {
-  if (!url) return "#";
-  if (/^https?:\/\//i.test(url)) return url;
-  if (url.startsWith("/pdfs/")) return `${serverFileBaseUrl}${url}`;
-  return url;
-};
-
 export default async function CallForPapersPage() {
   const content = await getPublicCallForPaper();
 
@@ -266,8 +257,8 @@ export default async function CallForPapersPage() {
     .filter((item) => item.isActive !== false)
     .sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
 
-  const pdfUrl = resolvePdfUrl(content.pdfUrl || fallbackContent.pdfUrl);
-  const pdfViewerSrc = `${pdfUrl}#toolbar=0&navpanes=0&scrollbar=1`;
+  const pdfUrl = content.pdfUrl || fallbackContent.pdfUrl;
+  const pdfViewerSrc = `${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH&zoom=page-width`;
 
   return (
     <PublicLayout>
@@ -320,10 +311,114 @@ export default async function CallForPapersPage() {
                   <iframe
                     src={pdfViewerSrc}
                     title="Call for Papers PDF"
-                    className="block h-[720px] w-full bg-white"
+                    className="block aspect-[210/297] w-full bg-white md:aspect-auto md:h-[720px]"
                   />
                 </div>
               </div>
+
+              <aside className="space-y-6 lg:hidden">
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <p className="journal-subheading">{content.importantInfoLabel}</p>
+
+                  <h2
+                    className="mt-3 text-[26px] font-semibold leading-tight text-slate-950"
+                    style={{ fontFamily: "var(--font-source-serif)" }}
+                  >
+                    {content.timelineTitle}
+                  </h2>
+
+                  <div className="mt-6 space-y-3">
+                    {activeImportantDates.map((date, index) => (
+                      <div
+                        key={`${date.label}-${date.date}-${index}`}
+                        className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                      >
+                        <p className="text-[13px] text-slate-500">
+                          {date.label}
+                        </p>
+
+                        <p className="mt-1 break-words text-[15px] font-semibold text-slate-900">
+                          {date.date}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-slate-200 bg-[#111433] p-6 text-white shadow-sm">
+                  <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-white/70">
+                    {content.submitSectionLabel}
+                  </p>
+
+                  <h2
+                    className="mt-3 text-[26px] font-semibold leading-tight text-white"
+                    style={{ fontFamily: "var(--font-source-serif)" }}
+                  >
+                    {content.submitTitle}
+                  </h2>
+
+                  <p className="mt-4 text-[14px] leading-7 text-white/80">
+                    {content.submitDescription}
+                  </p>
+
+                  <div className="mt-6 grid grid-cols-2 gap-3">
+                    <a
+                      href={normalizeHref(content.submissionButtonLink)}
+                      className="flex h-12 w-full items-center justify-center rounded-full bg-white px-2 text-center text-[12px] font-medium leading-tight text-[#111433] hover:bg-slate-100"
+                    >
+                      {content.submissionButtonLabel}
+                    </a>
+
+                    <Link
+                      href={normalizeHref(content.guidelinesButtonLink)}
+                      className="flex h-12 w-full items-center justify-center rounded-full border border-white/30 px-2 text-center text-[12px] font-medium leading-tight text-white hover:bg-white/10"
+                    >
+                      {content.guidelinesButtonLabel}
+                    </Link>
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <p className="journal-subheading">{content.contactSectionLabel}</p>
+
+                  <h2
+                    className="mt-3 text-[26px] font-semibold leading-tight text-slate-950"
+                    style={{ fontFamily: "var(--font-source-serif)" }}
+                  >
+                    {content.contactTitle}
+                  </h2>
+
+                  <div className="mt-5 space-y-3 text-[14px] leading-7 text-slate-600">
+                    <p>
+                      <span className="font-semibold text-slate-900">
+                        {content.contactEditorLabel}
+                      </span>
+                      <br />
+                      {content.contactEditorName}
+                    </p>
+
+                    <p>
+                      <span className="font-semibold text-slate-900">
+                        {content.publishedByLabel}
+                      </span>
+                      <br />
+                      {content.publishedBy}
+                    </p>
+
+                    <p>{content.publisherName}</p>
+
+                    <p>{content.publisherAddress}</p>
+
+                    <p>
+                      <span className="font-semibold text-slate-900">
+                        Email:
+                      </span>{" "}
+                      {content.contactEmail}
+                    </p>
+                  </div>
+                </div>
+              </aside>
+
 
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
                 <p className="journal-subheading">
@@ -367,16 +462,60 @@ export default async function CallForPapersPage() {
                   {content.scopeDescription}
                 </p>
 
-                <div className="mt-8 space-y-8">
+                {/* Mobile only: dropdown/accordion view for research areas */}
+                <div className="mt-8 space-y-3 md:hidden">
+                  <details className="group rounded-2xl border border-slate-200 bg-slate-50 p-4 [&>summary::-webkit-details-marker]:hidden">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-[15px] font-semibold leading-6 text-slate-950">
+                      <span>{content.engineeringTitle}</span>
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[20px] leading-none text-[#111433] shadow-sm transition-transform group-open:rotate-45">
+                        +
+                      </span>
+                    </summary>
+
+                    <div className="mt-4 space-y-2 border-t border-slate-200 pt-4">
+                      {content.engineeringTopics.map((topic, index) => (
+                        <div
+                          key={`${content.engineeringTitle}-${topic}-${index}`}
+                          className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-[13px] font-medium leading-6 text-slate-700"
+                        >
+                          {topic}
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+
+                  <details className="group rounded-2xl border border-slate-200 bg-slate-50 p-4 [&>summary::-webkit-details-marker]:hidden">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-[15px] font-semibold leading-6 text-slate-950">
+                      <span>{content.environmentalTitle}</span>
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[20px] leading-none text-[#111433] shadow-sm transition-transform group-open:rotate-45">
+                        +
+                      </span>
+                    </summary>
+
+                    <div className="mt-4 space-y-2 border-t border-slate-200 pt-4">
+                      {content.environmentalTopics.map((topic, index) => (
+                        <div
+                          key={`${content.environmentalTitle}-${topic}-${index}`}
+                          className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-[13px] font-medium leading-6 text-slate-700"
+                        >
+                          {topic}
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                </div>
+
+                {/* Desktop/tablet: keep the full visible topic grid */}
+                <div className="mt-8 hidden space-y-8 md:block">
                   <div>
                     <h3 className="text-[20px] font-semibold text-slate-950">
                       {content.engineeringTitle}
                     </h3>
 
                     <div className="mt-4 grid gap-3 md:grid-cols-2">
-                      {content.engineeringTopics.map((topic) => (
+                      {content.engineeringTopics.map((topic, index) => (
                         <div
-                          key={topic}
+                          key={`${content.engineeringTitle}-${topic}-${index}`}
                           className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-[14px] font-medium leading-6 text-slate-700"
                         >
                           {topic}
@@ -391,9 +530,9 @@ export default async function CallForPapersPage() {
                     </h3>
 
                     <div className="mt-4 grid gap-3 md:grid-cols-2">
-                      {content.environmentalTopics.map((topic) => (
+                      {content.environmentalTopics.map((topic, index) => (
                         <div
-                          key={topic}
+                          key={`${content.environmentalTitle}-${topic}-${index}`}
                           className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-[14px] font-medium leading-6 text-slate-700"
                         >
                           {topic}
@@ -422,7 +561,7 @@ export default async function CallForPapersPage() {
               </div>
             </section>
 
-            <aside className="space-y-6">
+            <aside className="hidden space-y-6 lg:block">
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                 <p className="journal-subheading">{content.importantInfoLabel}</p>
 
@@ -468,10 +607,10 @@ export default async function CallForPapersPage() {
                 </p>
 
                 <a
-                  href={submitManuscriptUrl}
+                  href={normalizeHref(content.submissionButtonLink)}
                   className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-full bg-white px-5 text-[14px] font-medium text-[#111433] hover:bg-slate-100"
                 >
-                  {content.submissionButtonLabel || "Submit Manuscript"}
+                  {content.submissionButtonLabel}
                 </a>
 
                 <Link

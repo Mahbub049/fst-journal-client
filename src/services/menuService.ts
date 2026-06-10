@@ -5,6 +5,7 @@ export type MenuLocation =
   | "about"
   | "issues"
   | "for-authors"
+  | "editorial-board"
   | "footer";
 
 export type MenuItemType = "link" | "dropdown" | "button";

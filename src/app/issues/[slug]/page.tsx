@@ -123,6 +123,10 @@ async function getIssueDetails(slug: string): Promise<IssueDetails | null> {
   return fetchJson<IssueDetails>(`${API_URL}/issues/${slug}`);
 }
 
+function getArticleDownloadUrl(issueSlug: string, articleSlug: string) {
+  return `${API_URL}/issues/${issueSlug}/articles/${articleSlug}/download`;
+}
+
 async function getPublicArticles(tab: string): Promise<Article[]> {
   const data = await fetchJson<Article[]>(
     `${API_URL}/issues/articles/home?tab=${tab}&limit=20`
@@ -328,22 +332,23 @@ function ArticleListPage({
                         {issue ? (
                           <Link
                             href={detailsHref}
+                            prefetch={false}
                             className="inline-flex h-10 items-center justify-center rounded-full bg-[#111433] px-5 text-[14px] font-semibold text-white hover:bg-[#1e2557]"
                           >
                             View Details
                           </Link>
                         ) : null}
 
-                        {article.pdfUrl ? (
+                        {/* {article.pdfUrl && issue ? (
                           <a
-                            href={article.pdfUrl}
+                            href={getArticleDownloadUrl(issue.slug, article.slug)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-5 text-[14px] font-semibold text-[#111433] hover:bg-slate-50"
                           >
                             View PDF
                           </a>
-                        ) : null}
+                        ) : null} */}
                       </div>
                     </article>
                   );
@@ -490,21 +495,22 @@ function IssueDetailsPage({
                       <div className="mt-5 flex flex-wrap gap-3">
                         <Link
                           href={`/issues/${issue.slug}/articles/${article.slug}`}
+                          prefetch={false}
                           className="inline-flex h-10 items-center justify-center rounded-full bg-[#111433] px-5 text-[14px] font-semibold text-white hover:bg-[#1e2557]"
                         >
                           View Details
                         </Link>
 
-                        {article.pdfUrl ? (
+                        {/* {article.pdfUrl ? (
                           <a
-                            href={article.pdfUrl}
+                            href={getArticleDownloadUrl(issue.slug, article.slug)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-5 text-[14px] font-semibold text-[#111433] hover:bg-slate-50"
                           >
                             View PDF
                           </a>
-                        ) : null}
+                        ) : null} */}
                       </div>
                     </article>
                   ))
