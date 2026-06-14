@@ -198,12 +198,12 @@ function IssueListPage({
     <PublicLayout>
       <main className="bg-[#f7f8fb]">
         <Container className="py-8 md:py-10">
-          <section className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-8">
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
             <div className="mb-8">
               <p className="journal-subheading">Published Issues</p>
 
               <h2
-                className="mt-3 text-[30px] font-semibold leading-tight text-slate-950"
+                className="mt-3 text-[24px] font-semibold leading-tight text-slate-950 md:text-[30px]"
                 style={{ fontFamily: "var(--font-source-serif)" }}
               >
                 {title}
@@ -253,12 +253,12 @@ function ArticleListPage({
     <PublicLayout>
       <main className="bg-[#f7f8fb]">
         <Container className="py-8 md:py-10">
-          <section className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-8">
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
             <div className="mb-8">
               <p className="journal-subheading">Published Articles</p>
 
               <h2
-                className="mt-3 text-[30px] font-semibold leading-tight text-slate-950"
+                className="mt-3 text-[24px] font-semibold leading-tight text-slate-950 md:text-[30px]"
                 style={{ fontFamily: "var(--font-source-serif)" }}
               >
                 {title}
@@ -282,14 +282,14 @@ function ArticleListPage({
                   return (
                     <article
                       key={article._id}
-                      className="rounded-3xl border border-slate-200 bg-[#fbfcfd] p-6 transition hover:border-[#111433]/30 hover:bg-white hover:shadow-md"
+                      className="rounded-3xl border border-slate-200 bg-[#fbfcfd] p-5 transition hover:border-[#111433]/30 hover:bg-white hover:shadow-md md:p-6"
                     >
                       <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                         Article {index + 1}
                         {article.articleType ? ` · ${article.articleType}` : ""}
                       </p>
 
-                      <h3 className="mt-3 text-[22px] font-semibold leading-8 text-slate-950">
+                      <h3 className="mt-3 text-[18px] font-semibold leading-7 text-slate-950 md:text-[22px] md:leading-8">
                         {article.title}
                       </h3>
 
@@ -421,7 +421,7 @@ function IssueDetailsPage({
               </div>
             </aside>
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-8">
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
               {/* <div className="border-b border-slate-200 pb-6">
                 <p className="journal-subheading">{pageLabel}</p>
 
@@ -443,7 +443,7 @@ function IssueDetailsPage({
                   <p className="journal-subheading">Table of Contents</p>
 
                   <h2
-                    className="mt-3 text-[30px] font-semibold leading-tight text-slate-950"
+                    className="mt-3 text-[24px] font-semibold leading-tight text-slate-950 md:text-[30px]"
                     style={{ fontFamily: "var(--font-source-serif)" }}
                   >
                     Articles in this Issue
@@ -464,13 +464,13 @@ function IssueDetailsPage({
                   articles.map((article, index) => (
                     <article
                       key={article._id}
-                      className="rounded-3xl border border-slate-200 bg-[#fbfcfd] p-6 transition hover:border-[#111433]/30 hover:bg-white hover:shadow-md"
+                      className="rounded-3xl border border-slate-200 bg-[#fbfcfd] p-5 transition hover:border-[#111433]/30 hover:bg-white hover:shadow-md md:p-6"
                     >
                       <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                         Article {index + 1}
                       </p>
 
-                      <h3 className="mt-3 text-[22px] font-semibold leading-8 text-slate-950">
+                      <h3 className="mt-3 text-[18px] font-semibold leading-7 text-slate-950 md:text-[22px] md:leading-8">
                         {article.title}
                       </h3>
 

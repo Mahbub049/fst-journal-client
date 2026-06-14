@@ -279,13 +279,13 @@ export default async function EditorialBoardPage() {
               <p className="journal-subheading">Editorial Leadership</p>
 
               <h1
-                className="mt-4 text-[40px] font-semibold leading-tight tracking-tight text-slate-950 md:text-[56px]"
+                className="mt-4 text-[36px] md:text-[40px] font-semibold leading-tight tracking-tight text-slate-950 md:text-[56px]"
                 style={{ fontFamily: "var(--font-source-serif)" }}
               >
                 Editorial Board
               </h1>
 
-              <p className="mt-5 text-[16px] leading-8 text-slate-600">
+              <p className="mt-5 text-[15px] md:text-[16px] text-justify leading-8 text-slate-600">
                 The editorial board of BUP Faculty of Science and Technology
                 Journal supports academic quality, publication ethics,
                 manuscript evaluation, and scholarly direction.
@@ -296,7 +296,7 @@ export default async function EditorialBoardPage() {
 
         <Container className="py-10 md:py-14">
           <div className="grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
-            <aside className="h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-[106px]">
+            <aside className="order-last h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:order-first lg:sticky lg:top-[106px]">
               <p className="journal-subheading">Board Summary</p>
 
               <h2

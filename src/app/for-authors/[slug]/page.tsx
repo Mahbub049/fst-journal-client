@@ -229,9 +229,9 @@ const ContentBlockCard = ({ block }: { block: PublicContentBlock }) => {
 
   if (block.type === "heading") {
     return (
-      <article className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-8">
+      <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
         <h2
-          className="text-[28px] font-semibold leading-tight text-slate-950"
+          className="text-[22px] font-semibold leading-tight text-slate-950 md:text-[28px]"
           style={{ fontFamily: "var(--font-source-serif)" }}
         >
           {block.title || block.content}
@@ -244,10 +244,10 @@ const ContentBlockCard = ({ block }: { block: PublicContentBlock }) => {
     const paragraphs = splitContent(block.content);
 
     return (
-      <article className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-8">
+      <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
         {block.title && (
           <h2
-            className="text-[28px] font-semibold leading-tight text-slate-950"
+            className="text-[22px] font-semibold leading-tight text-slate-950 md:text-[28px]"
             style={{ fontFamily: "var(--font-source-serif)" }}
           >
             {block.title}
@@ -257,7 +257,7 @@ const ContentBlockCard = ({ block }: { block: PublicContentBlock }) => {
         {paragraphs.map((paragraph, index) => (
           <p
             key={index}
-            className="mt-4 text-justify text-[16px] leading-8 text-slate-600"
+            className="mt-4 text-[15px] leading-7 text-slate-600 md:text-justify md:text-[16px] md:leading-8"
           >
             {paragraph}
           </p>
@@ -268,19 +268,19 @@ const ContentBlockCard = ({ block }: { block: PublicContentBlock }) => {
 
   if (block.type === "list") {
     return (
-      <article className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-8">
+      <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
         {block.title && (
           <h2
-            className="text-[28px] font-semibold leading-tight text-slate-950"
+            className="text-[22px] font-semibold leading-tight text-slate-950 md:text-[28px]"
             style={{ fontFamily: "var(--font-source-serif)" }}
           >
             {block.title}
           </h2>
         )}
 
-        <ul className="mt-5 space-y-3 text-[16px] leading-8 text-slate-600">
+        <ul className="mt-5 space-y-3 text-[15px] leading-7 text-slate-600 md:text-[16px] md:leading-8">
           {(block.items || []).map((item) => (
-            <li key={item} className="flex gap-3 text-justify">
+            <li key={item} className="flex gap-3 md:text-justify">
               <span className="mt-3 h-2 w-2 shrink-0 rounded-full bg-[#22b8e8]" />
               <span>{item}</span>
             </li>
@@ -292,10 +292,10 @@ const ContentBlockCard = ({ block }: { block: PublicContentBlock }) => {
 
   if (block.type === "image" && block.imageUrl) {
     return (
-      <article className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-8">
+      <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
         {block.title && (
           <h2
-            className="text-[28px] font-semibold leading-tight text-slate-950"
+            className="text-[22px] font-semibold leading-tight text-slate-950 md:text-[28px]"
             style={{ fontFamily: "var(--font-source-serif)" }}
           >
             {block.title}
@@ -312,9 +312,9 @@ const ContentBlockCard = ({ block }: { block: PublicContentBlock }) => {
 
   if (block.type === "pdf" && block.fileUrl) {
     return (
-      <article className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-8">
+      <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
         <h2
-          className="text-[28px] font-semibold leading-tight text-slate-950"
+          className="text-[22px] font-semibold leading-tight text-slate-950 md:text-[28px]"
           style={{ fontFamily: "var(--font-source-serif)" }}
         >
           {block.title || "Document"}
@@ -334,10 +334,10 @@ const ContentBlockCard = ({ block }: { block: PublicContentBlock }) => {
 
   if (block.type === "button" && block.buttonUrl) {
     return (
-      <article className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-8">
+      <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
         {block.title && (
           <h2
-            className="text-[28px] font-semibold leading-tight text-slate-950"
+            className="text-[22px] font-semibold leading-tight text-slate-950 md:text-[28px]"
             style={{ fontFamily: "var(--font-source-serif)" }}
           >
             {block.title}
@@ -413,13 +413,13 @@ export default async function ForAuthorsInnerPage({
               <p className="journal-subheading">For Authors</p>
 
               <h1
-                className="mt-4 text-[40px] font-semibold leading-tight tracking-tight text-slate-950 md:text-[56px]"
+                className="mt-4 text-[32px] font-semibold leading-tight tracking-tight text-slate-950 md:text-[56px]"
                 style={{ fontFamily: "var(--font-source-serif)" }}
               >
                 {data.title}
               </h1>
 
-              <p className="mt-5 max-w-3xl text-justify text-[16px] leading-8 text-slate-600">
+              <p className="mt-5 max-w-3xl text-[15px] leading-7 text-slate-600 md:text-justify md:text-[16px] md:leading-8">
                 {data.subtitle}
               </p>
 
@@ -460,20 +460,20 @@ export default async function ForAuthorsInnerPage({
                 </div>
               </aside>
 
-              <section className="space-y-5">
+              <section className="space-y-5 text-justify">
                 {data.contentBlocks.map((block, index) => (
                   <ContentBlockCard key={block._id || index} block={block} />
                 ))}
 
-                <div className="rounded-3xl border border-slate-200 bg-[#111433] p-7 text-white shadow-sm">
+                <div className="rounded-3xl border border-slate-200 bg-[#111433] p-5 text-white shadow-sm md:p-7">
                   <h2
-                    className="text-[28px] font-semibold leading-tight"
+                    className="text-[22px] font-semibold leading-tight md:text-[28px]"
                     style={{ fontFamily: "var(--font-source-serif)" }}
                   >
                     Need help preparing your manuscript?
                   </h2>
 
-                  <p className="mt-4 text-justify text-[15px] leading-7 text-white/80">
+                  <p className="mt-4 text-[15px] leading-7 text-white/80 md:text-justify">
                     Please review the author guidelines, submission checklist,
                     and call for papers notice before final submission.
                     Manuscripts and related documents should be sent to

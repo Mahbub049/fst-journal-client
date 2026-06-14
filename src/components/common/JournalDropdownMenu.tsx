@@ -1,5 +1,6 @@
 "use client";
 
+import { MouseEvent } from "react";
 import Link from "next/link";
 
 export type DropdownMenuItem = {
@@ -21,6 +22,37 @@ const isAbsoluteUrl = (href: string) => {
   return /^(https?:\/\/|mailto:|tel:)/i.test(href);
 };
 
+const handleSamePageNavigationClick = (
+  event: MouseEvent<HTMLAnchorElement>,
+  href: string,
+) => {
+  if (typeof window === "undefined") return;
+
+  const targetUrl = new URL(href, window.location.origin);
+  const currentUrl = new URL(window.location.href);
+  const isSamePage =
+    targetUrl.origin === currentUrl.origin &&
+    targetUrl.pathname === currentUrl.pathname &&
+    targetUrl.search === currentUrl.search;
+
+  if (!isSamePage) return;
+
+  event.preventDefault();
+
+  window.history.pushState(
+    null,
+    "",
+    `${targetUrl.pathname}${targetUrl.search}${targetUrl.hash}`,
+  );
+
+  if (targetUrl.hash) {
+    window.dispatchEvent(new Event("hashchange"));
+    return;
+  }
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
 function MenuAnchor({ item }: { item: DropdownMenuItem }) {
   const target = item.openInNewTab ? "_blank" : undefined;
   const rel = item.openInNewTab ? "noopener noreferrer" : undefined;
@@ -32,6 +64,7 @@ function MenuAnchor({ item }: { item: DropdownMenuItem }) {
         href={item.href}
         target={target}
         rel={rel}
+        onClick={(event) => handleSamePageNavigationClick(event, item.href)}
         className="block rounded-xl px-4 py-3 text-[14px] font-semibold text-[#26364d] transition-all duration-200 hover:bg-[#071a33] hover:text-white"
       >
         {item.label}
@@ -42,7 +75,8 @@ function MenuAnchor({ item }: { item: DropdownMenuItem }) {
   return (
     <Link
       href={item.href}
-      scroll={item.href.includes("#")}
+      scroll={!item.href.includes("#")}
+      onClick={(event) => handleSamePageNavigationClick(event, item.href)}
       className="block rounded-xl px-4 py-3 text-[14px] font-semibold text-[#26364d] transition-all duration-200 hover:bg-[#071a33] hover:text-white"
     >
       {item.label}
@@ -91,6 +125,7 @@ function ParentLabel({
         href={href}
         target={target}
         rel={rel}
+        onClick={(event) => handleSamePageNavigationClick(event, href)}
         className="nav-link inline-flex items-center gap-1.5 whitespace-nowrap"
       >
         {content}
@@ -101,7 +136,8 @@ function ParentLabel({
   return (
     <Link
       href={href}
-      scroll={href.includes("#")}
+      scroll={!href.includes("#")}
+      onClick={(event) => handleSamePageNavigationClick(event, href)}
       className="nav-link inline-flex items-center gap-1.5 whitespace-nowrap"
     >
       {content}

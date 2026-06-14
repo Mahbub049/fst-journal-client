@@ -52,9 +52,9 @@ export default async function ArticleDetailsPage({
   return (
     <PublicLayout>
       <main className="bg-[#f7f8fb]">
-        <Container className="py-10 md:py-12">
+        <Container className="md:py-10 lg:py-12">
           {/* Breadcrumb */}
-          <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-[14px] text-slate-600 shadow-sm">
+          <div className="hidden md:flex flex-wrap items-center gap-y-1 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-[13px] leading-6 text-slate-600 shadow-sm md:text-[14px]">
             <Link href="/" className="font-medium text-[#111433] hover:underline">
               Home
             </Link>
@@ -76,7 +76,7 @@ export default async function ArticleDetailsPage({
             <p className="journal-subheading">{article.articleType || "Research Article"}</p>
 
             <h1
-              className="mt-4 text-[28px] font-semibold leading-tight text-slate-950 md:text-[38px]"
+              className="mt-4 text-[24px] font-semibold leading-tight text-slate-950 sm:text-[28px] md:text-[38px]"
               style={{ fontFamily: "var(--font-source-serif)" }}
             >
               {article.title}
@@ -84,7 +84,7 @@ export default async function ArticleDetailsPage({
 
             <div className="mt-5 h-[2px] w-full bg-[#22b8e8]" />
 
-            <p className="mt-5 text-[15px] leading-7 text-slate-600">
+            <p className="mt-5 text-[14px] leading-7 text-slate-600 md:text-[15px]">
               <span className="font-semibold text-slate-950">Author(s): </span>
               {article.authors?.join(", ") || "Not available"}
             </p>
@@ -99,7 +99,7 @@ export default async function ArticleDetailsPage({
                   Article Information
                 </h2>
 
-                <div className="mt-5 space-y-3 text-[15px] leading-7 text-slate-700">
+                <div className="mt-5 space-y-3 text-[14px] leading-7 text-slate-700 md:text-[15px]">
                   <InfoLine
                     label="Article Info"
                     value={`${issue.title}, ISSN: ${issue.issn}, Volume - ${issue.volume}, Issue - ${issue.issueNumber}, ${issue.publishDateLabel}, Article #${article.order || "-"}`}
@@ -122,7 +122,7 @@ export default async function ArticleDetailsPage({
                         href={article.doi}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="break-words text-[#111433] hover:text-[#22b8e8] hover:underline"
+                        className="break-all text-[#111433] hover:text-[#22b8e8] hover:underline [overflow-wrap:anywhere]"
                       >
                         {article.doi}
                       </a>
@@ -142,9 +142,8 @@ export default async function ArticleDetailsPage({
 
                   <InfoLine
                     label="User Activity"
-                    value={`Views: ${article.views ?? "-"}, Downloads: ${
-                      article.downloads ?? "-"
-                    }`}
+                    value={`Views: ${article.views ?? "-"}, Downloads: ${article.downloads ?? "-"
+                      }`}
                   />
                 </div>
               </div>
@@ -155,9 +154,9 @@ export default async function ArticleDetailsPage({
                 </h2>
 
                 {article.abstract ? (
-<p className="mt-4 text-justify text-[15px] italic leading-8 text-slate-700">
-  {article.abstract}
-</p>
+                  <p className="mt-4 text-[14px] text-justify italic leading-7 text-slate-700 md:text-justify md:text-[15px] md:leading-8">
+                    {article.abstract}
+                  </p>
                 ) : (
                   <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-[14px] leading-7 text-slate-500">
                     Abstract has not been added yet.
@@ -170,15 +169,15 @@ export default async function ArticleDetailsPage({
                   Citation Information
                 </h2>
 
-                <div className="mt-5 space-y-3 text-[15px] leading-7 text-slate-700">
-<p className="text-justify">
-  {article.authors?.join(", ") || "Author(s)"}. (
-  {article.publishDate || issue.publishDateLabel}).{" "}
-  <span className="font-medium">{article.title}</span>.{" "}
-  <span className="italic">{issue.title}</span>, Volume{" "}
-  {issue.volume}, Issue {issue.issueNumber}
-  {article.pages ? `, ${article.pages}` : ""}.
-</p>
+                <div className="mt-5 space-y-3 text-[14px] leading-7 text-slate-700 md:text-[15px]">
+                  <p className="break-words text-justify">
+                    {article.authors?.join(", ") || "Author(s)"}. (
+                    {article.publishDate || issue.publishDateLabel}).{" "}
+                    <span className="font-medium">{article.title}</span>.{" "}
+                    <span className="italic">{issue.title}</span>, Volume{" "}
+                    {issue.volume}, Issue {issue.issueNumber}
+                    {article.pages ? `, ${article.pages}` : ""}.
+                  </p>
 
                   {article.doi ? (
                     <p>
@@ -187,7 +186,7 @@ export default async function ArticleDetailsPage({
                         href={article.doi}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="break-words text-[#111433] hover:text-[#22b8e8] hover:underline"
+                        className="break-all text-[#111433] hover:text-[#22b8e8] hover:underline [overflow-wrap:anywhere]"
                       >
                         {article.doi}
                       </a>
@@ -262,7 +261,7 @@ export default async function ArticleDetailsPage({
                 </div>
               </div>
 
-              {article.articleUrl ? (
+              {/* {article.articleUrl ? (
                 <a
                   href={article.articleUrl}
                   target="_blank"
@@ -271,7 +270,7 @@ export default async function ArticleDetailsPage({
                 >
                   Original Article Page
                 </a>
-              ) : null}
+              ) : null} */}
             </aside>
           </section>
         </Container>
@@ -282,7 +281,7 @@ export default async function ArticleDetailsPage({
 
 function InfoLine({ label, value }: { label: string; value: string }) {
   return (
-    <p>
+    <p className="break-words [overflow-wrap:anywhere]">
       <span className="font-bold text-slate-950">{label}: </span>
       {value}
     </p>
@@ -291,7 +290,7 @@ function InfoLine({ label, value }: { label: string; value: string }) {
 
 function SideInfo({ label, value }: { label: string; value: string }) {
   return (
-    <div className="py-3">
+    <div className="break-words py-3 [overflow-wrap:anywhere]">
       <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-500">
         {label}
       </p>

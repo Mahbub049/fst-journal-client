@@ -51,7 +51,7 @@ export default function ArticlesSection({ homepage }: Props) {
 
   return (
     <MotionSection>
-      <section className="journal-surface relative overflow-hidden p-7 md:p-8">
+      <section className="journal-surface relative overflow-hidden p-5 md:p-8">
         <div className="absolute right-[-110px] top-[-130px] h-72 w-72 rounded-full bg-[#0ea5b7]/10 blur-3xl" />
 
         <div className="relative flex flex-col gap-5 border-b border-[#e4edf1] pb-6 lg:flex-row lg:items-end lg:justify-between">
@@ -61,7 +61,7 @@ export default function ArticlesSection({ homepage }: Props) {
             </p>
 
             <h2
-              className="mt-3 text-[34px] font-semibold leading-tight text-[#0b1f3a] md:text-[42px]"
+              className="mt-3 text-[26px] font-semibold leading-tight text-[#0b1f3a] md:text-[42px]"
               style={{ fontFamily: "var(--font-source-serif)" }}
             >
               {homepage?.articlesSectionTitle || "Articles"}
@@ -104,7 +104,7 @@ export default function ArticlesSection({ homepage }: Props) {
               return (
                 <article
                   key={article._id}
-                  className="group flex min-h-[285px] flex-col rounded-3xl border border-[#d9e4ea] bg-white/92 p-5 shadow-[0_14px_40px_rgba(17,20,51,0.05)] backdrop-blur-xl transition hover:-translate-y-1 hover:border-[#0ea5b7]/45 hover:shadow-[0_22px_60px_rgba(11,31,58,0.1)]"
+                  className="group flex flex-col rounded-3xl border border-[#d9e4ea] bg-white/92 p-5 shadow-[0_14px_40px_rgba(17,20,51,0.05)] backdrop-blur-xl transition hover:-translate-y-1 hover:border-[#0ea5b7]/45 hover:shadow-[0_22px_60px_rgba(11,31,58,0.1)] md:min-h-[285px]"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#0a7180]">
@@ -117,11 +117,11 @@ export default function ArticlesSection({ homepage }: Props) {
                     />
                   </div>
 
-                  <h3 className="mt-5 text-[19px] font-bold leading-8 text-slate-950 group-hover:text-[#0a7180]">
+                  <h3 className="mt-5 text-[18px] font-bold leading-7 text-slate-950 group-hover:text-[#0a7180] md:text-[19px] md:leading-8">
                     {article.title}
                   </h3>
 
-                  <p className="mt-4 text-[14px] leading-6 text-slate-600">
+                  <p className="mt-4 text-[13px] leading-6 text-slate-600 md:text-[14px]">
                     {article.authors?.join(", ") ||
                       "Author information unavailable"}
                   </p>
