@@ -24,7 +24,7 @@ export default function OverviewSection({ homepage }: Props) {
 
         <div className="relative max-w-4xl">
           <div className="inline-flex rounded-full border border-[#d9e4ea] bg-[#f8fbfc] px-4 py-2">
-            <p className="journal-subheading">About the Journal</p>
+            <p className="journal-subheading font-extrabold">About the Journal</p>
           </div>
 
           <h2

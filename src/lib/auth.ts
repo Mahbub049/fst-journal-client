@@ -1,8 +1,11 @@
 export type AdminUser = {
   id: string;
+  _id?: string;
   name: string;
   email: string;
   role: "super_admin" | "admin";
+  isActive?: boolean;
+  mustChangePassword?: boolean;
 };
 
 const TOKEN_KEY = "bup_fst_journal_admin_token";

@@ -2,9 +2,12 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
+  ArrowDown,
+  ArrowUp,
   Edit,
   Eye,
   EyeOff,
+  GripVertical,
   Loader2,
   Plus,
   RefreshCw,
@@ -20,6 +23,7 @@ import {
   deleteAdminIssue,
   getAdminIssues,
   IssuePayload,
+  reorderAdminIssues,
   updateAdminIssue,
 } from "@/services/issues.service";
 import { Issue } from "@/types/issue";
@@ -29,7 +33,6 @@ type IssueStatusFilter = "all" | "published" | "draft" | "recent";
 
 type IssueFormState = {
   title: string;
-  slug: string;
   category: string;
   issn: string;
   volume: string;
@@ -39,12 +42,10 @@ type IssueFormState = {
   pdfUrl: string;
   isRecent: boolean;
   isPublished: boolean;
-  order: string;
 };
 
 const emptyForm: IssueFormState = {
   title: "",
-  slug: "",
   category: "Research Article",
   issn: "",
   volume: "",
@@ -54,7 +55,6 @@ const emptyForm: IssueFormState = {
   pdfUrl: "",
   isRecent: true,
   isPublished: true,
-  order: "0",
 };
 
 const makeSlug = (text: string) => {
@@ -64,6 +64,37 @@ const makeSlug = (text: string) => {
     .replace(/&/g, "and")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+};
+
+const formatTwoDigitValue = (value: string) => {
+  const trimmed = value.trim();
+  const numericMatch = trimmed.match(/\d+/);
+
+  if (!numericMatch) {
+    return makeSlug(trimmed);
+  }
+
+  return numericMatch[0].padStart(2, "0");
+};
+
+const buildIssueSlug = (form: Pick<IssueFormState, "title" | "volume" | "issueNumber" | "publishDateLabel">) => {
+  const titleSlug = makeSlug(form.title);
+  const volumeSlug = form.volume.trim()
+    ? `volume-${formatTwoDigitValue(form.volume)}`
+    : "";
+  const issueSlug = form.issueNumber.trim()
+    ? `issue-${formatTwoDigitValue(form.issueNumber)}`
+    : "";
+  const dateSlug = makeSlug(form.publishDateLabel);
+
+  return [titleSlug, volumeSlug, issueSlug, dateSlug].filter(Boolean).join("-");
+};
+
+const reorderList = <T,>(items: T[], fromIndex: number, toIndex: number) => {
+  const next = [...items];
+  const [removed] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, removed);
+  return next;
 };
 
 export default function AdminIssuesPage() {
@@ -78,8 +109,13 @@ export default function AdminIssuesPage() {
   const [saving, setSaving] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [reordering, setReordering] = useState(false);
+  const [draggedIssueId, setDraggedIssueId] = useState<string | null>(null);
 
   const [message, setMessage] = useState("");
+
+  const generatedSlug = useMemo(() => buildIssueSlug(form), [form]);
+  const canReorderIssues = statusFilter === "all" && search.trim().length === 0;
 
   const fetchIssues = async () => {
     try {
@@ -119,20 +155,11 @@ export default function AdminIssuesPage() {
     setMessage("");
   };
 
-  const handleTitleChange = (value: string) => {
-    setForm((prev) => ({
-      ...prev,
-      title: value,
-      slug: editingId ? prev.slug : makeSlug(value),
-    }));
-  };
-
   const handleEdit = (issue: Issue) => {
     setEditingId(issue._id);
 
     setForm({
       title: issue.title || "",
-      slug: issue.slug || "",
       category: issue.category || "Research Article",
       issn: issue.issn || "",
       volume: issue.volume || "",
@@ -142,7 +169,6 @@ export default function AdminIssuesPage() {
       pdfUrl: issue.pdfUrl || "",
       isRecent: issue.isRecent ?? true,
       isPublished: issue.isPublished ?? true,
-      order: String(issue.order ?? 0),
     });
 
     setMessage("");
@@ -152,7 +178,7 @@ export default function AdminIssuesPage() {
   const buildPayload = (): IssuePayload => {
     return {
       title: form.title.trim(),
-      slug: makeSlug(form.slug || form.title),
+      slug: generatedSlug,
       category: form.category.trim(),
       issn: form.issn.trim(),
       volume: form.volume.trim(),
@@ -162,7 +188,6 @@ export default function AdminIssuesPage() {
       pdfUrl: form.pdfUrl.trim(),
       isRecent: form.isRecent,
       isPublished: form.isPublished,
-      order: Number(form.order || 0),
     };
   };
 
@@ -186,7 +211,7 @@ export default function AdminIssuesPage() {
         await fetchIssues();
         setEditingId(null);
         setForm(emptyForm);
-        setMessage("Issue created successfully and the list has been refreshed.");
+        setMessage("Issue created successfully. It has been placed at the top of the issue order.");
       }
     } catch (error: any) {
       setMessage(error?.response?.data?.message || "Failed to save issue.");
@@ -194,7 +219,6 @@ export default function AdminIssuesPage() {
       setSaving(false);
     }
   };
-
 
   const handleMediaUpload = async (
     field: "coverImage" | "pdfUrl",
@@ -238,6 +262,54 @@ export default function AdminIssuesPage() {
     }
   };
 
+  const saveIssueOrder = async (orderedIssues: Issue[]) => {
+    if (!canReorderIssues) {
+      setMessage("Clear search and select All before changing issue order.");
+      return;
+    }
+
+    try {
+      setReordering(true);
+      const orderedWithIndex = orderedIssues.map((issue, index) => ({
+        ...issue,
+        order: index,
+      }));
+
+      setIssues(orderedWithIndex);
+      await reorderAdminIssues(orderedWithIndex.map((issue) => issue._id));
+      await fetchIssues();
+      setMessage("Issue display order updated. The public website will follow this order.");
+    } catch (error: any) {
+      setMessage(error?.response?.data?.message || "Failed to update issue order.");
+      await fetchIssues();
+    } finally {
+      setReordering(false);
+      setDraggedIssueId(null);
+    }
+  };
+
+  const handleIssueDrop = async (targetIssueId: string) => {
+    if (!draggedIssueId || draggedIssueId === targetIssueId || !canReorderIssues) {
+      setDraggedIssueId(null);
+      return;
+    }
+
+    const fromIndex = sortedIssues.findIndex((issue) => issue._id === draggedIssueId);
+    const toIndex = sortedIssues.findIndex((issue) => issue._id === targetIssueId);
+
+    if (fromIndex < 0 || toIndex < 0) {
+      setDraggedIssueId(null);
+      return;
+    }
+
+    await saveIssueOrder(reorderList(sortedIssues, fromIndex, toIndex));
+  };
+
+  const moveIssue = async (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= sortedIssues.length || fromIndex === toIndex) return;
+    await saveIssueOrder(reorderList(sortedIssues, fromIndex, toIndex));
+  };
+
   const handleDelete = async (issue: Issue) => {
     const confirmed = window.confirm(
       `Are you sure you want to delete "${issue.title}"?`
@@ -277,13 +349,13 @@ export default function AdminIssuesPage() {
                 Issues Management
               </h1>
               <p className="mt-2 max-w-3xl text-sm text-slate-600">
-                Create and manage published issues, current issue visibility,
-                archive records, cover images, and issue PDF links.
+                Create issues with automatic slugs and control the public display
+                order using drag and drop.
               </p>
             </div>
 
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-              Connected to the public issue pages.
+              Public issue order follows this list.
             </div>
           </div>
         </div>
@@ -305,7 +377,7 @@ export default function AdminIssuesPage() {
                   {editingId ? "Edit Issue" : "Create Issue"}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Add issue metadata, cover image, PDF link, and visibility.
+                  Fill issue details. The slug and display position are handled automatically.
                 </p>
               </div>
 
@@ -327,29 +399,25 @@ export default function AdminIssuesPage() {
                 </label>
                 <input
                   value={form.title}
-                  onChange={(event) => handleTitleChange(event.target.value)}
-                  placeholder="Example: Volume 3, Issue 1"
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, title: event.target.value }))
+                  }
+                  placeholder="Example: Journal of FST"
                   className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
                   required
                 />
               </div>
 
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                  Slug
+              <div className="rounded-2xl border border-dashed border-[#005A78]/25 bg-[#005A78]/5 px-4 py-3">
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.18em] text-[#005A78]">
+                  Auto-generated slug
                 </label>
-                <input
-                  value={form.slug}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      slug: makeSlug(event.target.value),
-                    }))
-                  }
-                  placeholder="volume-3-issue-1"
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
-                  required
-                />
+                <p className="break-all text-sm font-semibold text-slate-700">
+                  {generatedSlug || "journal-of-fst-volume-03-issue-01-july-2025"}
+                </p>
+                {/* <p className="mt-1 text-xs text-slate-500">
+                  Format: issue-title-volume-no-issue-no-publication-date-label.
+                </p> */}
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -360,10 +428,7 @@ export default function AdminIssuesPage() {
                   <input
                     value={form.volume}
                     onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        volume: event.target.value,
-                      }))
+                      setForm((prev) => ({ ...prev, volume: event.target.value }))
                     }
                     placeholder="3"
                     className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
@@ -539,23 +604,6 @@ export default function AdminIssuesPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                  Display Order
-                </label>
-                <input
-                  type="number"
-                  value={form.order}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      order: event.target.value,
-                    }))
-                  }
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
-                />
-              </div>
-
               <div className="grid gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4">
                 <label className="flex items-center gap-3 text-sm font-semibold text-slate-700">
                   <input
@@ -586,6 +634,11 @@ export default function AdminIssuesPage() {
                   />
                   Published
                 </label>
+              </div>
+
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold leading-5 text-amber-800">
+                New issues are automatically inserted at the top of the public display order.
+                Use the issue list on the right to rearrange them.
               </div>
 
               <div className="flex flex-wrap gap-3 pt-2">
@@ -626,10 +679,10 @@ export default function AdminIssuesPage() {
             <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div>
                 <h2 className="text-lg font-bold text-slate-950">
-                  Issue List
+                  Issue List & Display Order
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Search, filter, edit, publish, or delete issues.
+                  Drag issues to control which one appears first on the public website.
                 </p>
               </div>
 
@@ -645,7 +698,7 @@ export default function AdminIssuesPage() {
 
             <form
               onSubmit={handleSearchSubmit}
-              className="mb-5 grid gap-3 lg:grid-cols-[1fr_180px_auto]"
+              className="mb-4 grid gap-3 lg:grid-cols-[1fr_180px_auto]"
             >
               <div className="relative">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -677,6 +730,19 @@ export default function AdminIssuesPage() {
                 Search
               </button>
             </form>
+{/* 
+            <div
+              className={[
+                "mb-5 rounded-2xl border px-4 py-3 text-sm font-semibold",
+                canReorderIssues
+                  ? "border-cyan-200 bg-cyan-50 text-cyan-800"
+                  : "border-amber-200 bg-amber-50 text-amber-800",
+              ].join(" ")}
+            >
+              {canReorderIssues
+                ? "Ordering mode is active. Drag an issue, or use the arrow buttons, then the public site will follow the saved order."
+                : "Ordering is disabled while searching or filtering. Select All and clear the search box to rearrange issues."}
+            </div> */}
 
             {loading ? (
               <div className="rounded-2xl border border-slate-100 bg-slate-50 p-8 text-center">
@@ -694,13 +760,48 @@ export default function AdminIssuesPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {sortedIssues.map((issue) => (
+                {sortedIssues.map((issue, index) => (
                   <div
                     key={issue._id}
-                    className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                    draggable={canReorderIssues && !reordering}
+                    onDragStart={() => setDraggedIssueId(issue._id)}
+                    onDragOver={(event) => {
+                      if (canReorderIssues) event.preventDefault();
+                    }}
+                    onDrop={() => handleIssueDrop(issue._id)}
+                    onDragEnd={() => setDraggedIssueId(null)}
+                    className={[
+                      "rounded-2xl border bg-slate-50 p-4 transition",
+                      draggedIssueId === issue._id
+                        ? "border-[#005A78] opacity-70 ring-2 ring-[#005A78]/15"
+                        : "border-slate-200 hover:border-[#005A78]/30",
+                      canReorderIssues ? "cursor-move" : "cursor-default",
+                    ].join(" ")}
                   >
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div className="flex gap-4">
+                        <div className="flex shrink-0 flex-col items-center gap-2">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#005A78] text-xs font-black text-white shadow-sm">
+                            {index + 1}
+                          </div>
+
+                          <div
+                            className={[
+                              "flex h-9 w-9 items-center justify-center rounded-full border bg-white text-slate-400",
+                              canReorderIssues
+                                ? "border-slate-200"
+                                : "border-slate-100 opacity-50",
+                            ].join(" ")}
+                            title="Drag to reorder"
+                          >
+                            {reordering && draggedIssueId === issue._id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <GripVertical className="h-4 w-4" />
+                            )}
+                          </div>
+                        </div>
+
                         <div className="h-24 w-16 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
                           {issue.coverImage ? (
                             <img
@@ -720,7 +821,7 @@ export default function AdminIssuesPage() {
                             {issue.title}
                           </h3>
 
-                          <p className="mt-1 text-sm text-slate-500">
+                          <p className="mt-1 break-all text-sm text-slate-500">
                             /issues/{issue.slug}
                           </p>
 
@@ -734,8 +835,8 @@ export default function AdminIssuesPage() {
                             <span className="rounded-full bg-white px-3 py-1 text-slate-700">
                               {issue.publishDateLabel}
                             </span>
-                            <span className="rounded-full bg-white px-3 py-1 text-slate-700">
-                              Order {issue.order ?? 0}
+                            <span className="rounded-full bg-[#005A78]/10 px-3 py-1 text-[#005A78]">
+                              Public position {index + 1}
                             </span>
                           </div>
 
@@ -766,6 +867,30 @@ export default function AdminIssuesPage() {
                       </div>
 
                       <div className="flex flex-wrap justify-end gap-2">
+                        <button
+                          type="button"
+                          disabled={!canReorderIssues || reordering || index === 0}
+                          onClick={() => moveIssue(index, index - 1)}
+                          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                          title="Move up"
+                        >
+                          <ArrowUp className="h-4 w-4" />
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={
+                            !canReorderIssues ||
+                            reordering ||
+                            index === sortedIssues.length - 1
+                          }
+                          onClick={() => moveIssue(index, index + 1)}
+                          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                          title="Move down"
+                        >
+                          <ArrowDown className="h-4 w-4" />
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => handleEdit(issue)}

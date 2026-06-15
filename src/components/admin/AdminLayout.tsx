@@ -10,8 +10,21 @@ type AdminLayoutProps = {
   children: ReactNode;
 };
 
+const SIDEBAR_COLLAPSED_KEY = "jfst_admin_sidebar_collapsed";
+
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [checking, setChecking] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    const savedSidebarState = window.localStorage.getItem(
+      SIDEBAR_COLLAPSED_KEY
+    );
+
+    if (savedSidebarState === "true") {
+      setSidebarCollapsed(true);
+    }
+  }, []);
 
   useEffect(() => {
     const verifyAdmin = async () => {
@@ -32,6 +45,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     verifyAdmin();
   }, []);
 
+  const handleSidebarToggle = () => {
+    setSidebarCollapsed((currentValue) => {
+      const nextValue = !currentValue;
+      window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(nextValue));
+      return nextValue;
+    });
+  };
+
   if (checking) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-100">
@@ -47,9 +68,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <main className="min-h-screen bg-[#F4F7FA]">
-      <AdminSidebar />
+      <AdminSidebar
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={handleSidebarToggle}
+      />
 
-      <section className="lg:pl-[270px]">
+      <section
+        className={[
+          "min-h-screen transition-[padding] duration-300 ease-in-out",
+          sidebarCollapsed ? "lg:pl-[92px]" : "lg:pl-[270px]",
+        ].join(" ")}
+      >
         <AdminTopbar />
 
         <div className="p-5 lg:p-8">{children}</div>

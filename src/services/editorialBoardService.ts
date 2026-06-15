@@ -12,7 +12,7 @@ export type EditorialBoardMember = {
   profileImage: string;
   bio: string;
   email: string;
-  order: number;
+  order?: number;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -29,7 +29,7 @@ export type EditorialBoardPayload = {
   profileImage: string;
   bio: string;
   email: string;
-  order: number;
+  order?: number;
   isActive: boolean;
 };
 
@@ -108,6 +108,14 @@ export const updateAdminEditorialBoard = async (
 
 export const deleteAdminEditorialBoard = async (id: string) => {
   const { data } = await api.delete(`/editorial-board/admin/${id}`);
+  return data;
+};
+
+export const reorderAdminEditorialBoard = async (orderedIds: string[]) => {
+  const { data } = await api.put("/editorial-board/admin/reorder", {
+    orderedIds,
+  });
+
   return data;
 };
 

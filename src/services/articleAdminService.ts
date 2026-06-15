@@ -40,6 +40,13 @@ type AdminArticleResponse = {
   data: Article;
 };
 
+type ArticlePdfUploadResponse = {
+  success: boolean;
+  message: string;
+  fileUrl: string;
+  filename: string;
+};
+
 export const getAdminArticles = async (params?: {
   search?: string;
   issueId?: string;
@@ -91,4 +98,40 @@ export const updateAdminArticle = async (
 export const deleteAdminArticle = async (id: string) => {
   const { data } = await api.delete(`/articles/admin/${id}`);
   return data;
+};
+
+export const uploadAdminArticlePdf = async (payload: {
+  file: File;
+  title?: string;
+  slug?: string;
+}) => {
+  const formData = new FormData();
+
+  formData.append("file", payload.file);
+  formData.append("title", payload.title || payload.file.name);
+  formData.append("slug", payload.slug || "");
+
+  const { data } = await api.post<ArticlePdfUploadResponse>(
+    "/articles/admin/upload-pdf",
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+
+  return data;
+};
+
+export const reorderAdminArticles = async (payload: {
+  issueId: string;
+  articleIds: string[];
+}) => {
+  const { data } = await api.patch<AdminArticlesResponse>(
+    "/articles/admin/reorder",
+    payload
+  );
+
+  return data.data || [];
 };

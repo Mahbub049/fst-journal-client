@@ -53,7 +53,7 @@ export type IssuePayload = {
   pdfUrl?: string;
   isRecent: boolean;
   isPublished: boolean;
-  order: number;
+  order?: number;
 };
 
 /* Public issue APIs */
@@ -140,4 +140,11 @@ export const updateAdminIssue = async (
 export const deleteAdminIssue = async (id: string) => {
   const res = await api.delete(`/issues/admin/${id}`);
   return res.data;
+};
+export const reorderAdminIssues = async (issueIds: string[]): Promise<Issue[]> => {
+  const res = await api.patch<AdminIssuesResponse>("/issues/admin/reorder", {
+    issueIds,
+  });
+
+  return res.data.data || [];
 };

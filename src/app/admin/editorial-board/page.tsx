@@ -2,10 +2,13 @@
 
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import {
+  ArrowDown,
+  ArrowUp,
   Edit,
   ExternalLink,
   Eye,
   EyeOff,
+  GripVertical,
   Loader2,
   Plus,
   RefreshCw,
@@ -22,6 +25,7 @@ import {
   EditorialBoardMember,
   EditorialBoardPayload,
   getAdminEditorialBoard,
+  reorderAdminEditorialBoard,
   updateAdminEditorialBoard,
 } from "@/services/editorialBoardService";
 import { uploadMedia } from "@/services/mediaService";
@@ -39,7 +43,6 @@ type EditorFormState = {
   profileImage: string;
   bio: string;
   email: string;
-  order: string;
   isActive: boolean;
 };
 
@@ -54,7 +57,6 @@ const emptyForm: EditorFormState = {
   profileImage: "",
   bio: "",
   email: "",
-  order: "0",
   isActive: true,
 };
 
@@ -72,6 +74,24 @@ const editorialAreaOptions = [
   "Editorial Advisory Board",
   "General",
 ];
+
+const categorySortRank = (category?: string) => {
+  const normalized = (category || "").toLowerCase().trim();
+  const orderMap: Record<string, number> = {
+    "chief patron": 1,
+    "chief editor": 2,
+    editor: 3,
+    "assistant editor": 4,
+    "assistant editors": 4,
+    "editorial advisory board": 5,
+    "editorial advisory board member": 5,
+    "editorial advisory board members": 5,
+    "advisory board member": 5,
+    "advisory board members": 5,
+  };
+
+  return orderMap[normalized] || 99;
+};
 
 const splitCommaValues = (value: string) => {
   return value
@@ -94,6 +114,7 @@ export default function AdminEditorialBoardPage() {
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [message, setMessage] = useState("");
+  const [draggingId, setDraggingId] = useState<string | null>(null);
 
   const fetchEditors = async () => {
     try {
@@ -137,12 +158,13 @@ export default function AdminEditorialBoardPage() {
 
   const sortedEditors = useMemo(() => {
     return [...editors].sort((a, b) => {
-      if (a.category !== b.category) {
-        return a.category.localeCompare(b.category);
-      }
+      const categoryRankA = categorySortRank(a.category);
+      const categoryRankB = categorySortRank(b.category);
 
-      if ((a.editorialArea || "") !== (b.editorialArea || "")) {
-        return (a.editorialArea || "").localeCompare(b.editorialArea || "");
+      if (categoryRankA !== categoryRankB) return categoryRankA - categoryRankB;
+
+      if ((a.category || "") !== (b.category || "")) {
+        return (a.category || "").localeCompare(b.category || "");
       }
 
       const orderA = Number(a.order || 0);
@@ -172,7 +194,6 @@ export default function AdminEditorialBoardPage() {
       profileImage: form.profileImage.trim(),
       bio: form.bio.trim(),
       email: form.email.trim(),
-      order: Number(form.order || 0),
       isActive: form.isActive,
     };
   };
@@ -208,7 +229,6 @@ export default function AdminEditorialBoardPage() {
       profileImage: editor.profileImage || "",
       bio: editor.bio || "",
       email: editor.email || "",
-      order: String(editor.order || 0),
       isActive: editor.isActive ?? true,
     });
 
@@ -256,6 +276,61 @@ export default function AdminEditorialBoardPage() {
         error?.response?.data?.message || "Failed to update member status.",
       );
     }
+  };
+
+  const persistOrder = async (nextEditors: EditorialBoardMember[]) => {
+    try {
+      setEditors(nextEditors);
+      setMessage("");
+
+      await reorderAdminEditorialBoard(nextEditors.map((editor) => editor._id));
+      setMessage("Editorial board display order updated successfully.");
+      await fetchEditors();
+    } catch (error: any) {
+      setMessage(
+        error?.response?.data?.message ||
+          "Failed to update editorial board display order.",
+      );
+      await fetchEditors();
+    } finally {
+      setDraggingId(null);
+    }
+  };
+
+  const handleMoveMember = async (editorId: string, direction: "up" | "down") => {
+    const currentIndex = sortedEditors.findIndex((editor) => editor._id === editorId);
+    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
+    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= sortedEditors.length) {
+      return;
+    }
+
+    const nextEditors = [...sortedEditors];
+    const [movedEditor] = nextEditors.splice(currentIndex, 1);
+    nextEditors.splice(targetIndex, 0, movedEditor);
+
+    await persistOrder(nextEditors);
+  };
+
+  const handleDropMember = async (targetId: string) => {
+    if (!draggingId || draggingId === targetId) {
+      setDraggingId(null);
+      return;
+    }
+
+    const currentIndex = sortedEditors.findIndex((editor) => editor._id === draggingId);
+    const targetIndex = sortedEditors.findIndex((editor) => editor._id === targetId);
+
+    if (currentIndex < 0 || targetIndex < 0) {
+      setDraggingId(null);
+      return;
+    }
+
+    const nextEditors = [...sortedEditors];
+    const [movedEditor] = nextEditors.splice(currentIndex, 1);
+    nextEditors.splice(targetIndex, 0, movedEditor);
+
+    await persistOrder(nextEditors);
   };
 
   const handleProfileImageUpload = async (
@@ -633,23 +708,6 @@ export default function AdminEditorialBoardPage() {
                 />
               </div>
 
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                  Display Order
-                </label>
-                <input
-                  type="number"
-                  value={form.order}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      order: event.target.value,
-                    }))
-                  }
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
-                />
-              </div>
-
               <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                 <label className="flex items-center gap-3 text-sm font-semibold text-slate-700">
                   <input
@@ -706,7 +764,7 @@ export default function AdminEditorialBoardPage() {
                   Editorial Board List
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Search, filter, edit, activate, deactivate, or delete members.
+                  Search, filter, edit, activate, deactivate, delete, or reorder members by dragging.
                 </p>
               </div>
 
@@ -799,13 +857,36 @@ export default function AdminEditorialBoardPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {sortedEditors.map((editor) => (
+                {sortedEditors.map((editor, index) => (
                   <div
                     key={editor._id}
-                    className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                    draggable
+                    onDragStart={() => setDraggingId(editor._id)}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={() => handleDropMember(editor._id)}
+                    onDragEnd={() => setDraggingId(null)}
+                    className={[
+                      "rounded-2xl border bg-slate-50 p-4 transition",
+                      draggingId === editor._id
+                        ? "border-[#005A78] opacity-60 ring-2 ring-[#005A78]/10"
+                        : "border-slate-200 hover:border-[#005A78]/40 hover:bg-white",
+                    ].join(" ")}
                   >
                     <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                       <div className="flex min-w-0 gap-4">
+                        <div className="flex shrink-0 flex-col items-center gap-2">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#005A78] text-sm font-bold text-white">
+                            {index + 1}
+                          </div>
+                          <button
+                            type="button"
+                            title="Drag to reorder"
+                            className="cursor-grab rounded-full border border-slate-200 bg-white p-2 text-slate-400 active:cursor-grabbing"
+                          >
+                            <GripVertical className="h-4 w-4" />
+                          </button>
+                        </div>
+
                         <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white">
                           {editor.profileImage ? (
                             <img
@@ -872,8 +953,8 @@ export default function AdminEditorialBoardPage() {
                           )}
 
                           <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
-                            <span className="rounded-full bg-white px-3 py-1 text-slate-700">
-                              Order {editor.order ?? 0}
+                            <span className="rounded-full bg-cyan-50 px-3 py-1 text-[#005A78]">
+                              Display position {index + 1}
                             </span>
 
                             {editor.expertise?.map((item) => (
@@ -895,6 +976,26 @@ export default function AdminEditorialBoardPage() {
                       </div>
 
                       <div className="flex flex-wrap justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleMoveMember(editor._id, "up")}
+                          disabled={index === 0}
+                          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                          title="Move up"
+                        >
+                          <ArrowUp className="h-4 w-4" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleMoveMember(editor._id, "down")}
+                          disabled={index === sortedEditors.length - 1}
+                          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                          title="Move down"
+                        >
+                          <ArrowDown className="h-4 w-4" />
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => handleEdit(editor)}

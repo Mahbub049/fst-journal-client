@@ -25,6 +25,7 @@ import {
   PenTool,
   RefreshCw,
   Settings,
+  ShieldCheck,
   UserRoundCog,
   Users,
 } from "lucide-react";
@@ -123,6 +124,15 @@ const moduleCards = [
     icon: Image,
     description: "Upload and reuse images, PDF files, cover images, posters, and document assets.",
     accent: "from-slate-500 to-slate-700",
+  },
+
+  {
+    title: "Admin Access",
+    href: "/admin/admin-access",
+    publicHref: "",
+    icon: ShieldCheck,
+    description: "Create approved admin emails, set temporary passwords, and control admin account status.",
+    accent: "from-emerald-500 to-teal-600",
   },
   {
     title: "Settings / Footer",
@@ -336,14 +346,20 @@ export default function AdminDashboardPage() {
                       <Icon size={23} />
                     </div>
 
-                    <Link
-                      href={card.publicHref}
-                      target="_blank"
-                      className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:border-[#005A78] hover:text-[#005A78]"
-                    >
-                      Public
-                      <ExternalLink size={13} />
-                    </Link>
+                    {card.publicHref ? (
+                      <Link
+                        href={card.publicHref}
+                        target="_blank"
+                        className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:border-[#005A78] hover:text-[#005A78]"
+                      >
+                        Public
+                        <ExternalLink size={13} />
+                      </Link>
+                    ) : (
+                      <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-500">
+                        Private
+                      </span>
+                    )}
                   </div>
 
                   <h2 className="mt-5 text-xl font-black text-slate-950">
