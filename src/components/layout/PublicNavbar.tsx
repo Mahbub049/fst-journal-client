@@ -357,9 +357,7 @@ export default function PublicNavbar() {
   const router = useRouter();
   const pathname = usePathname();
   const navbarRef = useRef<HTMLElement | null>(null);
-  const mobileMenuTimerRef = useRef<ReturnType<
-    typeof window.setTimeout
-  > | null>(null);
+  const mobileMenuTimerRef = useRef<number | null>(null);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -407,8 +405,9 @@ export default function PublicNavbar() {
 
   useEffect(() => {
     return () => {
-      if (mobileMenuTimerRef.current) {
+      if (mobileMenuTimerRef.current !== null) {
         window.clearTimeout(mobileMenuTimerRef.current);
+        mobileMenuTimerRef.current = null;
       }
     };
   }, []);
@@ -476,7 +475,7 @@ export default function PublicNavbar() {
   const handleMobileMenuToggle = () => {
     setMobileSearchOpen(false);
 
-    if (mobileMenuTimerRef.current) {
+    if (mobileMenuTimerRef.current !== null) {
       window.clearTimeout(mobileMenuTimerRef.current);
       mobileMenuTimerRef.current = null;
     }
@@ -591,8 +590,8 @@ export default function PublicNavbar() {
     <header
       ref={navbarRef}
       className={`journal-navbar sticky top-0 z-[100] border-b backdrop-blur-xl transition-all duration-300 ${isNavbarStuck
-          ? "journal-navbar-stuck border-[#15395e]/70 bg-[#071a33]/95 shadow-[0_16px_40px_rgba(2,8,23,0.22)]"
-          : "border-slate-200 bg-white/95 shadow-sm"
+        ? "journal-navbar-stuck border-[#15395e]/70 bg-[#071a33]/95 shadow-[0_16px_40px_rgba(2,8,23,0.22)]"
+        : "border-slate-200 bg-white/95 shadow-sm"
         }`}
     >
       <Container>
@@ -696,8 +695,8 @@ export default function PublicNavbar() {
                 setMobileSearchOpen((current) => !current);
               }}
               className={`inline-flex h-11 w-11 items-center justify-center rounded-full border text-[18px] font-semibold transition-all duration-300 active:scale-95 lg:hidden ${mobileSearchOpen
-                  ? "border-[#22b8e8] bg-[#eef8fc] text-[#087895]"
-                  : "border-slate-200 bg-white text-[#111433] hover:border-[#22b8e8] hover:bg-[#eef8fc] hover:text-[#087895]"
+                ? "border-[#22b8e8] bg-[#eef8fc] text-[#087895]"
+                : "border-slate-200 bg-white text-[#111433] hover:border-[#22b8e8] hover:bg-[#eef8fc] hover:text-[#087895]"
                 }`}
               aria-label="Toggle search"
               aria-expanded={mobileSearchOpen}
@@ -778,8 +777,8 @@ export default function PublicNavbar() {
 
         <div
           className={`border-t border-slate-200 transition-all duration-500 ease-in-out xl:hidden ${menuOpen
-              ? "max-h-[calc(100dvh-78px)] translate-y-0 overflow-y-auto overscroll-contain touch-pan-y py-4 opacity-100"
-              : "max-h-0 -translate-y-2 overflow-hidden border-transparent py-0 opacity-0"
+            ? "max-h-[calc(100dvh-78px)] translate-y-0 overflow-y-auto overscroll-contain touch-pan-y py-4 opacity-100"
+            : "max-h-0 -translate-y-2 overflow-hidden border-transparent py-0 opacity-0"
             }`}
         >
           <div
