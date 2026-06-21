@@ -1,8 +1,9 @@
 import axios from "axios";
 import { getAdminToken, removeAdminToken } from "./auth";
+import { getBrowserApiBaseUrl } from "./apiBase";
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
+  baseURL: getBrowserApiBaseUrl(),
   withCredentials: true,
 });
 

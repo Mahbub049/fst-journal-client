@@ -1,5 +1,6 @@
 import Container from "@/components/common/Container";
 import PublicLayout from "@/components/layout/PublicLayout";
+import { getServerApiBaseUrl } from "@/lib/apiBase";
 
 type EditorialBoardMember = {
   _id: string;
@@ -25,8 +26,7 @@ type EditorialSection = {
   members: EditorialBoardMember[];
 };
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = getServerApiBaseUrl();
 
 const sectionConfig = [
   {

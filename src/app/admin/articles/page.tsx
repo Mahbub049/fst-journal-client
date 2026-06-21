@@ -33,6 +33,7 @@ import {
 } from "@/services/articleAdminService";
 import { getAdminIssues } from "@/services/issues.service";
 import { Article, Issue, PopulatedIssue } from "@/types/issue";
+import { getBrowserFileOrigin } from "@/lib/apiBase";
 
 type PublicationFilter = "all" | "published" | "draft";
 
@@ -99,9 +100,7 @@ const makeSlug = (text: string) => {
     .replace(/^-+|-+$/g, "");
 };
 
-const API_ORIGIN = (
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
-).replace(/\/api\/?$/, "");
+const API_ORIGIN = getBrowserFileOrigin();
 
 const getPdfPreviewUrl = (pdfUrl: string) => {
   const value = pdfUrl.trim();
@@ -358,12 +357,19 @@ export default function AdminArticlesPage() {
 
     if (!file) return;
 
+    if (!form.issueId) {
+      setMessage("Please select the issue first. The PDF will be stored inside that issue folder.");
+      event.target.value = "";
+      return;
+    }
+
     try {
       setUploadingPdf(true);
       setMessage("");
 
       const uploaded = await uploadAdminArticlePdf({
         file,
+        issueId: form.issueId,
         title: form.title ? `${form.title} PDF` : file.name,
         slug: form.slug || makeSlug(form.title),
       });
@@ -374,7 +380,9 @@ export default function AdminArticlesPage() {
       }));
 
       setMessage(
-        "PDF uploaded to the local server. Save the article to publish this PDF link."
+        uploaded.folder
+          ? `PDF uploaded successfully to ${uploaded.folder}. Save the article to publish this PDF link.`
+          : "PDF uploaded to the local server. Save the article to publish this PDF link."
       );
     } catch (error: any) {
       setMessage(error?.response?.data?.message || "Failed to upload PDF.");
@@ -728,10 +736,10 @@ export default function AdminArticlesPage() {
                   required
                 />
                 <p className="mt-1.5 text-xs leading-5 text-slate-500">
-                  Upload PDF stores the paper in your server folder:
+                  Select an issue first, then upload. The PDF will be stored in:
                   <span className="font-semibold text-slate-700">
                     {" "}
-                    public/pdfs/articles
+                    public/pdfs/articles/volume-XX/issue-XX
                   </span>
                   . External PDF links can still be pasted manually.
                 </p>

@@ -18,14 +18,14 @@ export default function MotionSection({
 }: MotionSectionProps) {
   const position =
     direction === "down"
-      ? { y: -22, x: 0 }
+      ? { y: -18, x: 0 }
       : direction === "left"
-        ? { x: 22, y: 0 }
+        ? { x: 18, y: 0 }
         : direction === "right"
-          ? { x: -22, y: 0 }
+          ? { x: -18, y: 0 }
           : direction === "none"
             ? { x: 0, y: 0 }
-            : { y: 22, x: 0 };
+            : { y: 18, x: 0 };
 
   const variants: Variants = {
     hidden: {
@@ -37,7 +37,7 @@ export default function MotionSection({
       x: 0,
       y: 0,
       transition: {
-        duration: 0.55,
+        duration: 0.45,
         delay,
         ease: [0.22, 1, 0.36, 1],
       },
@@ -48,9 +48,9 @@ export default function MotionSection({
     <motion.div
       className={className}
       variants={variants}
-      initial="hidden"
+      initial={false}
       whileInView="visible"
-      viewport={{ once: true, amount: 0.15 }}
+      viewport={{ once: true, amount: 0.12 }}
     >
       {children}
     </motion.div>

@@ -3,8 +3,10 @@ import PublicLayout from "@/components/layout/PublicLayout";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { getBrowserApiBaseUrl, getServerApiBaseUrl } from "@/lib/apiBase";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_URL = getServerApiBaseUrl();
+const BROWSER_API_URL = getBrowserApiBaseUrl();
 
 type Issue = {
   _id: string;
@@ -124,7 +126,7 @@ async function getIssueDetails(slug: string): Promise<IssueDetails | null> {
 }
 
 function getArticleDownloadUrl(issueSlug: string, articleSlug: string) {
-  return `${API_URL}/issues/${issueSlug}/articles/${articleSlug}/download`;
+  return `${BROWSER_API_URL}/issues/${issueSlug}/articles/${articleSlug}/download`;
 }
 
 async function getPublicArticles(tab: string): Promise<Article[]> {

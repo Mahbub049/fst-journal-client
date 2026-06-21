@@ -1,6 +1,3 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Container from "@/components/common/Container";
 import PublicLayout from "@/components/layout/PublicLayout";
 import ArticlesSection from "@/components/home/ArticlesSection";
@@ -8,26 +5,69 @@ import ExecutiveEditorsSection from "@/components/home/ExecutiveEditorsSection";
 import JournalInfoSidebar from "@/components/home/JournalInfoSidebar";
 import OverviewSection from "@/components/home/OverviewSection";
 import RecentIssuesSection from "@/components/home/RecentIssuesSection";
-import {
-  getPublicHomepage,
-  PublicHomepageContent,
-} from "@/services/publicHomepageService";
+import { getServerApiBaseUrl } from "@/lib/apiBase";
+import { PublicHomepageContent } from "@/services/publicHomepageService";
+import { Article, Issue } from "@/types/issue";
 
-export default function HomePage() {
-  const [homepage, setHomepage] = useState<PublicHomepageContent | null>(null);
+export const dynamic = "force-dynamic";
 
-  useEffect(() => {
-    const loadHomepage = async () => {
-      try {
-        const data = await getPublicHomepage();
-        setHomepage(data);
-      } catch {
-        setHomepage(null);
-      }
-    };
+const HOME_ISSUE_LIMIT = 3;
 
-    loadHomepage();
-  }, []);
+async function fetchJson<T>(url: string): Promise<T | null> {
+  try {
+    const response = await fetch(url, {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return response.json();
+  } catch {
+    return null;
+  }
+}
+
+async function getHomepageData(): Promise<PublicHomepageContent | null> {
+  const API_URL = getServerApiBaseUrl();
+
+  const data = await fetchJson<{
+    success: boolean;
+    homepage: PublicHomepageContent;
+  }>(`${API_URL}/homepage`);
+
+  return data?.homepage || null;
+}
+
+async function getInitialArticles(): Promise<Article[]> {
+  const API_URL = getServerApiBaseUrl();
+
+  const data = await fetchJson<{
+    success: boolean;
+    data: Article[];
+  }>(`${API_URL}/issues/articles/home?tab=latest`);
+
+  return Array.isArray(data?.data) ? data.data : [];
+}
+
+async function getInitialRecentIssues(): Promise<Issue[]> {
+  const API_URL = getServerApiBaseUrl();
+
+  const data = await fetchJson<{
+    success: boolean;
+    data: Issue[];
+  }>(`${API_URL}/issues/recent`);
+
+  return Array.isArray(data?.data) ? data.data.slice(0, HOME_ISSUE_LIMIT) : [];
+}
+
+export default async function HomePage() {
+  const [homepage, initialArticles, initialIssues] = await Promise.all([
+    getHomepageData(),
+    getInitialArticles(),
+    getInitialRecentIssues(),
+  ]);
 
   return (
     <PublicLayout homepage={homepage}>
@@ -36,11 +76,6 @@ export default function HomePage() {
           <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_390px]">
             <OverviewSection homepage={homepage} />
 
-            {/*
-              The sticky behavior belongs to this wrapper, not inside the card.
-              This keeps the full Journal Information card visible while scrolling
-              and prevents the card header from being clipped/hidden.
-            */}
             <div className="self-start lg:sticky lg:top-[104px]">
               <JournalInfoSidebar homepage={homepage} />
             </div>
@@ -50,8 +85,15 @@ export default function HomePage() {
         <ExecutiveEditorsSection homepage={homepage} />
 
         <Container className="space-y-10 py-10 md:py-14">
-          <ArticlesSection homepage={homepage} />
-          <RecentIssuesSection homepage={homepage} />
+          <ArticlesSection
+            homepage={homepage}
+            initialArticles={initialArticles}
+          />
+
+          <RecentIssuesSection
+            homepage={homepage}
+            initialIssues={initialIssues}
+          />
         </Container>
       </main>
     </PublicLayout>

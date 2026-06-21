@@ -2,8 +2,9 @@ import Container from "@/components/common/Container";
 import PublicLayout from "@/components/layout/PublicLayout";
 import Link from "next/link";
 import { Article, Issue, PopulatedIssue } from "@/types/issue";
+import { getServerApiBaseUrl } from "@/lib/apiBase";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_URL = getServerApiBaseUrl();
 
 type SearchPageItem = {
   _id: string;

@@ -1,9 +1,9 @@
 import Container from "@/components/common/Container";
 import PublicLayout from "@/components/layout/PublicLayout";
 import Link from "next/link";
+import { getServerApiBaseUrl } from "@/lib/apiBase";
 
-const apiBaseUrl =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const apiBaseUrl = getServerApiBaseUrl();
 
 type ImportantDate = {
   _id?: string;

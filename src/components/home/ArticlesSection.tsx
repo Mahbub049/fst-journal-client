@@ -9,6 +9,7 @@ import { PublicHomepageContent } from "@/services/publicHomepageService";
 
 type Props = {
   homepage?: PublicHomepageContent | null;
+  initialArticles?: Article[];
 };
 
 const tabs = [
@@ -27,27 +28,32 @@ function getIssue(article: Article) {
   return article.issueId;
 }
 
-export default function ArticlesSection({ homepage }: Props) {
+export default function ArticlesSection({ homepage, initialArticles }: Props) {
   const [activeTab, setActiveTab] = useState("latest");
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [articles, setArticles] = useState<Article[]>(initialArticles || []);
+  const [loading, setLoading] = useState(!initialArticles);
+useEffect(() => {
+  if (activeTab === "latest" && initialArticles) {
+    setArticles(initialArticles);
+    setLoading(false);
+    return;
+  }
 
-  useEffect(() => {
-    const loadArticles = async () => {
-      try {
-        setLoading(true);
-        const data = await getHomeArticles(activeTab);
-        setArticles(data);
-      } catch (error) {
-        console.error("Failed to load homepage articles:", error);
-        setArticles([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadArticles = async () => {
+    try {
+      setLoading(true);
+      const data = await getHomeArticles(activeTab);
+      setArticles(data);
+    } catch (error) {
+      console.error("Failed to load homepage articles:", error);
+      setArticles([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    loadArticles();
-  }, [activeTab]);
+  loadArticles();
+}, [activeTab, initialArticles]);
 
   return (
     <MotionSection>
@@ -86,11 +92,9 @@ export default function ArticlesSection({ homepage }: Props) {
           </div>
         </div>
 
-        {loading ? (
-          <div className="relative mt-6 rounded-3xl border border-[#d9e4ea] bg-[#f1fafb] p-6 text-[14px] font-medium text-slate-600">
-            Loading articles...
-          </div>
-        ) : articles.length === 0 ? (
+{loading ? (
+  <ArticleCardsSkeleton />
+) : articles.length === 0 ? (
           <div className="relative mt-6 rounded-3xl border border-dashed border-[#d9e4ea] bg-white/80 p-8 text-center">
             <p className="text-[14px] text-slate-500">
               No articles found for this tab.
@@ -180,5 +184,37 @@ export default function ArticlesSection({ homepage }: Props) {
         )}
       </section>
     </MotionSection>
+  );
+}
+
+
+function ArticleCardsSkeleton() {
+  return (
+    <div className="relative mt-7 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div
+          key={index}
+          className="animate-pulse rounded-3xl border border-[#d9e4ea] bg-white/92 p-5 shadow-[0_14px_40px_rgba(17,20,51,0.05)]"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="h-3 w-32 rounded-full bg-slate-200" />
+            <div className="h-3 w-3 rounded-full bg-slate-200" />
+          </div>
+
+          <div className="mt-6 h-5 w-full rounded-full bg-slate-200" />
+          <div className="mt-3 h-5 w-4/5 rounded-full bg-slate-200" />
+
+          <div className="mt-6 h-4 w-2/3 rounded-full bg-slate-200" />
+          <div className="mt-3 h-4 w-1/2 rounded-full bg-slate-200" />
+
+          <div className="mt-6 flex gap-2">
+            <div className="h-7 w-20 rounded-full bg-slate-200" />
+            <div className="h-7 w-24 rounded-full bg-slate-200" />
+          </div>
+
+          <div className="mt-8 h-9 w-32 rounded-full bg-slate-200" />
+        </div>
+      ))}
+    </div>
   );
 }

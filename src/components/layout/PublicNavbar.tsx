@@ -362,6 +362,7 @@ export default function PublicNavbar() {
   > | null>(null);
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [menus, setMenus] = useState<PublicMenuItem[]>([]);
   const [publicIssues, setPublicIssues] = useState<Issue[]>([]);
   const [searchText, setSearchText] = useState("");
@@ -473,6 +474,8 @@ export default function PublicNavbar() {
   }, [pathname]);
 
   const handleMobileMenuToggle = () => {
+    setMobileSearchOpen(false);
+
     if (mobileMenuTimerRef.current) {
       window.clearTimeout(mobileMenuTimerRef.current);
       mobileMenuTimerRef.current = null;
@@ -517,6 +520,7 @@ export default function PublicNavbar() {
     if (!cleanSearch) return;
 
     setMenuOpen(false);
+    setMobileSearchOpen(false);
     router.push(`/search?q=${encodeURIComponent(cleanSearch)}`);
   };
 
@@ -586,11 +590,10 @@ export default function PublicNavbar() {
   return (
     <header
       ref={navbarRef}
-      className={`journal-navbar sticky top-0 z-[100] border-b backdrop-blur-xl transition-all duration-300 ${
-        isNavbarStuck
+      className={`journal-navbar sticky top-0 z-[100] border-b backdrop-blur-xl transition-all duration-300 ${isNavbarStuck
           ? "journal-navbar-stuck border-[#15395e]/70 bg-[#071a33]/95 shadow-[0_16px_40px_rgba(2,8,23,0.22)]"
           : "border-slate-200 bg-white/95 shadow-sm"
-      }`}
+        }`}
     >
       <Container>
         <nav className="flex min-h-[78px] items-center justify-between gap-6">
@@ -685,34 +688,103 @@ export default function PublicNavbar() {
             />
           </div>
 
-          <button
-            type="button"
-            onClick={handleMobileMenuToggle}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-[22px] font-semibold text-[#111433] shadow-sm transition-all duration-300 hover:scale-105 hover:border-[#22b8e8] hover:bg-[#eef8fc] active:scale-95 xl:hidden"
-            aria-label="Toggle menu"
-            aria-expanded={menuOpen}
-          >
-            <span
-              className={`inline-block transition-transform duration-300 ease-out ${
-                menuOpen ? "rotate-90 scale-110" : "rotate-0 scale-100"
-              }`}
+          <div className="flex items-center gap-2 xl:hidden">
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                setMobileSearchOpen((current) => !current);
+              }}
+              className={`inline-flex h-11 w-11 items-center justify-center rounded-full border text-[18px] font-semibold transition-all duration-300 active:scale-95 lg:hidden ${mobileSearchOpen
+                  ? "border-[#22b8e8] bg-[#eef8fc] text-[#087895]"
+                  : "border-slate-200 bg-white text-[#111433] hover:border-[#22b8e8] hover:bg-[#eef8fc] hover:text-[#087895]"
+                }`}
+              aria-label="Toggle search"
+              aria-expanded={mobileSearchOpen}
             >
-              {menuOpen ? "×" : "☰"}
-            </span>
-          </button>
+              <svg
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="M20 20l-3.5-3.5" />
+              </svg>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleMobileMenuToggle}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-[22px] font-semibold text-[#111433] transition-all duration-300 hover:scale-105 hover:border-[#22b8e8] hover:bg-[#eef8fc] active:scale-95 xl:hidden"
+              aria-label="Toggle menu"
+              aria-expanded={menuOpen}
+            >
+              <span
+                className={`inline-block transition-transform duration-300 ease-out ${menuOpen ? "rotate-90 scale-110" : "rotate-0 scale-100"
+                  }`}
+              >
+                {menuOpen ? "×" : "☰"}
+              </span>
+            </button>
+          </div>
         </nav>
 
         <div
-          className={`border-t border-slate-200 transition-all duration-500 ease-in-out xl:hidden ${
-            menuOpen
+          className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-in-out lg:hidden ${mobileSearchOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+            }`}
+        >
+          <div className="min-h-0">
+            <form
+              onSubmit={handleSearch}
+              className="mx-auto mb-4 flex h-10 w-[calc(100%-18px)] max-w-[292px] overflow-hidden rounded-full border border-slate-200 bg-slate-50 transition-all duration-300 focus-within:border-[#22b8e8]"
+            >
+              <div className="flex w-11 shrink-0 items-center justify-center text-slate-400">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="M20 20l-3.5-3.5" />
+                </svg>
+              </div>
+
+              <input
+                value={searchText}
+                onChange={(event) => setSearchText(event.target.value)}
+                placeholder="Search journal"
+                className="min-w-0 flex-1 bg-transparent pr-3 text-[14px] text-slate-700 outline-none placeholder:text-slate-400"
+              />
+
+              <button
+                type="submit"
+                className="mr-1 my-1 inline-flex items-center justify-center rounded-full bg-[#111433] px-4 text-[13px] font-semibold text-white transition-all duration-300 hover:bg-[#087895] active:scale-[0.98]"
+              >
+                Search
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div
+          className={`border-t border-slate-200 transition-all duration-500 ease-in-out xl:hidden ${menuOpen
               ? "max-h-[calc(100dvh-78px)] translate-y-0 overflow-y-auto overscroll-contain touch-pan-y py-4 opacity-100"
               : "max-h-0 -translate-y-2 overflow-hidden border-transparent py-0 opacity-0"
-          }`}
+            }`}
         >
           <div
-            className={`grid gap-2 pr-1 transition-all duration-500 ease-in-out ${
-              menuOpen ? "scale-100" : "scale-[0.98]"
-            }`}
+            className={`grid gap-2 pr-1 transition-all duration-500 ease-in-out ${menuOpen ? "scale-100" : "scale-[0.98]"
+              }`}
           >
             <MobileLink
               href={homeHref}
@@ -764,7 +836,7 @@ export default function PublicNavbar() {
               isExternal={cfpMenu?.isExternal}
               openInNewTab={cfpMenu?.openInNewTab}
               onClick={() => setMenuOpen(false)}
-              className="mt-2 inline-flex h-11 items-center justify-center rounded-full border border-[#111433] bg-[#111433] px-4 text-[14px] font-semibold text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#f5c84b] hover:bg-[#f5c84b] hover:text-[#111433] hover:shadow-md active:scale-[0.99]"
+              className="inline-flex h-11 items-center justify-center rounded-full border border-[#f5c84b] bg-[#f5c84b] px-4 text-[14px] font-extrabold text-[#07162b] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#ffd86b] hover:bg-[#ffd86b] hover:text-[#07162b] active:translate-y-0 active:scale-[0.99]"
             />
 
             <SmartLink
@@ -773,10 +845,10 @@ export default function PublicNavbar() {
               isExternal={submitMenu?.isExternal ?? true}
               openInNewTab={submitMenu?.openInNewTab ?? true}
               onClick={() => setMenuOpen(false)}
-              className="inline-flex h-11 items-center justify-center rounded-full bg-[#111433] px-4 text-[14px] font-semibold text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1e2557] hover:shadow-md active:scale-[0.99]"
+              className="inline-flex h-11 items-center justify-center rounded-full border border-[#40546f] bg-[#24364f] px-4 text-[14px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 hover:border-[#f5c84b]/80 hover:bg-[#2f4664] hover:text-[#f5c84b] active:translate-y-0 active:scale-[0.99]"
             />
 
-            <form
+            {/* <form
               onSubmit={handleSearch}
               className="mt-3 flex h-11 overflow-hidden rounded-full border border-slate-200 bg-slate-50 transition-all duration-300 focus-within:border-[#22b8e8]"
             >
@@ -793,7 +865,7 @@ export default function PublicNavbar() {
               >
                 Search
               </button>
-            </form>
+            </form> */}
           </div>
         </div>
       </Container>
@@ -855,18 +927,16 @@ function MobileGroup({
         <span>{title}</span>
         <span
           aria-hidden="true"
-          className={`text-[12px] leading-none transition-transform duration-300 ease-out ${
-            isOpen ? "rotate-180 text-[#087895]" : "rotate-0 text-slate-500"
-          }`}
+          className={`text-[12px] leading-none transition-transform duration-300 ease-out ${isOpen ? "rotate-180 text-[#087895]" : "rotate-0 text-slate-500"
+            }`}
         >
           ▼
         </span>
       </button>
 
       <div
-        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
-          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-        }`}
+        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+          }`}
       >
         <div className="min-h-0 overflow-hidden">
           <div className="grid gap-1 border-t border-slate-200 bg-slate-50 p-2">

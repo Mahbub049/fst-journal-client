@@ -10,29 +10,38 @@ import { PublicHomepageContent } from "@/services/publicHomepageService";
 
 type Props = {
   homepage?: PublicHomepageContent | null;
+  initialIssues?: Issue[];
 };
 
 const DEFAULT_COVER = "/images/cover.jpg";
 const HOME_ISSUE_LIMIT = 3;
 
-export default function RecentIssuesSection({ homepage }: Props) {
-  const [issues, setIssues] = useState<Issue[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function RecentIssuesSection({ homepage, initialIssues }: Props) {
+  const [issues, setIssues] = useState<Issue[]>(
+    Array.isArray(initialIssues) ? initialIssues.slice(0, HOME_ISSUE_LIMIT) : []
+  );
+  const [loading, setLoading] = useState(!initialIssues);
 
-  useEffect(() => {
-    const loadIssues = async () => {
-      try {
-        const data = await getRecentIssues();
-        setIssues(Array.isArray(data) ? data.slice(0, HOME_ISSUE_LIMIT) : []);
-      } catch (error) {
-        console.error("Failed to load recent issues:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+useEffect(() => {
+  if (initialIssues) {
+    setIssues(initialIssues.slice(0, HOME_ISSUE_LIMIT));
+    setLoading(false);
+    return;
+  }
 
-    loadIssues();
-  }, []);
+  const loadIssues = async () => {
+    try {
+      const data = await getRecentIssues();
+      setIssues(Array.isArray(data) ? data.slice(0, HOME_ISSUE_LIMIT) : []);
+    } catch (error) {
+      console.error("Failed to load recent issues:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  loadIssues();
+}, [initialIssues]);
 
   return (
     <MotionSection delay={0.08}>
@@ -62,11 +71,9 @@ export default function RecentIssuesSection({ homepage }: Props) {
           </Link>
         </div>
 
-        {loading ? (
-          <div className="relative mt-8 rounded-3xl border border-[#d9e4ea] bg-[#f1fafb] p-6 text-[14px] font-medium text-slate-600">
-            Loading recent issues...
-          </div>
-        ) : issues.length === 0 ? (
+{loading ? (
+  <RecentIssuesSkeleton />
+) : issues.length === 0 ? (
           <div className="relative mt-8 rounded-3xl border border-[#d9e4ea] bg-white/80 p-6 text-[14px] text-slate-500">
             No recent issues found.
           </div>
@@ -121,5 +128,28 @@ export default function RecentIssuesSection({ homepage }: Props) {
         )}
       </section>
     </MotionSection>
+  );
+}
+
+function RecentIssuesSkeleton() {
+  return (
+    <div className="relative mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div
+          key={index}
+          className="animate-pulse overflow-hidden rounded-[1.7rem] border border-[#d9e4ea] bg-white/94 shadow-[0_18px_50px_rgba(17,20,51,0.06)]"
+        >
+          <div className="aspect-[0.72] w-full bg-slate-200" />
+
+          <div className="p-5">
+            <div className="h-3 w-40 rounded-full bg-slate-200" />
+            <div className="mt-5 h-5 w-full rounded-full bg-slate-200" />
+            <div className="mt-3 h-5 w-3/4 rounded-full bg-slate-200" />
+            <div className="mt-5 h-4 w-2/3 rounded-full bg-slate-200" />
+            <div className="mt-7 h-9 w-28 rounded-full bg-slate-200" />
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }

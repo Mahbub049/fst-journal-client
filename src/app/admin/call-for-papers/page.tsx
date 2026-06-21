@@ -11,6 +11,7 @@ import {
   uploadAdminCallForPaperPdf,
 } from "@/services/callForPaperService";
 import { uploadMedia } from "@/services/mediaService";
+import { getBrowserFileOrigin } from "@/lib/apiBase";
 
 const defaultForm: CallForPaperContent = {
   invitationLabel: "Publication Invitation",
@@ -161,9 +162,7 @@ const createImportantDate = (order: number): ImportantDate => ({
   isActive: true,
 });
 
-const apiBaseUrl =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-const serverFileBaseUrl = apiBaseUrl.replace(/\/api\/?$/, "");
+const serverFileBaseUrl = getBrowserFileOrigin();
 
 const resolveUploadedFileUrl = (url: string) => {
   if (!url) return "#";

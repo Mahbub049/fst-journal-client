@@ -45,6 +45,7 @@ type ArticlePdfUploadResponse = {
   message: string;
   fileUrl: string;
   filename: string;
+  folder?: string;
 };
 
 export const getAdminArticles = async (params?: {
@@ -102,12 +103,14 @@ export const deleteAdminArticle = async (id: string) => {
 
 export const uploadAdminArticlePdf = async (payload: {
   file: File;
+  issueId: string;
   title?: string;
   slug?: string;
 }) => {
   const formData = new FormData();
 
   formData.append("file", payload.file);
+  formData.append("issueId", payload.issueId);
   formData.append("title", payload.title || payload.file.name);
   formData.append("slug", payload.slug || "");
 
