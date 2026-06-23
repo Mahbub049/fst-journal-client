@@ -1,6 +1,7 @@
 import Container from "@/components/common/Container";
 import PublicLayout from "@/components/layout/PublicLayout";
 import Link from "next/link";
+import CallForPapersPdfViewer from "@/components/call-for-papers/CallForPapersPdfViewer";
 import { getServerApiBaseUrl } from "@/lib/apiBase";
 
 const apiBaseUrl = getServerApiBaseUrl();
@@ -258,7 +259,6 @@ export default async function CallForPapersPage() {
     .sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
 
   const pdfUrl = content.pdfUrl || fallbackContent.pdfUrl;
-  const pdfViewerSrc = `${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH&zoom=page-width`;
 
   return (
     <PublicLayout>
@@ -288,32 +288,11 @@ export default async function CallForPapersPage() {
                   </div>
                 </div>
 
-                <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm">
-                  <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-3">
-                    <div>
-                      <p className="text-[13px] font-semibold text-slate-900">
-                        {content.pdfTitle}
-                      </p>
-                      <p className="text-[12px] text-slate-500">
-                        {content.pdfSubtitle}
-                      </p>
-                    </div>
-
-                    <a
-                      href={pdfUrl}
-                      target="_blank"
-                      className="rounded-full border border-slate-300 bg-white px-4 py-2 text-[12px] font-semibold text-slate-700 hover:border-[#111433]/40 hover:text-[#111433]"
-                    >
-                      View Fullscreen
-                    </a>
-                  </div>
-
-                  <iframe
-                    src={pdfViewerSrc}
-                    title="Call for Papers PDF"
-                    className="block aspect-[210/297] w-full bg-white md:aspect-auto md:h-[720px]"
-                  />
-                </div>
+                <CallForPapersPdfViewer
+                  pdfUrl={pdfUrl}
+                  pdfTitle={content.pdfTitle}
+                  pdfSubtitle={content.pdfSubtitle}
+                />
               </div>
 
               <aside className="space-y-6 lg:hidden">

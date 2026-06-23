@@ -219,8 +219,18 @@ html {
 
   .journal-gradient {
     background:
-      radial-gradient(circle at top left, rgba(34, 184, 232, 0.28), transparent 32%),
-      linear-gradient(135deg, #111433 0%, #1e2557 55%, #0b102b 100%);
+      radial-gradient(circle at 9% 22%, rgba(34, 184, 232, 0.32), transparent 28%),
+      radial-gradient(circle at 84% 18%, rgba(86, 111, 219, 0.24), transparent 30%),
+      radial-gradient(circle at 58% 100%, rgba(245, 200, 75, 0.13), transparent 28%),
+      linear-gradient(120deg, #071d35 0%, #171e52 48%, #0a0d27 100%);
+  }
+
+  .journal-hero-grid {
+    background-image:
+      linear-gradient(rgba(125, 228, 238, 0.055) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(125, 228, 238, 0.055) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(circle at 50% 45%, #000 0 56%, transparent 88%);
   }
 
   .journal-gold-line {
@@ -289,5 +299,61 @@ html {
 
   100% {
     transform: translateX(320%);
+  }
+}
+@layer components {
+  .journal-network-bg {
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(125, 228, 238, 0.9) 0 1.45px, transparent 2px),
+      radial-gradient(circle at 23% 61%, rgba(125, 228, 238, 0.62) 0 1.35px, transparent 2px),
+      radial-gradient(circle at 38% 26%, rgba(245, 200, 75, 0.58) 0 1.35px, transparent 2px),
+      radial-gradient(circle at 56% 47%, rgba(125, 228, 238, 0.52) 0 1.35px, transparent 2px),
+      radial-gradient(circle at 72% 24%, rgba(125, 228, 238, 0.66) 0 1.35px, transparent 2px),
+      radial-gradient(circle at 88% 62%, rgba(245, 200, 75, 0.46) 0 1.35px, transparent 2px),
+      linear-gradient(118deg, transparent 0 15%, rgba(125, 228, 238, 0.16) 15.12%, transparent 15.42% 100%),
+      linear-gradient(28deg, transparent 0 30%, rgba(125, 228, 238, 0.12) 30.12%, transparent 30.42% 100%),
+      linear-gradient(148deg, transparent 0 49%, rgba(245, 200, 75, 0.1) 49.12%, transparent 49.42% 100%),
+      linear-gradient(72deg, transparent 0 66%, rgba(125, 228, 238, 0.11) 66.12%, transparent 66.42% 100%);
+    background-size:
+      410px 250px,
+      470px 300px,
+      520px 300px,
+      560px 340px,
+      480px 280px,
+      540px 320px,
+      340px 220px,
+      400px 250px,
+      500px 300px,
+      460px 270px;
+    background-position:
+      10px 0,
+      90px 36px,
+      150px 16px,
+      42px 86px,
+      130px 62px,
+      190px 26px,
+      0 0,
+      52px 24px,
+      24px 80px,
+      84px 34px;
+    mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+  }
+
+  .journal-announcement-track {
+    animation: journalMarqueeLeftToRight 32s linear infinite;
+  }
+
+  .journal-announcement-track:hover {
+    animation-play-state: paused;
+  }
+}
+
+@keyframes journalMarqueeLeftToRight {
+  from {
+    transform: translateX(-50%);
+  }
+
+  to {
+    transform: translateX(0);
   }
 }

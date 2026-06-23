@@ -12,6 +12,7 @@ import {
 import AdminLayout from "@/components/admin/AdminLayout";
 import {
   getAdminSiteSettings,
+  AnnouncementItem,
   SiteSettingsContent,
   SocialLink,
   updateAdminSiteSettings,
@@ -38,11 +39,40 @@ const emptySettings: SiteSettingsContent = {
   language: "English",
   publicationFrequency: "Annual",
 
+  announcementItems: [
+    {
+      text: "Welcome to the official website of Journal of FST",
+      order: 1,
+      isActive: true,
+    },
+    {
+      text: "Call for Papers is now open",
+      order: 2,
+      isActive: true,
+    },
+    {
+      text: "Submit your research manuscript through the online submission system",
+      order: 3,
+      isActive: true,
+    },
+    {
+      text: "Explore current and archived issues of the journal",
+      order: 4,
+      isActive: true,
+    },
+  ],
+
   usefulLinks: [],
   socialLinks: [],
 
   isPublished: true,
 };
+
+const createAnnouncementItem = (order: number): AnnouncementItem => ({
+  text: "",
+  order,
+  isActive: true,
+});
 
 const createUsefulLink = (order: number): UsefulLink => ({
   label: "",
@@ -74,6 +104,7 @@ export default function AdminSettingsPage() {
       setForm({
         ...emptySettings,
         ...data,
+        announcementItems: data.announcementItems || emptySettings.announcementItems,
         usefulLinks: data.usefulLinks || [],
         socialLinks: data.socialLinks || [],
       });
@@ -96,6 +127,40 @@ export default function AdminSettingsPage() {
       ...prev,
       [field]: value,
     }));
+  };
+
+  const updateAnnouncementItem = (
+    index: number,
+    field: keyof AnnouncementItem,
+    value: any
+  ) => {
+    const updated = [...form.announcementItems];
+
+    updated[index] = {
+      ...updated[index],
+      [field]: value,
+    };
+
+    updateField("announcementItems", updated);
+  };
+
+  const addAnnouncementItem = () => {
+    updateField("announcementItems", [
+      ...form.announcementItems,
+      createAnnouncementItem(form.announcementItems.length + 1),
+    ]);
+  };
+
+  const removeAnnouncementItem = (index: number) => {
+    updateField(
+      "announcementItems",
+      form.announcementItems
+        .filter((_, itemIndex) => itemIndex !== index)
+        .map((item, itemIndex) => ({
+          ...item,
+          order: itemIndex + 1,
+        }))
+    );
   };
 
   const updateUsefulLink = (
@@ -175,6 +240,10 @@ export default function AdminSettingsPage() {
 
       const payload: SiteSettingsContent = {
         ...form,
+        announcementItems: form.announcementItems.map((item, index) => ({
+          ...item,
+          order: index + 1,
+        })),
         usefulLinks: form.usefulLinks.map((item, index) => ({
           ...item,
           order: index + 1,
@@ -190,6 +259,7 @@ export default function AdminSettingsPage() {
       setForm({
         ...emptySettings,
         ...updated,
+        announcementItems: updated.announcementItems || emptySettings.announcementItems,
         usefulLinks: updated.usefulLinks || [],
         socialLinks: updated.socialLinks || [],
       });
@@ -214,11 +284,10 @@ export default function AdminSettingsPage() {
                 Site Settings
               </p>
               <h1 className="mt-2 text-2xl font-bold text-slate-950">
-                Footer CMS
+                Website Settings CMS
               </h1>
               <p className="mt-2 max-w-3xl text-sm text-slate-600">
-                Manage the public footer identity, description, publisher block,
-                grouped links, contact details, and copyright text.
+                Manage the announcement ticker, public footer identity, publisher block, grouped links, contact details, and copyright text.
               </p>
             </div>
 
@@ -249,6 +318,78 @@ export default function AdminSettingsPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
+            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-950">
+                    Journal Announcement
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Control the scrolling announcement text shown between the journal hero and the navbar.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={addAnnouncementItem}
+                  className="inline-flex w-fit items-center gap-2 rounded-xl bg-[#005A78] px-4 py-2.5 text-sm font-bold text-white"
+                >
+                  <Link2 className="h-4 w-4" />
+                  Add Text
+                </button>
+              </div>
+
+              <div className="mt-5 space-y-4">
+                {form.announcementItems.map((item, index) => (
+                  <div
+                    key={item._id || index}
+                    className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                  >
+                    <div className="grid gap-4 lg:grid-cols-[1fr_auto]">
+                      <input
+                        value={item.text}
+                        onChange={(event) =>
+                          updateAnnouncementItem(index, "text", event.target.value)
+                        }
+                        placeholder="Example: Call for Papers is now open"
+                        className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => removeAnnouncementItem(index)}
+                        className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700"
+                        aria-label="Remove announcement text"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <label className="mt-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={item.isActive}
+                        onChange={(event) =>
+                          updateAnnouncementItem(
+                            index,
+                            "isActive",
+                            event.target.checked
+                          )
+                        }
+                      />
+                      Active
+                    </label>
+                  </div>
+                ))}
+
+                {!form.announcementItems.length && (
+                  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm font-semibold text-slate-500">
+                    No announcement text added. Add at least one active text to show the scrolling announcement bar.
+                  </div>
+                )}
+              </div>
+            </section>
+
             <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-bold text-slate-950">
                 Footer Identity

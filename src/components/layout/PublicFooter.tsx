@@ -28,6 +28,28 @@ const fallbackSettings: SiteSettingsContent = {
   publishingModel: "Hybrid",
   language: "English",
   publicationFrequency: "Annual",
+  announcementItems: [
+    {
+      text: "Welcome to the official website of Journal of FST",
+      order: 1,
+      isActive: true,
+    },
+    {
+      text: "Call for Papers is now open",
+      order: 2,
+      isActive: true,
+    },
+    {
+      text: "Submit your research manuscript through the online submission system",
+      order: 3,
+      isActive: true,
+    },
+    {
+      text: "Explore current and archived issues of the journal",
+      order: 4,
+      isActive: true,
+    },
+  ],
   usefulLinks: [
     {
       label: "About the Journal",
