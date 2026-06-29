@@ -240,7 +240,12 @@ const scrollToHashTarget = (
 
   const navbarHeight =
     document.querySelector<HTMLElement>(".journal-navbar")?.offsetHeight || 0;
-  const extraGap = window.innerWidth < 768 ? 18 : 24;
+  const shouldAlignDirectlyUnderNavbar = targetId === "page-start";
+  const extraGap = shouldAlignDirectlyUnderNavbar
+    ? 0
+    : window.innerWidth < 768
+      ? 18
+      : 24;
   const targetTop =
     targetElement.getBoundingClientRect().top +
     window.scrollY -

@@ -2,7 +2,12 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import api from "@/lib/api";
-import { removeAdminToken, setAdminUser } from "@/lib/auth";
+import {
+  getAdminToken,
+  removeAdminToken,
+  setAdminUser,
+  startAdminInactivityWatcher,
+} from "@/lib/auth";
 import AdminSidebar from "./AdminSidebar";
 import AdminTopbar from "./AdminTopbar";
 
@@ -27,7 +32,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }, []);
 
   useEffect(() => {
+    const redirectToLogin = () => {
+      removeAdminToken();
+      window.location.replace("/admin/login");
+    };
+
     const verifyAdmin = async () => {
+      const token = getAdminToken();
+
+      if (!token) {
+        redirectToLogin();
+        return;
+      }
+
       try {
         const { data } = await api.get("/auth/me");
 
@@ -37,12 +54,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
         setChecking(false);
       } catch {
-        removeAdminToken();
-        window.location.href = "/admin/login";
+        redirectToLogin();
       }
     };
 
+    const stopInactivityWatcher = startAdminInactivityWatcher(redirectToLogin);
+
     verifyAdmin();
+
+    return stopInactivityWatcher;
   }, []);
 
   const handleSidebarToggle = () => {

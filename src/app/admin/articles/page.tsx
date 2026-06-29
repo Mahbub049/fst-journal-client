@@ -28,6 +28,8 @@ import {
   deleteAdminArticle,
   getAdminArticles,
   reorderAdminArticles,
+  syncAdminAllArticleCitations,
+  syncAdminArticleCitation,
   updateAdminArticle,
   uploadAdminArticlePdf,
 } from "@/services/articleAdminService";
@@ -55,6 +57,7 @@ type ArticleFormState = {
   views: string;
   downloads: string;
   citations: string;
+  citationSyncEnabled: boolean;
 
   status: ArticleStatus;
   articleType: string;
@@ -82,6 +85,7 @@ const emptyForm: ArticleFormState = {
   views: "0",
   downloads: "0",
   citations: "0",
+  citationSyncEnabled: true,
 
   status: "published",
   articleType: "Research Article",
@@ -146,6 +150,29 @@ const getIssueObject = (
 
   return issues.find((issue) => issue._id === issueId) || null;
 };
+const formatSyncDate = (value?: string | null) => {
+  if (!value) return "Never synced";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "Never synced";
+
+  return date.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const getCitationBadgeClass = (status?: Article["citationSyncStatus"]) => {
+  if (status === "success") return "bg-emerald-50 text-emerald-700";
+  if (status === "failed") return "bg-rose-50 text-rose-700";
+  if (status === "skipped") return "bg-amber-50 text-amber-700";
+  return "bg-slate-100 text-slate-600";
+};
+
 
 export default function AdminArticlesPage() {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -164,6 +191,8 @@ export default function AdminArticlesPage() {
   const [saving, setSaving] = useState(false);
   const [uploadingPdf, setUploadingPdf] = useState(false);
   const [reordering, setReordering] = useState(false);
+  const [syncingAllCitations, setSyncingAllCitations] = useState(false);
+  const [syncingArticleId, setSyncingArticleId] = useState<string | null>(null);
   const [draggedArticleId, setDraggedArticleId] = useState<string | null>(null);
 
   const [message, setMessage] = useState("");
@@ -261,6 +290,7 @@ export default function AdminArticlesPage() {
       views: String(article.views || 0),
       downloads: String(article.downloads || 0),
       citations: String(article.citations || 0),
+      citationSyncEnabled: article.citationSyncEnabled ?? true,
 
       status: article.status || "published",
       articleType: article.articleType || "Research Article",
@@ -293,6 +323,8 @@ export default function AdminArticlesPage() {
       views: Number(form.views || 0),
       downloads: Number(form.downloads || 0),
       citations: Number(form.citations || 0),
+      citationSyncEnabled: form.citationSyncEnabled,
+      citationSource: form.citationSyncEnabled ? undefined : "manual",
 
       status: form.status,
       articleType: form.articleType.trim(),
@@ -412,6 +444,11 @@ export default function AdminArticlesPage() {
         views: Number(article.views || 0),
         downloads: Number(article.downloads || 0),
         citations: Number(article.citations || 0),
+        citationSyncEnabled: article.citationSyncEnabled ?? true,
+        citationSource: article.citationSource || "manual",
+        citationSourceId: article.citationSourceId || "",
+        citationSyncStatus: article.citationSyncStatus || "idle",
+        citationSyncMessage: article.citationSyncMessage || "",
 
         status: article.status || "published",
         articleType: article.articleType || "Research Article",
@@ -520,6 +557,78 @@ export default function AdminArticlesPage() {
     await fetchArticles();
   };
 
+  const handleSyncAllCitations = async () => {
+    try {
+      setSyncingAllCitations(true);
+      setMessage("Syncing citations from OpenAlex/Crossref. Please wait...");
+
+      const response = await syncAdminAllArticleCitations();
+
+      if (Array.isArray(response.data)) {
+        setArticles(response.data);
+      } else {
+        await fetchArticles();
+      }
+
+      const summary = response.sync;
+      setMessage(
+        summary
+          ? `Citation sync completed. Success: ${summary.success || 0}, Failed: ${summary.failed || 0}, Skipped: ${summary.skipped || 0}, Total increase: ${summary.totalIncrease || 0}.`
+          : response.message || "Citation sync completed."
+      );
+    } catch (error: any) {
+      setMessage(error?.response?.data?.message || "Failed to sync citations.");
+    } finally {
+      setSyncingAllCitations(false);
+    }
+  };
+
+  const handleSyncOneCitation = async (article: Article) => {
+    if (!article.doi?.trim()) {
+      setMessage("Add a DOI before syncing citations for this article.");
+      return;
+    }
+
+    try {
+      setSyncingArticleId(article._id);
+      setMessage(`Syncing citation count for "${article.title}"...`);
+
+      const response = await syncAdminArticleCitation(article._id);
+
+      if (response.data && !Array.isArray(response.data)) {
+        setArticles((prev) =>
+          prev.map((item) =>
+            item._id === article._id ? (response.data as Article) : item
+          )
+        );
+
+        if (editingId === article._id) {
+          setForm((prev) => ({
+            ...prev,
+            citations: String((response.data as Article).citations || 0),
+            citationSyncEnabled:
+              (response.data as Article).citationSyncEnabled ?? true,
+          }));
+        }
+      } else {
+        await fetchArticles();
+      }
+
+      const sync = response.sync?.results?.[0];
+      setMessage(
+        sync
+          ? `${sync.title}: citations ${sync.previousCitations} → ${sync.citations}.`
+          : response.message || "Citation sync completed."
+      );
+    } catch (error: any) {
+      setMessage(
+        error?.response?.data?.message || "Failed to sync this article citation."
+      );
+    } finally {
+      setSyncingArticleId(null);
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -539,8 +648,24 @@ export default function AdminArticlesPage() {
               </p>
             </div>
 
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-              Local PDF upload enabled
+            <div className="flex flex-wrap gap-2">
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+                Local PDF upload enabled
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSyncAllCitations}
+                disabled={syncingAllCitations}
+                className="inline-flex items-center gap-2 rounded-2xl border border-[#005A78]/20 bg-[#005A78] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#064963] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {syncingAllCitations ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                {syncingAllCitations ? "Syncing Citations..." : "Sync All Citations"}
+              </button>
             </div>
           </div>
         </div>
@@ -778,7 +903,7 @@ export default function AdminArticlesPage() {
               {/* Article URL field intentionally hidden from the admin UI.
                   The articleUrl value is still kept in state and payload for old data/backward compatibility. */}
 
-              <div>
+              <div className="rounded-2xl border border-[#005A78]/10 bg-[#005A78]/[0.03] p-4">
                 <label className="mb-1.5 block text-sm font-semibold text-slate-700">
                   DOI
                 </label>
@@ -790,9 +915,29 @@ export default function AdminArticlesPage() {
                       doi: event.target.value,
                     }))
                   }
-                  placeholder="https://doi.org/..."
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
+                  placeholder="https://doi.org/... or 10.xxxx/jfst.xxxx"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
                 />
+
+                <label className="mt-3 flex items-start gap-3 text-sm font-semibold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={form.citationSyncEnabled}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        citationSyncEnabled: event.target.checked,
+                      }))
+                    }
+                    className="mt-1 h-4 w-4"
+                  />
+                  <span>
+                    Auto-sync citation count from DOI
+                    <span className="block text-xs font-medium leading-5 text-slate-500">
+                      The server checks OpenAlex first and Crossref as fallback. Turn this off only when you want to keep a manual citation number.
+                    </span>
+                  </span>
+                </label>
               </div>
 
               <div>
@@ -854,14 +999,20 @@ export default function AdminArticlesPage() {
                   <input
                     type="number"
                     value={form.citations}
+                    disabled={form.citationSyncEnabled}
                     onChange={(event) =>
                       setForm((prev) => ({
                         ...prev,
                         citations: event.target.value,
                       }))
                     }
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10 disabled:bg-slate-50 disabled:text-slate-500"
                   />
+                  <p className="mt-1 text-xs text-slate-500">
+                    {form.citationSyncEnabled
+                      ? "Auto mode: value updates from DOI sync."
+                      : "Manual mode: edit this number yourself."}
+                  </p>
                 </div>
               </div>
 
@@ -1192,7 +1343,38 @@ export default function AdminArticlesPage() {
                             <span>Views: {article.views || 0}</span>
                             <span>Downloads: {article.downloads || 0}</span>
                             <span>Citations: {article.citations || 0}</span>
+                            <span>Source: {article.citationSource || "manual"}</span>
+                            <span>Last synced: {formatSyncDate(article.citationLastSyncedAt)}</span>
                           </div>
+
+                          <div className="mt-2 flex flex-wrap gap-2 text-xs font-bold">
+                            <span
+                              className={[
+                                "rounded-full px-3 py-1",
+                                getCitationBadgeClass(article.citationSyncStatus),
+                              ].join(" ")}
+                            >
+                              Citation Sync: {article.citationSyncStatus || "idle"}
+                            </span>
+                            <span
+                              className={[
+                                "rounded-full px-3 py-1",
+                                article.citationSyncEnabled === false
+                                  ? "bg-amber-50 text-amber-700"
+                                  : "bg-emerald-50 text-emerald-700",
+                              ].join(" ")}
+                            >
+                              {article.citationSyncEnabled === false
+                                ? "Manual citation mode"
+                                : "Auto citation mode"}
+                            </span>
+                          </div>
+
+                          {article.citationSyncMessage ? (
+                            <p className="mt-2 text-xs leading-5 text-slate-500">
+                              {article.citationSyncMessage}
+                            </p>
+                          ) : null}
 
                           {article.doi && (
                             <div className="mt-3 rounded-xl bg-white px-4 py-3 text-xs font-semibold text-slate-500">
@@ -1237,6 +1419,21 @@ export default function AdminArticlesPage() {
                           title="Move down"
                         >
                           <ArrowDown className="h-4 w-4" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSyncOneCitation(article)}
+                          disabled={!article.doi || syncingArticleId === article._id}
+                          className="inline-flex items-center gap-2 rounded-xl border border-[#005A78]/20 bg-[#005A78]/10 px-4 py-2.5 text-sm font-bold text-[#005A78] transition hover:bg-[#005A78]/15 disabled:cursor-not-allowed disabled:opacity-45"
+                          title={article.doi ? "Sync citation from DOI" : "Add DOI first"}
+                        >
+                          {syncingArticleId === article._id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-4 w-4" />
+                          )}
+                          Sync Citation
                         </button>
 
                         {article.isPublished && getArticlePublicHref(article) ? (

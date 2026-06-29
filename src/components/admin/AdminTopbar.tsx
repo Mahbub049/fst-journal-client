@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   UserCircle2,
 } from "lucide-react";
+import api from "@/lib/api";
 import { getAdminUser, logoutAdmin } from "@/lib/auth";
 
 export default function AdminTopbar() {
@@ -31,9 +32,15 @@ export default function AdminTopbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
-    logoutAdmin();
-    window.location.href = "/admin/login";
+  const handleLogout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch {
+      // Session may already be expired. Clear local admin data either way.
+    } finally {
+      logoutAdmin();
+      window.location.href = "/admin/login";
+    }
   };
 
   return (

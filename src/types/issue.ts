@@ -52,8 +52,14 @@ export type Article = {
   views?: number;
   downloads?: number;
 
-  // Needed for homepage tabs
+  // Needed for homepage tabs and citation sync
   citations?: number;
+  citationSyncEnabled?: boolean;
+  citationSource?: "manual" | "OpenAlex" | "Crossref";
+  citationSourceId?: string;
+  citationLastSyncedAt?: string | null;
+  citationSyncStatus?: "idle" | "success" | "failed" | "skipped";
+  citationSyncMessage?: string;
   status?: "published" | "inPress";
   articleType?: string;
   accessType?: string;

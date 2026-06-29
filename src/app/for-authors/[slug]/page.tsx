@@ -447,7 +447,7 @@ export default async function ForAuthorsInnerPage({
                     <Link
                       key={link.href}
                       href={`${link.href}#page-start`}
-                      scroll={true}
+                      scroll={false}
                       className={`rounded-2xl px-4 py-3 text-[14px] font-medium transition ${
                         link.href.endsWith(slug)
                           ? "bg-[#111433] text-white"

@@ -19,6 +19,7 @@ import {
   UserRoundCog,
   Users,
 } from "lucide-react";
+import api from "@/lib/api";
 import { getAdminUser, logoutAdmin } from "@/lib/auth";
 
 type SidebarItem = {
@@ -125,9 +126,15 @@ export default function AdminSidebar({
   const pathname = usePathname();
   const admin = getAdminUser();
 
-  const handleLogout = () => {
-    logoutAdmin();
-    window.location.href = "/admin/login";
+  const handleLogout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch {
+      // Session may already be expired. Clear local admin data either way.
+    } finally {
+      logoutAdmin();
+      window.location.href = "/admin/login";
+    }
   };
 
   const visibleSections = sidebarSections

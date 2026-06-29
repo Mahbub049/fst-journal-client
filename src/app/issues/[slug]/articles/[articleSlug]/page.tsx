@@ -144,8 +144,7 @@ export default async function ArticleDetailsPage({
 
                   <InfoLine
                     label="User Activity"
-                    value={`Views: ${article.views ?? "-"}, Downloads: ${article.downloads ?? "-"
-                      }`}
+                    value={`Views: ${article.views ?? "-"}, Downloads: ${article.downloads ?? "-"}, Citations: ${article.citations ?? "-"}`}
                   />
                 </div>
               </div>
@@ -259,6 +258,10 @@ export default async function ArticleDetailsPage({
                   <SideInfo
                     label="Downloads"
                     value={String(article.downloads ?? "-")}
+                  />
+                  <SideInfo
+                    label="Citations"
+                    value={String(article.citations ?? "-")}
                   />
                 </div>
               </div>

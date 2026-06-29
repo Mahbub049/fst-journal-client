@@ -21,6 +21,11 @@ export type ArticlePayload = {
   views: number;
   downloads: number;
   citations: number;
+  citationSyncEnabled: boolean;
+  citationSource?: "manual" | "OpenAlex" | "Crossref";
+  citationSourceId?: string;
+  citationSyncStatus?: "idle" | "success" | "failed" | "skipped";
+  citationSyncMessage?: string;
 
   status: ArticleStatus;
   articleType: string;
@@ -46,6 +51,32 @@ type ArticlePdfUploadResponse = {
   fileUrl: string;
   filename: string;
   folder?: string;
+};
+
+type CitationSyncSummary = {
+  total?: number;
+  success?: number;
+  failed?: number;
+  skipped?: number;
+  totalIncrease?: number;
+  results?: Array<{
+    articleId: string;
+    title: string;
+    doi: string;
+    previousCitations: number;
+    citations: number;
+    increasedBy: number;
+    source: string;
+    status: string;
+    message: string;
+  }>;
+};
+
+type CitationSyncResponse = {
+  success: boolean;
+  message: string;
+  data: Article | Article[];
+  sync?: CitationSyncSummary;
 };
 
 export const getAdminArticles = async (params?: {
@@ -137,4 +168,21 @@ export const reorderAdminArticles = async (payload: {
   );
 
   return data.data || [];
+};
+
+
+export const syncAdminArticleCitation = async (id: string) => {
+  const { data } = await api.post<CitationSyncResponse>(
+    `/articles/admin/${id}/sync-citation`
+  );
+
+  return data;
+};
+
+export const syncAdminAllArticleCitations = async () => {
+  const { data } = await api.post<CitationSyncResponse>(
+    "/articles/admin/sync-citations"
+  );
+
+  return data;
 };

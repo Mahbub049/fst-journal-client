@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -20,6 +21,9 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const cleanMessages = () => {
     setError("");
@@ -54,7 +58,7 @@ export default function AdminLoginPage() {
     } catch (err: any) {
       setError(
         err?.response?.data?.message ||
-          "Login failed. Please check your email and password."
+        "Login failed. Please check your email and password."
       );
     } finally {
       setLoading(false);
@@ -82,7 +86,7 @@ export default function AdminLoginPage() {
     } catch (err: any) {
       setError(
         err?.response?.data?.message ||
-          "OTP verification failed. Please try again."
+        "OTP verification failed. Please try again."
       );
     } finally {
       setLoading(false);
@@ -109,7 +113,7 @@ export default function AdminLoginPage() {
     } catch (err: any) {
       setError(
         err?.response?.data?.message ||
-          "Password reset OTP could not be sent. Please try again."
+        "Password reset OTP could not be sent. Please try again."
       );
     } finally {
       setLoading(false);
@@ -159,7 +163,7 @@ export default function AdminLoginPage() {
     } catch (err: any) {
       setError(
         err?.response?.data?.message ||
-          "Password reset failed. Please check the OTP and try again."
+        "Password reset failed. Please check the OTP and try again."
       );
     } finally {
       setLoading(false);
@@ -193,7 +197,7 @@ export default function AdminLoginPage() {
 
   const stepTitle =
     step === "credentials"
-      ? "Welcome back"
+      ? "Welcome!"
       : step === "loginOtp"
         ? "Verify OTP"
         : step === "forgotEmail"
@@ -202,7 +206,7 @@ export default function AdminLoginPage() {
 
   const stepDescription =
     step === "credentials"
-      ? "Enter your admin email and password. A login OTP will be sent for secure access."
+      ? "Enter your email and password. A login OTP will be sent for secure access."
       : step === "loginOtp"
         ? "Enter the 6-digit OTP sent to the admin email address."
         : step === "forgotEmail"
@@ -386,15 +390,26 @@ export default function AdminLoginPage() {
                       </button>
                     </div>
 
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      className="h-[52px] w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-[#005A78] focus:bg-white focus:ring-4 focus:ring-[#005A78]/10"
-                      placeholder="Enter password"
-                      autoComplete="new-password"
-                      required
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                        className="h-[52px] w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 pr-12 text-sm outline-none transition placeholder:text-slate-400 focus:border-[#005A78] focus:bg-white focus:ring-4 focus:ring-[#005A78]/10"
+                        placeholder="Enter password"
+                        autoComplete="new-password"
+                        required
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-slate-400 transition hover:text-[#005A78]"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </div>
 
                   <button
@@ -413,7 +428,7 @@ export default function AdminLoginPage() {
                   className="space-y-5"
                   autoComplete="off"
                 >
-                  <div>
+                  {/* <div>
                     <label className="mb-2 block text-sm font-semibold text-slate-700">
                       Admin Email
                     </label>
@@ -423,7 +438,7 @@ export default function AdminLoginPage() {
                       className="h-[52px] w-full rounded-2xl border border-slate-200 bg-slate-100 px-4 text-sm text-slate-600 outline-none"
                       readOnly
                     />
-                  </div>
+                  </div> */}
 
                   <div>
                     <label className="mb-2 block text-sm font-semibold text-slate-700">
@@ -538,32 +553,54 @@ export default function AdminLoginPage() {
                     <label className="mb-2 block text-sm font-semibold text-slate-700">
                       New Password
                     </label>
-                    <input
-                      type="password"
-                      value={newPassword}
-                      onChange={(event) => setNewPassword(event.target.value)}
-                      className="h-[52px] w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-[#005A78] focus:bg-white focus:ring-4 focus:ring-[#005A78]/10"
-                      placeholder="Enter new password"
-                      autoComplete="new-password"
-                      minLength={6}
-                      required
-                    />
+                    <div className="relative">
+                      <input
+                        type={showNewPassword ? "text" : "password"}
+                        value={newPassword}
+                        onChange={(event) => setNewPassword(event.target.value)}
+                        className="h-[52px] w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 pr-12 text-sm outline-none transition placeholder:text-slate-400 focus:border-[#005A78] focus:bg-white focus:ring-4 focus:ring-[#005A78]/10"
+                        placeholder="Enter new password"
+                        autoComplete="new-password"
+                        minLength={6}
+                        required
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword((prev) => !prev)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-slate-400 transition hover:text-[#005A78]"
+                        aria-label={showNewPassword ? "Hide new password" : "Show new password"}
+                      >
+                        {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </div>
 
                   <div>
                     <label className="mb-2 block text-sm font-semibold text-slate-700">
                       Confirm Password
                     </label>
-                    <input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(event) => setConfirmPassword(event.target.value)}
-                      className="h-[52px] w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-[#005A78] focus:bg-white focus:ring-4 focus:ring-[#005A78]/10"
-                      placeholder="Confirm new password"
-                      autoComplete="new-password"
-                      minLength={6}
-                      required
-                    />
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(event) => setConfirmPassword(event.target.value)}
+                        className="h-[52px] w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 pr-12 text-sm outline-none transition placeholder:text-slate-400 focus:border-[#005A78] focus:bg-white focus:ring-4 focus:ring-[#005A78]/10"
+                        placeholder="Confirm new password"
+                        autoComplete="new-password"
+                        minLength={6}
+                        required
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword((prev) => !prev)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-slate-400 transition hover:text-[#005A78]"
+                        aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                      >
+                        {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </div>
 
                   <button
