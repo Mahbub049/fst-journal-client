@@ -61,13 +61,21 @@ type SiteSettingsResponse = {
 };
 
 export const getPublicSiteSettings = async () => {
-  const { data } = await api.get<SiteSettingsResponse>("/site-settings");
+  const { data } = await api.get<SiteSettingsResponse>("/site-settings", {
+    headers: { "Cache-Control": "no-cache" },
+    params: { _t: Date.now() },
+  });
+
   return data.data;
 };
 
 export const getAdminSiteSettings = async () => {
   const { data } = await api.get<SiteSettingsResponse>(
-    "/site-settings/admin"
+    "/site-settings/admin",
+    {
+      headers: { "Cache-Control": "no-cache" },
+      params: { _t: Date.now() },
+    }
   );
 
   return data.data;
@@ -78,7 +86,11 @@ export const updateAdminSiteSettings = async (
 ) => {
   const { data } = await api.put<SiteSettingsResponse>(
     "/site-settings/admin",
-    payload
+    payload,
+    {
+      headers: { "Cache-Control": "no-cache" },
+      params: { _t: Date.now() },
+    }
   );
 
   return data.data;
