@@ -20,6 +20,7 @@ export type SocialLink = {
 export type AnnouncementItem = {
   _id?: string;
   text: string;
+  url?: string;
   order: number;
   isActive: boolean;
 };
@@ -45,6 +46,7 @@ export type SiteSettingsContent = {
   publicationFrequency: string;
 
   announcementItems: AnnouncementItem[];
+  announcementSpeedSeconds: number;
 
   usefulLinks: UsefulLink[];
   socialLinks: SocialLink[];

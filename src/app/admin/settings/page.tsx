@@ -42,25 +42,30 @@ const emptySettings: SiteSettingsContent = {
   announcementItems: [
     {
       text: "Welcome to the official website of Journal of FST",
+      url: "",
       order: 1,
       isActive: true,
     },
     {
       text: "Call for Papers is now open",
+      url: "/call-for-papers",
       order: 2,
       isActive: true,
     },
     {
       text: "Submit your research manuscript through the online submission system",
+      url: "/submit-manuscript-portal",
       order: 3,
       isActive: true,
     },
     {
       text: "Explore current and archived issues of the journal",
+      url: "/issues/archive",
       order: 4,
       isActive: true,
     },
   ],
+  announcementSpeedSeconds: 100,
 
   usefulLinks: [],
   socialLinks: [],
@@ -70,6 +75,7 @@ const emptySettings: SiteSettingsContent = {
 
 const createAnnouncementItem = (order: number): AnnouncementItem => ({
   text: "",
+  url: "",
   order,
   isActive: true,
 });
@@ -105,6 +111,8 @@ export default function AdminSettingsPage() {
         ...emptySettings,
         ...data,
         announcementItems: data.announcementItems || emptySettings.announcementItems,
+        announcementSpeedSeconds:
+          data.announcementSpeedSeconds || emptySettings.announcementSpeedSeconds,
         usefulLinks: data.usefulLinks || [],
         socialLinks: data.socialLinks || [],
       });
@@ -242,8 +250,14 @@ export default function AdminSettingsPage() {
         ...form,
         announcementItems: form.announcementItems.map((item, index) => ({
           ...item,
+          text: item.text.trim(),
+          url: item.url?.trim() || "",
           order: index + 1,
         })),
+        announcementSpeedSeconds: Math.min(
+          Math.max(Number(form.announcementSpeedSeconds) || 100, 10),
+          300
+        ),
         usefulLinks: form.usefulLinks.map((item, index) => ({
           ...item,
           order: index + 1,
@@ -260,6 +274,8 @@ export default function AdminSettingsPage() {
         ...emptySettings,
         ...updated,
         announcementItems: updated.announcementItems || emptySettings.announcementItems,
+        announcementSpeedSeconds:
+          updated.announcementSpeedSeconds || emptySettings.announcementSpeedSeconds,
         usefulLinks: updated.usefulLinks || [],
         socialLinks: updated.socialLinks || [],
       });
@@ -325,7 +341,7 @@ export default function AdminSettingsPage() {
                     Journal Announcement
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    Control the scrolling announcement text shown between the journal hero and the navbar.
+                    Control the scrolling announcement text, speed, and optional links shown between the journal hero and the navbar.
                   </p>
                 </div>
 
@@ -335,8 +351,30 @@ export default function AdminSettingsPage() {
                   className="inline-flex w-fit items-center gap-2 rounded-xl bg-[#005A78] px-4 py-2.5 text-sm font-bold text-white"
                 >
                   <Link2 className="h-4 w-4" />
-                  Add Text
+                  Add Item
                 </button>
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                  Marquee Speed <span className="font-normal text-slate-400">(seconds)</span>
+                </label>
+                <input
+                  type="number"
+                  min={10}
+                  max={300}
+                  value={form.announcementSpeedSeconds}
+                  onChange={(event) =>
+                    updateField(
+                      "announcementSpeedSeconds",
+                      Number(event.target.value) as SiteSettingsContent["announcementSpeedSeconds"]
+                    )
+                  }
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78] lg:max-w-xs"
+                />
+                <p className="mt-1.5 text-xs text-slate-500">
+                  Lower value moves faster. Higher value moves slower. Recommended range: 60–140 seconds.
+                </p>
               </div>
 
               <div className="mt-5 space-y-4">
@@ -345,13 +383,22 @@ export default function AdminSettingsPage() {
                     key={item._id || index}
                     className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
                   >
-                    <div className="grid gap-4 lg:grid-cols-[1fr_auto]">
+                    <div className="grid gap-4 lg:grid-cols-[1fr_0.75fr_auto]">
                       <input
                         value={item.text}
                         onChange={(event) =>
                           updateAnnouncementItem(index, "text", event.target.value)
                         }
                         placeholder="Example: Call for Papers is now open"
+                        className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"
+                      />
+
+                      <input
+                        value={item.url || ""}
+                        onChange={(event) =>
+                          updateAnnouncementItem(index, "url", event.target.value)
+                        }
+                        placeholder="Optional link: /call-for-papers"
                         className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"
                       />
 

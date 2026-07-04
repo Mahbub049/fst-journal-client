@@ -1,8 +1,14 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { getPublicSiteSettings } from "@/services/siteSettingsService";
 import type { AnnouncementItem } from "@/services/siteSettingsService";
+import { getPublicSiteSettings } from "@/services/siteSettingsService";
+
+type AnnouncementMessage = {
+  text: string;
+  url?: string;
+};
 
 type JournalAnnouncementProps = {
   homepage?: unknown;
@@ -11,33 +17,56 @@ type JournalAnnouncementProps = {
   className?: string;
 };
 
-const fallbackAnnouncements = [
-  "SUBMIT YOUR MANUSCRIPT TODAY",
-  "WELCOME TO THE JOURNAL OF FST",
-  "CALL FOR PAPERS",
-  "EXPLORE CURRENT AND ARCHIVED ISSUES OF THE JOURNAL",
-  "SUBMIT YOUR RESEARCH MANUSCRIPT THROUGH THE ONLINE SUBMISSION SYSTEM",
+const fallbackAnnouncements: AnnouncementMessage[] = [
+  { text: "SUBMIT YOUR MANUSCRIPT TODAY" },
+  { text: "WELCOME TO THE JOURNAL OF FST" },
+  { text: "CALL FOR PAPERS" },
+  { text: "EXPLORE CURRENT AND ARCHIVED ISSUES OF THE JOURNAL" },
+  { text: "SUBMIT YOUR RESEARCH MANUSCRIPT THROUGH THE ONLINE SUBMISSION SYSTEM" },
 ];
 
-function asStringArray(value: unknown): string[] {
+const DEFAULT_SPEED_SECONDS = 100;
+const MIN_SPEED_SECONDS = 10;
+const MAX_SPEED_SECONDS = 300;
+
+function clampSpeed(value: unknown) {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue)) return DEFAULT_SPEED_SECONDS;
+
+  return Math.min(
+    Math.max(Math.round(numericValue), MIN_SPEED_SECONDS),
+    MAX_SPEED_SECONDS
+  );
+}
+
+function asAnnouncementMessages(value: unknown): AnnouncementMessage[] {
   if (!Array.isArray(value)) return [];
 
   return value
     .map((item) => {
-      if (typeof item === "string") return item;
+      if (typeof item === "string") {
+        return { text: item.trim() };
+      }
+
       if (item && typeof item === "object") {
         const record = item as Record<string, unknown>;
         const possibleText =
           record.text ?? record.title ?? record.label ?? record.message ?? record.name;
-        return typeof possibleText === "string" ? possibleText : "";
+        const possibleUrl = record.url ?? record.link ?? record.href ?? record.linkUrl;
+
+        return {
+          text: typeof possibleText === "string" ? possibleText.trim() : "",
+          url: typeof possibleUrl === "string" ? possibleUrl.trim() : undefined,
+        };
       }
-      return "";
+
+      return { text: "" };
     })
-    .map((item) => item.trim())
-    .filter(Boolean);
+    .filter((item) => item.text);
 }
 
-function getHomepageAnnouncements(homepage: unknown): string[] {
+function getHomepageAnnouncements(homepage: unknown): AnnouncementMessage[] {
   if (!homepage || typeof homepage !== "object") return [];
 
   const record = homepage as Record<string, unknown>;
@@ -53,25 +82,32 @@ function getHomepageAnnouncements(homepage: unknown): string[] {
   ];
 
   for (const candidate of candidates) {
-    const values = asStringArray(candidate);
+    const values = asAnnouncementMessages(candidate);
     if (values.length > 0) return values;
   }
 
   const announcementBar = record.announcementBar;
   if (announcementBar && typeof announcementBar === "object") {
     const bar = announcementBar as Record<string, unknown>;
-    const values = asStringArray(bar.items ?? bar.messages ?? bar.texts);
+    const values = asAnnouncementMessages(bar.items ?? bar.messages ?? bar.texts);
     if (values.length > 0) return values;
   }
 
   return [];
 }
 
-function getActiveAnnouncementTexts(items: AnnouncementItem[] = []) {
+function getActiveAnnouncementMessages(items: AnnouncementItem[] = []) {
   return items
     .filter((item) => item.isActive !== false && item.text?.trim())
     .sort((a, b) => Number(a.order || 0) - Number(b.order || 0))
-    .map((item) => item.text.trim());
+    .map((item) => ({
+      text: item.text.trim(),
+      url: item.url?.trim() || undefined,
+    }));
+}
+
+function isExternalUrl(url: string) {
+  return /^https?:\/\//i.test(url);
 }
 
 export default function JournalAnnouncement({
@@ -80,7 +116,10 @@ export default function JournalAnnouncement({
   announcements,
   className = "",
 }: JournalAnnouncementProps) {
-  const [settingsAnnouncements, setSettingsAnnouncements] = useState<string[]>([]);
+  const [settingsAnnouncements, setSettingsAnnouncements] = useState<
+    AnnouncementMessage[]
+  >([]);
+  const [speedSeconds, setSpeedSeconds] = useState(DEFAULT_SPEED_SECONDS);
   const [loadedSettings, setLoadedSettings] = useState(false);
   const [failedToLoadSettings, setFailedToLoadSettings] = useState(false);
 
@@ -94,8 +133,9 @@ export default function JournalAnnouncement({
         if (!isMounted) return;
 
         setSettingsAnnouncements(
-          getActiveAnnouncementTexts(settings.announcementItems)
+          getActiveAnnouncementMessages(settings.announcementItems)
         );
+        setSpeedSeconds(clampSpeed(settings.announcementSpeedSeconds));
         setFailedToLoadSettings(false);
       } catch (error) {
         console.error("Failed to load journal announcements:", error);
@@ -119,8 +159,8 @@ export default function JournalAnnouncement({
 
   const messages = useMemo(() => {
     const propItems = [
-      ...asStringArray(items),
-      ...asStringArray(announcements),
+      ...asAnnouncementMessages(items),
+      ...asAnnouncementMessages(announcements),
       ...getHomepageAnnouncements(homepage),
     ];
 
@@ -134,27 +174,49 @@ export default function JournalAnnouncement({
   if (!loadedSettings && messages.length === 0) return null;
   if (messages.length === 0) return null;
 
-  // Repeat inside each group so one group is always wider than the screen.
-  // Then render two identical groups; the CSS moves exactly one group width.
   const loopItems = [...messages, ...messages, ...messages];
+  const trackStyle = {
+    "--announcement-duration": `${speedSeconds}s`,
+  } as CSSProperties;
+
+  const renderMessageText = (message: AnnouncementMessage) => {
+    if (!message.url) return <span>{message.text}</span>;
+
+    return (
+      <a
+        href={message.url}
+        target={isExternalUrl(message.url) ? "_blank" : undefined}
+        rel={isExternalUrl(message.url) ? "noreferrer" : undefined}
+        className="journal-announcement-link"
+      >
+        {message.text}
+      </a>
+    );
+  };
 
   const renderGroup = (hidden = false) => (
     <div className="journal-announcement-group" aria-hidden={hidden || undefined}>
       {loopItems.map((message, index) => (
-        <span className="journal-announcement-item" key={`${message}-${index}`}>
+        <span
+          className="journal-announcement-item"
+          key={`${message.text}-${message.url || "text"}-${index}`}
+        >
           <span className="journal-announcement-dot" />
-          <span>{message}</span>
+          {renderMessageText(message)}
         </span>
       ))}
     </div>
   );
 
   return (
-    <section className={`journal-announcement-shell ${className}`} aria-label="Journal announcements">
+    <section
+      className={`journal-announcement-shell ${className}`}
+      aria-label="Journal announcements"
+    >
       <div className="journal-announcement-fade journal-announcement-fade-left" />
       <div className="journal-announcement-fade journal-announcement-fade-right" />
 
-      <div className="journal-announcement-track">
+      <div className="journal-announcement-track" style={trackStyle}>
         {renderGroup(false)}
         {renderGroup(true)}
       </div>
