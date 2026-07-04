@@ -1,3 +1,9 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { getPublicSiteSettings } from "@/services/siteSettingsService";
+import type { AnnouncementItem } from "@/services/siteSettingsService";
+
 type JournalAnnouncementProps = {
   homepage?: unknown;
   items?: string[];
@@ -5,7 +11,7 @@ type JournalAnnouncementProps = {
   className?: string;
 };
 
-const defaultAnnouncements = [
+const fallbackAnnouncements = [
   "SUBMIT YOUR MANUSCRIPT TODAY",
   "WELCOME TO THE JOURNAL OF FST",
   "CALL FOR PAPERS",
@@ -61,19 +67,72 @@ function getHomepageAnnouncements(homepage: unknown): string[] {
   return [];
 }
 
+function getActiveAnnouncementTexts(items: AnnouncementItem[] = []) {
+  return items
+    .filter((item) => item.isActive !== false && item.text?.trim())
+    .sort((a, b) => Number(a.order || 0) - Number(b.order || 0))
+    .map((item) => item.text.trim());
+}
+
 export default function JournalAnnouncement({
   homepage,
   items,
   announcements,
   className = "",
 }: JournalAnnouncementProps) {
-  const resolvedItems = [
-    ...asStringArray(items),
-    ...asStringArray(announcements),
-    ...getHomepageAnnouncements(homepage),
-  ];
+  const [settingsAnnouncements, setSettingsAnnouncements] = useState<string[]>([]);
+  const [loadedSettings, setLoadedSettings] = useState(false);
+  const [failedToLoadSettings, setFailedToLoadSettings] = useState(false);
 
-  const messages = resolvedItems.length > 0 ? resolvedItems : defaultAnnouncements;
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSiteSettings = async () => {
+      try {
+        const settings = await getPublicSiteSettings();
+
+        if (!isMounted) return;
+
+        setSettingsAnnouncements(
+          getActiveAnnouncementTexts(settings.announcementItems)
+        );
+        setFailedToLoadSettings(false);
+      } catch (error) {
+        console.error("Failed to load journal announcements:", error);
+
+        if (!isMounted) return;
+
+        setFailedToLoadSettings(true);
+      } finally {
+        if (isMounted) {
+          setLoadedSettings(true);
+        }
+      }
+    };
+
+    loadSiteSettings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const messages = useMemo(() => {
+    const propItems = [
+      ...asStringArray(items),
+      ...asStringArray(announcements),
+      ...getHomepageAnnouncements(homepage),
+    ];
+
+    if (settingsAnnouncements.length > 0) return settingsAnnouncements;
+    if (propItems.length > 0) return propItems;
+    if (failedToLoadSettings) return fallbackAnnouncements;
+
+    return [];
+  }, [announcements, failedToLoadSettings, homepage, items, settingsAnnouncements]);
+
+  if (!loadedSettings && messages.length === 0) return null;
+  if (messages.length === 0) return null;
 
   // Repeat inside each group so one group is always wider than the screen.
   // Then render two identical groups; the CSS moves exactly one group width.
