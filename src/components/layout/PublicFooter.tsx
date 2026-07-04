@@ -28,6 +28,7 @@ const fallbackSettings: SiteSettingsContent = {
   publishingModel: "Hybrid",
   language: "English",
   publicationFrequency: "Annual",
+  announcementSpeedSeconds: 100,
   announcementItems: [
     {
       text: "Welcome to the official website of Journal of FST",
