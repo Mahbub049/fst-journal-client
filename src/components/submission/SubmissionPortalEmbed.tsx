@@ -3,6 +3,8 @@
 import { FormEvent, useMemo, useState } from "react";
 
 type FormMode = "login" | "register" | "forgot";
+type RequestStatus = "idle" | "loading" | "success" | "error";
+
 
 type ModeInfo = {
   label: string;
@@ -45,8 +47,10 @@ export default function SubmissionPortalEmbed() {
   const [mode, setMode] = useState<FormMode>("login");
   const [repeatPassword, setRepeatPassword] = useState("");
   const [forgotEmail, setForgotEmail] = useState("");
-  const [forgotStatus, setForgotStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [forgotStatus, setForgotStatus] = useState<RequestStatus>("idle");
   const [forgotMessage, setForgotMessage] = useState("");
+  const [registerStatus, setRegisterStatus] = useState<RequestStatus>("idle");
+  const [registerMessage, setRegisterMessage] = useState("");
 
   const ojs = useMemo(() => {
     const baseUrl = getOjsBaseUrl();
@@ -61,6 +65,94 @@ export default function SubmissionPortalEmbed() {
   }, []);
 
   const currentMode = modes[mode];
+
+  const submitOjsLogin = (username: string, password: string, targetUrl = ojs.submissionsUrl) => {
+    const form = document.createElement("form");
+    form.method = "post";
+    form.action = ojs.loginAction;
+    form.style.display = "none";
+
+    const appendField = (name: string, value: string) => {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = name;
+      input.value = value;
+      form.appendChild(input);
+    };
+
+    appendField("username", username);
+    appendField("password", password);
+    appendField("source", targetUrl);
+    appendField("returnUrl", targetUrl);
+    appendField("remember", "1");
+    appendField("submitFormButton", "Login");
+
+    document.body.appendChild(form);
+    form.submit();
+  };
+
+  const handleRegister = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+    const getValue = (key: string) => String(formData.get(key) || "").trim();
+
+    const username = getValue("username");
+    const password = getValue("password");
+    const password2 = getValue("password2");
+
+    if (password !== password2) {
+      setRegisterStatus("error");
+      setRegisterMessage("Password and confirm password do not match.");
+      return;
+    }
+
+    setRegisterStatus("loading");
+    setRegisterMessage("");
+
+    try {
+      const response = await fetch("/api/ojs-portal/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          givenName: getValue("givenName"),
+          familyName: getValue("familyName"),
+          affiliation: getValue("affiliation"),
+          country: getValue("country") || "BD",
+          email: getValue("email"),
+          username,
+          password,
+          password2,
+          privacyConsent: formData.get("privacyConsent") === "1",
+        }),
+      });
+
+      const result = (await response.json()) as { message?: string; redirectUrl?: string };
+
+      if (!response.ok) {
+        throw new Error(result.message || "Registration failed. Please try again.");
+      }
+
+      setRegisterStatus("success");
+      setRegisterMessage(
+        result.message ||
+          "Registration completed. Redirecting to manuscript submission...",
+      );
+
+      window.setTimeout(() => {
+        submitOjsLogin(username, password, ojs.submissionsUrl);
+      }, 500);
+    } catch (error) {
+      setRegisterStatus("error");
+      setRegisterMessage(
+        error instanceof Error
+          ? error.message
+          : "Registration failed. Please try again.",
+      );
+    }
+  };
 
   const handleForgotPassword = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -77,7 +169,7 @@ export default function SubmissionPortalEmbed() {
         body: JSON.stringify({ email: forgotEmail }),
       });
 
-      const result = (await response.json()) as { message?: string };
+      const result = (await response.json()) as { message?: string; redirectUrl?: string };
 
       if (!response.ok) {
         throw new Error(result.message || "Password recovery request failed.");
@@ -86,7 +178,7 @@ export default function SubmissionPortalEmbed() {
       setForgotStatus("success");
       setForgotMessage(
         result.message ||
-          "If this email is registered, OJS will send password recovery instructions shortly.",
+          "Password reset request has been sent to OJS. Please check the registered email inbox and spam folder.",
       );
     } catch (error) {
       setForgotStatus("error");
@@ -124,6 +216,8 @@ export default function SubmissionPortalEmbed() {
                         setMode(key);
                         setForgotStatus("idle");
                         setForgotMessage("");
+                        setRegisterStatus("idle");
+                        setRegisterMessage("");
                       }}
                       className={`h-10 cursor-pointer rounded-xl px-3 text-xs font-extrabold transition-all duration-300 sm:min-w-28 sm:text-sm ${
                         isActive
@@ -212,7 +306,11 @@ export default function SubmissionPortalEmbed() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setMode("register")}
+                  onClick={() => {
+                    setMode("register");
+                    setRegisterStatus("idle");
+                    setRegisterMessage("");
+                  }}
                   className="inline-flex h-11 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white px-6 text-sm font-bold text-[#111433] transition hover:border-[#087895] hover:text-[#087895]"
                 >
                   Create account
@@ -222,11 +320,7 @@ export default function SubmissionPortalEmbed() {
           )}
 
           {mode === "register" && (
-            <form method="post" action={ojs.registerAction} className="space-y-4">
-              <input type="hidden" name="source" value={ojs.submissionSource} />
-              <input type="hidden" name="locale" value="en_US" />
-              <input type="hidden" name="registerAsAuthor" value="1" />
-              <input type="hidden" name="repeatPassword" value={repeatPassword} />
+            <form onSubmit={handleRegister} className="space-y-4">
               <input type="hidden" name="country" value="BD" />
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -236,7 +330,7 @@ export default function SubmissionPortalEmbed() {
                   </label>
                   <input
                     id="givenName"
-                    name="givenName[en_US]"
+                    name="givenName"
                     type="text"
                     autoComplete="given-name"
                     required
@@ -250,7 +344,7 @@ export default function SubmissionPortalEmbed() {
                   </label>
                   <input
                     id="familyName"
-                    name="familyName[en_US]"
+                    name="familyName"
                     type="text"
                     autoComplete="family-name"
                     required
@@ -327,9 +421,10 @@ export default function SubmissionPortalEmbed() {
                 </label>
                 <input
                   id="affiliation"
-                  name="affiliation[en_US]"
+                  name="affiliation"
                   type="text"
                   autoComplete="organization"
+                  required
                   className={inputClass}
                 />
               </div>
@@ -345,16 +440,35 @@ export default function SubmissionPortalEmbed() {
                 I agree to have my data collected and stored according to the journal privacy statement.
               </label>
 
+
+
+              {registerMessage && (
+                <div
+                  className={`rounded-2xl border p-4 text-sm leading-6 ${
+                    registerStatus === "success"
+                      ? "border-cyan-100 bg-cyan-50/70 text-slate-700"
+                      : "border-rose-100 bg-rose-50 text-rose-700"
+                  }`}
+                >
+                  {registerMessage}
+                </div>
+              )}
+
               <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center">
                 <button
                   type="submit"
-                  className="inline-flex h-11 cursor-pointer items-center justify-center rounded-full bg-[#111433] px-7 text-sm font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#087895]"
+                  disabled={registerStatus === "loading"}
+                  className="inline-flex h-11 cursor-pointer items-center justify-center rounded-full bg-[#111433] px-7 text-sm font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#087895] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Register and continue
+                  {registerStatus === "loading" ? "Registering..." : "Register and continue"}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setMode("login")}
+                  onClick={() => {
+                    setMode("login");
+                    setRegisterStatus("idle");
+                    setRegisterMessage("");
+                  }}
                   className="inline-flex h-11 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white px-6 text-sm font-bold text-[#111433] transition hover:border-[#087895] hover:text-[#087895]"
                 >
                   Already have account
@@ -403,7 +517,11 @@ export default function SubmissionPortalEmbed() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setMode("login")}
+                  onClick={() => {
+                    setMode("login");
+                    setRegisterStatus("idle");
+                    setRegisterMessage("");
+                  }}
                   className="inline-flex h-11 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white px-6 text-sm font-bold text-[#111433] transition hover:border-[#087895] hover:text-[#087895]"
                 >
                   Back to login

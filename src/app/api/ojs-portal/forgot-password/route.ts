@@ -17,33 +17,106 @@ const httpsAgent = new https.Agent({
   rejectUnauthorized: false,
 });
 
-const collectCookieHeader = (cookies?: string[]) => {
-  if (!cookies?.length) return undefined;
+type ParsedInput = {
+  name: string;
+  value: string;
+  type: string;
+  checked: boolean;
+};
 
-  return cookies
+const collectCookieHeader = (cookies?: string[] | string) => {
+  const cookieList = Array.isArray(cookies) ? cookies : cookies ? [cookies] : [];
+
+  if (!cookieList.length) return undefined;
+
+  return cookieList
     .map((cookie) => cookie.split(";")[0])
     .filter(Boolean)
     .join("; ");
 };
 
-const readHiddenInputs = (html: string) => {
-  const hiddenInputs: Record<string, string> = {};
-  const inputRegex = /<input\b[^>]*>/gi;
-  const nameRegex = /name=["']([^"']+)["']/i;
-  const valueRegex = /value=["']([^"']*)["']/i;
-  const typeRegex = /type=["']([^"']+)["']/i;
+const decodeHtmlAttribute = (value: string) =>
+  value
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
 
-  for (const input of html.match(inputRegex) || []) {
-    const type = input.match(typeRegex)?.[1]?.toLowerCase();
-    if (type !== "hidden") continue;
+const parseAttributes = (tag: string) => {
+  const attrs: Record<string, string> = {};
+  const attrRegex = /([:\w\-\[\]]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>/=`]+)))?/g;
+  let match: RegExpExecArray | null;
 
-    const name = input.match(nameRegex)?.[1];
-    if (!name) continue;
+  while ((match = attrRegex.exec(tag)) !== null) {
+    const key = match[1].toLowerCase();
+    if (key === "input") continue;
 
-    hiddenInputs[name] = input.match(valueRegex)?.[1] || "";
+    attrs[key] = decodeHtmlAttribute(match[2] ?? match[3] ?? match[4] ?? "");
   }
 
-  return hiddenInputs;
+  return attrs;
+};
+
+const readInputs = (html: string): ParsedInput[] => {
+  const inputs: ParsedInput[] = [];
+  const inputRegex = /<input\b[^>]*>/gi;
+
+  for (const input of html.match(inputRegex) || []) {
+    const attrs = parseAttributes(input);
+    const name = attrs.name;
+
+    if (!name) continue;
+
+    inputs.push({
+      name,
+      value: attrs.value || "",
+      type: (attrs.type || "text").toLowerCase(),
+      checked: Object.prototype.hasOwnProperty.call(attrs, "checked"),
+    });
+  }
+
+  return inputs;
+};
+
+const appendInputValues = (params: URLSearchParams, inputs: ParsedInput[]) => {
+  inputs.forEach((input) => {
+    if (input.type === "hidden") {
+      params.append(input.name, input.value);
+      return;
+    }
+
+    if ((input.type === "checkbox" || input.type === "radio") && input.checked) {
+      params.append(input.name, input.value || "1");
+    }
+  });
+};
+
+const stripTags = (html: string) =>
+  html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const extractOjsError = (html: string) => {
+  if (!/formErrors|Errors occurred processing this form|The form could not be submitted|alert-danger|pkp_form_error/i.test(html)) {
+    return "";
+  }
+
+  const errorBlock =
+    html.match(/<div[^>]*(?:id|class)=["'][^"']*(?:formErrors|alert-danger|pkp_form_error)[^"']*["'][^>]*>[\s\S]*?<\/div>/i)?.[0] ||
+    html.match(/Errors occurred processing this form[\s\S]{0,1200}/i)?.[0] ||
+    html;
+
+  return (
+    stripTags(errorBlock)
+      .replace(/^Errors occurred processing this form:?\s*/i, "")
+      .replace(/^Error:?\s*/i, "") ||
+    "OJS rejected the password reset request. Please check the email address and try again."
+  );
 };
 
 export async function POST(request: NextRequest) {
@@ -51,9 +124,9 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as { email?: string };
     const email = body.email?.trim();
 
-    if (!email) {
+    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
       return NextResponse.json(
-        { message: "Please enter a valid email address." },
+        { message: "Please enter a valid registered email address." },
         { status: 400 },
       );
     }
@@ -72,36 +145,42 @@ export async function POST(request: NextRequest) {
       validateStatus: (status) => status >= 200 && status < 400,
     });
 
-    const hiddenInputs = readHiddenInputs(pageResponse.data);
     const params = new URLSearchParams();
+    appendInputValues(params, readInputs(pageResponse.data));
 
-    Object.entries(hiddenInputs).forEach(([key, value]) => {
-      params.set(key, value);
-    });
-
+    // OJS lost password expects the simple `email` field from its native form.
+    // submitFormButton is included because some OJS themes/forms depend on it.
     params.set("email", email);
+    params.set("submitFormButton", "Reset Password");
     params.set("submit", "Reset Password");
 
     const cookieHeader = collectCookieHeader(pageResponse.headers["set-cookie"]);
 
-    await axios.post(lostPasswordUrl, params.toString(), {
+    const postResponse = await axios.post<string>(lostPasswordUrl, params.toString(), {
       httpsAgent,
       headers: {
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Content-Type": "application/x-www-form-urlencoded",
-        Origin: baseUrl.replace(/\/index\.php\/jfst$/, ""),
+        Origin: new URL(baseUrl).origin,
         Referer: lostPasswordUrl,
         "User-Agent": "JournalFST-SubmissionPortal/1.0",
         ...(cookieHeader ? { Cookie: cookieHeader } : {}),
       },
-      maxRedirects: 5,
+      maxRedirects: 0,
       timeout: 15000,
-      validateStatus: (status) => status >= 200 && status < 500,
+      validateStatus: (status) => status >= 200 && status < 400,
     });
+
+    const errorMessage =
+      typeof postResponse.data === "string" ? extractOjsError(postResponse.data) : "";
+
+    if (errorMessage) {
+      return NextResponse.json({ message: errorMessage }, { status: 400 });
+    }
 
     return NextResponse.json({
       message:
-        "If this email is registered, OJS will send password recovery instructions shortly.",
+        "Password reset request has been sent to OJS. Please check the registered email inbox and spam folder.",
     });
   } catch (error) {
     console.error("OJS forgot password request failed:", error);
@@ -109,7 +188,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         message:
-          "Password recovery could not be requested right now. Please try again later.",
+          "Password recovery could not be requested right now. Please try again later or use the OJS reset page directly.",
       },
       { status: 502 },
     );

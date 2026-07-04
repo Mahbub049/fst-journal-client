@@ -1,84 +1,103 @@
-"use client";
+type JournalAnnouncementProps = {
+  homepage?: unknown;
+  items?: string[];
+  announcements?: string[];
+  className?: string;
+};
 
-import { useEffect, useMemo, useState } from "react";
-import {
-  AnnouncementItem,
-  getPublicSiteSettings,
-} from "@/services/siteSettingsService";
-
-const fallbackAnnouncements: AnnouncementItem[] = [
-  {
-    text: "Welcome to the official website of Journal of FST",
-    order: 1,
-    isActive: true,
-  },
-  {
-    text: "Call for Papers is now open",
-    order: 2,
-    isActive: true,
-  },
-  {
-    text: "Submit your research manuscript through the online submission system",
-    order: 3,
-    isActive: true,
-  },
-  {
-    text: "Explore current and archived issues of the journal",
-    order: 4,
-    isActive: true,
-  },
+const defaultAnnouncements = [
+  "SUBMIT YOUR MANUSCRIPT TODAY",
+  "WELCOME TO THE JOURNAL OF FST",
+  "CALL FOR PAPERS",
+  "EXPLORE CURRENT AND ARCHIVED ISSUES OF THE JOURNAL",
+  "SUBMIT YOUR RESEARCH MANUSCRIPT THROUGH THE ONLINE SUBMISSION SYSTEM",
 ];
 
-export default function JournalAnnouncement() {
-  const [announcements, setAnnouncements] =
-    useState<AnnouncementItem[]>(fallbackAnnouncements);
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
 
-  useEffect(() => {
-    const loadAnnouncementItems = async () => {
-      try {
-        const settings = await getPublicSiteSettings();
-
-        if (Array.isArray(settings.announcementItems)) {
-          setAnnouncements(settings.announcementItems);
-        }
-      } catch {
-        setAnnouncements(fallbackAnnouncements);
+  return value
+    .map((item) => {
+      if (typeof item === "string") return item;
+      if (item && typeof item === "object") {
+        const record = item as Record<string, unknown>;
+        const possibleText =
+          record.text ?? record.title ?? record.label ?? record.message ?? record.name;
+        return typeof possibleText === "string" ? possibleText : "";
       }
-    };
+      return "";
+    })
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
 
-    loadAnnouncementItems();
-  }, []);
+function getHomepageAnnouncements(homepage: unknown): string[] {
+  if (!homepage || typeof homepage !== "object") return [];
 
-  const activeAnnouncements = useMemo(() => {
-    return announcements
-      .filter((item) => item.isActive && item.text?.trim())
-      .sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
-  }, [announcements]);
+  const record = homepage as Record<string, unknown>;
 
-  if (!activeAnnouncements.length) {
-    return null;
+  const candidates = [
+    record.announcements,
+    record.announcementItems,
+    record.marqueeItems,
+    record.marqueeTexts,
+    record.tickerItems,
+    record.tickerTexts,
+    record.newsTicker,
+  ];
+
+  for (const candidate of candidates) {
+    const values = asStringArray(candidate);
+    if (values.length > 0) return values;
   }
 
-  const scrollingItems = [...activeAnnouncements, ...activeAnnouncements];
+  const announcementBar = record.announcementBar;
+  if (announcementBar && typeof announcementBar === "object") {
+    const bar = announcementBar as Record<string, unknown>;
+    const values = asStringArray(bar.items ?? bar.messages ?? bar.texts);
+    if (values.length > 0) return values;
+  }
+
+  return [];
+}
+
+export default function JournalAnnouncement({
+  homepage,
+  items,
+  announcements,
+  className = "",
+}: JournalAnnouncementProps) {
+  const resolvedItems = [
+    ...asStringArray(items),
+    ...asStringArray(announcements),
+    ...getHomepageAnnouncements(homepage),
+  ];
+
+  const messages = resolvedItems.length > 0 ? resolvedItems : defaultAnnouncements;
+
+  // Repeat inside each group so one group is always wider than the screen.
+  // Then render two identical groups; the CSS moves exactly one group width.
+  const loopItems = [...messages, ...messages, ...messages];
+
+  const renderGroup = (hidden = false) => (
+    <div className="journal-announcement-group" aria-hidden={hidden || undefined}>
+      {loopItems.map((message, index) => (
+        <span className="journal-announcement-item" key={`${message}-${index}`}>
+          <span className="journal-announcement-dot" />
+          <span>{message}</span>
+        </span>
+      ))}
+    </div>
+  );
 
   return (
-    <section className="relative overflow-hidden border-y border-[#1f4566]/60 bg-[#071a33] text-white">
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(34,184,232,0.22),rgba(17,20,51,0.95),rgba(245,200,75,0.12))]" />
-      <div className="absolute inset-x-0 top-0 h-px bg-[#7de4ee]/45" />
-      <div className="absolute inset-x-0 bottom-0 h-px bg-[#7de4ee]/25" />
+    <section className={`journal-announcement-shell ${className}`} aria-label="Journal announcements">
+      <div className="journal-announcement-fade journal-announcement-fade-left" />
+      <div className="journal-announcement-fade journal-announcement-fade-right" />
 
-      <div className="relative flex min-h-[46px] items-center overflow-hidden">
-        <div className="journal-announcement-track flex w-max items-center gap-10 whitespace-nowrap px-6">
-          {scrollingItems.map((item, index) => (
-            <div
-              key={`${item.text}-${index}`}
-              className="inline-flex items-center gap-3 text-[13px] font-semibold uppercase tracking-[0.14em] text-white/92"
-            >
-              <span className="h-2 w-2 rounded-full bg-[#7de4ee] shadow-[0_0_14px_rgba(125,228,238,0.8)]" />
-              <span>{item.text}</span>
-            </div>
-          ))}
-        </div>
+      <div className="journal-announcement-track">
+        {renderGroup(false)}
+        {renderGroup(true)}
       </div>
     </section>
   );
