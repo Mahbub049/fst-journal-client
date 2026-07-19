@@ -254,7 +254,7 @@ export default async function AboutInnerPage({
     cmsPages.length > 0
       ? cmsPages.map((page) => ({
           label: page.title,
-          href: `/about/${page.slug}`,
+          href: page.slug === "contact-us" ? "/contact" : `/about/${page.slug}`,
         }))
       : fallbackSideLinks;
 

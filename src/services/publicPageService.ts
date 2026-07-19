@@ -1,4 +1,4 @@
-import api from "@/lib/api";
+import { getServerApiBaseUrl } from "@/lib/apiBase";
 
 export type PublicPageGroup = "about" | "for-authors" | "issues" | "custom";
 
@@ -52,10 +52,26 @@ type PublicPageResponse = {
   page: PublicCmsPage;
 };
 
-export const getPublicPagesByGroup = async (group: PublicPageGroup) => {
-  const { data } = await api.get<PublicPagesResponse>("/pages", {
-    params: { group },
+const fetchPublicPageApi = async <T>(path: string): Promise<T> => {
+  const response = await fetch(`${getServerApiBaseUrl()}${path}`, {
+    cache: "no-store",
+    headers: {
+      Accept: "application/json",
+    },
   });
+
+  if (!response.ok) {
+    throw new Error(`Public page API request failed with ${response.status}.`);
+  }
+
+  return (await response.json()) as T;
+};
+
+export const getPublicPagesByGroup = async (group: PublicPageGroup) => {
+  const query = new URLSearchParams({ group });
+  const data = await fetchPublicPageApi<PublicPagesResponse>(
+    `/pages?${query.toString()}`
+  );
 
   return data.pages || [];
 };
@@ -64,6 +80,9 @@ export const getPublicPageByGroupAndSlug = async (
   group: PublicPageGroup,
   slug: string
 ) => {
-  const { data } = await api.get<PublicPageResponse>(`/pages/${group}/${slug}`);
+  const data = await fetchPublicPageApi<PublicPageResponse>(
+    `/pages/${encodeURIComponent(group)}/${encodeURIComponent(slug)}`
+  );
+
   return data.page;
 };

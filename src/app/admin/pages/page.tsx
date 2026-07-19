@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Edit,
@@ -87,6 +87,7 @@ const groupLabel = (group: string) => {
 };
 
 const getPublicPageHref = (page: CmsPage) => {
+  if (page.group === "about" && page.slug === "contact-us") return "/contact";
   if (page.group === "about") return `/about/${page.slug}`;
   if (page.group === "for-authors") return `/for-authors/${page.slug}`;
   if (page.group === "issues") return `/issues/${page.slug}`;
@@ -109,6 +110,18 @@ export default function AdminPagesPage() {
   const [form, setForm] = useState<PagePayload>(emptyForm);
   const [message, setMessage] = useState("");
   const [uploadingTarget, setUploadingTarget] = useState("");
+  const formSectionRef = useRef<HTMLElement | null>(null);
+
+  const scrollToForm = () => {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        formSectionRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      });
+    });
+  };
 
   const fetchPages = async () => {
     try {
@@ -135,6 +148,7 @@ export default function AdminPagesPage() {
     setForm(emptyForm);
     setIsFormOpen(true);
     setMessage("");
+    scrollToForm();
   };
 
   const openEditForm = (page: CmsPage) => {
@@ -156,6 +170,7 @@ export default function AdminPagesPage() {
     });
     setIsFormOpen(true);
     setMessage("");
+    scrollToForm();
   };
 
   const closeForm = () => {
@@ -404,7 +419,10 @@ export default function AdminPagesPage() {
       </div>
 
       {isFormOpen && (
-        <section className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section
+          ref={formSectionRef}
+          className="mb-6 scroll-mt-24 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+        >
           <div className="mb-6 flex items-center justify-between gap-4">
             <div>
               <h2 className="text-2xl font-bold text-slate-950">
