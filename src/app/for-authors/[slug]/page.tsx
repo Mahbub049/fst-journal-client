@@ -3,6 +3,7 @@ import CmsContentRenderer from "@/components/common/CmsContentRenderer";
 import PageTransition from "@/components/common/PageTransition";
 import PublicLayout from "@/components/layout/PublicLayout";
 import Link from "next/link";
+import { buildGmailComposeUrl } from "@/lib/emailLinks";
 import { getPublicEditorialBoardConfig } from "@/services/editorialBoardService";
 import {
   getPublicPageByGroupAndSlug,
@@ -374,7 +375,12 @@ export default async function ForAuthorsInnerPage({
                       </Link>
 
                       <a
-                        href={`mailto:${editorialOfficeEmail}`}
+                        href={buildGmailComposeUrl(
+                          editorialOfficeEmail,
+                          "Journal of FST editorial office inquiry"
+                        )}
+                        target="_blank"
+                        rel="noreferrer"
                         className="flex h-12 w-full items-center justify-center rounded-full border border-white/30 px-2 text-center text-[12px] font-medium leading-tight text-white hover:bg-white/10 sm:h-11 sm:w-auto sm:px-6 sm:text-[14px]"
                       >
                         Email Editorial Office

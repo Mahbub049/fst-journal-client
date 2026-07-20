@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import Container from "@/components/common/Container";
 import PublicLayout from "@/components/layout/PublicLayout";
+import { buildGmailComposeUrl } from "@/lib/emailLinks";
 import {
   EditorialBoardMember,
   EditorialBoardPageSettings,
@@ -119,8 +120,8 @@ function EditorCard({ member }: { member: EditorialBoardMember }) {
       id={`member-${member._id}`}
       className="scroll-mt-32 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md sm:p-6"
     >
-      <div className="flex flex-col items-center gap-6 text-center md:flex-row md:items-start md:text-left">
-        <div className="h-[220px] w-[170px] shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-[#f1f5f9] shadow-sm">
+      <div className="flex flex-col items-center gap-6 text-center md:flex-row md:items-stretch md:text-left">
+        <div className="h-[260px] w-[200px] shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-[#f1f5f9] shadow-sm md:h-auto md:min-h-[280px] md:w-[220px] md:self-stretch">
           {imageUrl ? (
             <img
               src={imageUrl}
@@ -139,12 +140,6 @@ function EditorCard({ member }: { member: EditorialBoardMember }) {
             <h3 className="text-[20px] font-semibold leading-8 text-slate-950">
               {member.name}
             </h3>
-
-            <div className="mt-2 flex flex-wrap justify-center gap-2 md:justify-start">
-              <span className="rounded-full bg-[#eef8fc] px-3 py-1 text-[12px] font-semibold text-[#005A78]">
-                {member.category}
-              </span>
-            </div>
 
             <div className="mt-5 space-y-2 text-[15px] leading-7 text-slate-700">
               {member.designation ? <p>{member.designation}</p> : null}
@@ -244,7 +239,7 @@ export default async function EditorialBoardPage() {
       <main className="bg-[#f7f8fb]">
         <section className="border-b border-slate-200 bg-white">
           <Container className="py-12 md:py-16">
-            <div className="max-w-3xl">
+            <div>
               <p className="journal-subheading">{config.eyebrow}</p>
 
               <h1
@@ -345,7 +340,12 @@ export default async function EditorialBoardPage() {
 
                 {config.editorialOfficeEmail ? (
                   <a
-                    href={`mailto:${config.editorialOfficeEmail}`}
+                    href={buildGmailComposeUrl(
+                      config.editorialOfficeEmail,
+                      "Journal of FST editorial office inquiry"
+                    )}
+                    target="_blank"
+                    rel="noreferrer"
                     className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-[#111433] px-5 py-3 text-sm font-semibold text-white hover:bg-[#1b204a]"
                   >
                     Email Editorial Office

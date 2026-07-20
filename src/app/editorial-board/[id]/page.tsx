@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import Container from "@/components/common/Container";
 import PublicLayout from "@/components/layout/PublicLayout";
+import { buildGmailComposeUrl } from "@/lib/emailLinks";
 import {
   EditorialBoardMember,
   EditorialBoardPageSettings,
@@ -240,7 +241,12 @@ export default async function EditorialMemberDetailsPage({
 
                   {member.email ? (
                     <a
-                      href={`mailto:${member.email}`}
+                      href={buildGmailComposeUrl(
+                        member.email,
+                        "Journal of FST editorial board inquiry"
+                      )}
+                      target="_blank"
+                      rel="noreferrer"
                       className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-[#005A78] hover:text-[#005A78]"
                     >
                       <Mail size={16} aria-hidden="true" />

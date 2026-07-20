@@ -1,6 +1,8 @@
 import Container from "@/components/common/Container";
 import PublicLayout from "@/components/layout/PublicLayout";
+import { resolveEmailActionUrl } from "@/lib/emailLinks";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import CallForPapersPdfViewer from "@/components/call-for-papers/CallForPapersPdfViewer";
 import { getServerApiBaseUrl } from "@/lib/apiBase";
 
@@ -212,34 +214,39 @@ const fallbackContent: CallForPaperContent = {
   publisherInfo: "Bangladesh University of Professionals",
 };
 
+const mergeCallForPaperContent = (
+  data: Partial<CallForPaperContent>
+): CallForPaperContent => ({
+  ...fallbackContent,
+  ...data,
+  importantDates: Array.isArray(data.importantDates)
+    ? data.importantDates
+    : fallbackContent.importantDates,
+  submissionTypes: Array.isArray(data.submissionTypes)
+    ? data.submissionTypes
+    : fallbackContent.submissionTypes,
+  engineeringTopics: Array.isArray(data.engineeringTopics)
+    ? data.engineeringTopics
+    : fallbackContent.engineeringTopics,
+  environmentalTopics: Array.isArray(data.environmentalTopics)
+    ? data.environmentalTopics
+    : fallbackContent.environmentalTopics,
+});
+
 const getPublicCallForPaper = async () => {
   try {
     const response = await fetch(`${apiBaseUrl}/call-for-papers`, {
       cache: "no-store",
     });
 
+    if (response.status === 404) return null;
     if (!response.ok) return fallbackContent;
 
     const result = (await response.json()) as CallForPaperResponse;
 
     if (!result.success || !result.data) return fallbackContent;
 
-    return {
-      ...fallbackContent,
-      ...result.data,
-      importantDates: result.data.importantDates?.length
-        ? result.data.importantDates
-        : fallbackContent.importantDates,
-      submissionTypes: result.data.submissionTypes?.length
-        ? result.data.submissionTypes
-        : fallbackContent.submissionTypes,
-      engineeringTopics: result.data.engineeringTopics?.length
-        ? result.data.engineeringTopics
-        : fallbackContent.engineeringTopics,
-      environmentalTopics: result.data.environmentalTopics?.length
-        ? result.data.environmentalTopics
-        : fallbackContent.environmentalTopics,
-    };
+    return mergeCallForPaperContent(result.data);
   } catch (error) {
     console.error("Failed to load call for papers:", error);
     return fallbackContent;
@@ -248,11 +255,13 @@ const getPublicCallForPaper = async () => {
 
 const normalizeHref = (url: string) => {
   if (!url) return "#";
-  return url;
+  return resolveEmailActionUrl(url, "Journal of FST manuscript submission");
 };
 
 export default async function CallForPapersPage() {
   const content = await getPublicCallForPaper();
+
+  if (!content) notFound();
 
   const activeImportantDates = [...content.importantDates]
     .filter((item) => item.isActive !== false)
@@ -270,9 +279,9 @@ export default async function CallForPapersPage() {
                 <div className="border-b border-slate-200 pb-6">
                   <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
                     <div>
-                      <p className="journal-subheading">
-                        {content.invitationLabel}
-                      </p>
+                      {content.invitationLabel ? (
+                        <p className="journal-subheading">{content.invitationLabel}</p>
+                      ) : null}
 
                       <h1
                         className="mt-3 text-[34px] font-semibold leading-tight text-slate-950 md:text-[42px]"
@@ -281,9 +290,17 @@ export default async function CallForPapersPage() {
                         {content.title}
                       </h1>
 
-                      <p className="mt-4 max-w-3xl text-[15px] text-justify leading-8 text-slate-600">
-                        {content.description}
-                      </p>
+                      {content.subtitle ? (
+                        <p className="mt-3 max-w-3xl text-[16px] font-medium leading-7 text-slate-700">
+                          {content.subtitle}
+                        </p>
+                      ) : null}
+
+                      {content.description ? (
+                        <p className="mt-4 max-w-3xl text-[15px] text-justify leading-8 text-slate-600">
+                          {content.description}
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -297,7 +314,9 @@ export default async function CallForPapersPage() {
 
               <aside className="space-y-6 lg:hidden">
                 <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <p className="journal-subheading">{content.importantInfoLabel}</p>
+                  {content.importantInfoLabel ? (
+                    <p className="journal-subheading">{content.importantInfoLabel}</p>
+                  ) : null}
 
                   <h2
                     className="mt-3 text-[26px] font-semibold leading-tight text-slate-950"
@@ -324,10 +343,22 @@ export default async function CallForPapersPage() {
                   </div>
                 </div>
 
+                {content.posterImage ? (
+                  <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
+                    <img
+                      src={content.posterImage}
+                      alt={`${content.title} poster`}
+                      className="h-auto w-full rounded-2xl object-contain"
+                    />
+                  </div>
+                ) : null}
+
                 <div className="rounded-3xl border border-slate-200 bg-[#111433] p-6 text-white shadow-sm">
-                  <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-white/70">
-                    {content.submitSectionLabel}
-                  </p>
+                  {content.submitSectionLabel ? (
+                    <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-white/70">
+                      {content.submitSectionLabel}
+                    </p>
+                  ) : null}
 
                   <h2
                     className="mt-3 text-[26px] font-semibold leading-tight text-white"
@@ -336,13 +367,17 @@ export default async function CallForPapersPage() {
                     {content.submitTitle}
                   </h2>
 
-                  <p className="mt-4 text-[14px] leading-7 text-white/80">
-                    {content.submitDescription}
-                  </p>
+                  {content.submitDescription ? (
+                    <p className="mt-4 text-[14px] leading-7 text-white/80">
+                      {content.submitDescription}
+                    </p>
+                  ) : null}
 
                   <div className="mt-6 grid grid-cols-2 gap-3">
                     <a
                       href={normalizeHref(content.submissionButtonLink)}
+                      target={normalizeHref(content.submissionButtonLink).startsWith("http") ? "_blank" : undefined}
+                      rel={normalizeHref(content.submissionButtonLink).startsWith("http") ? "noreferrer" : undefined}
                       className="flex h-12 w-full items-center justify-center rounded-full bg-white px-2 text-center text-[12px] font-medium leading-tight text-[#111433] hover:bg-slate-100"
                     >
                       {content.submissionButtonLabel}
@@ -358,7 +393,9 @@ export default async function CallForPapersPage() {
                 </div>
 
                 <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <p className="journal-subheading">{content.contactSectionLabel}</p>
+                  {content.contactSectionLabel ? (
+                    <p className="journal-subheading">{content.contactSectionLabel}</p>
+                  ) : null}
 
                   <h2
                     className="mt-3 text-[26px] font-semibold leading-tight text-slate-950"
@@ -394,15 +431,23 @@ export default async function CallForPapersPage() {
                       </span>{" "}
                       {content.contactEmail}
                     </p>
+                    {content.contactPhone ? (
+                      <p>
+                        <span className="font-semibold text-slate-900">
+                          Phone:
+                        </span>{" "}
+                        {content.contactPhone}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               </aside>
 
 
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-                <p className="journal-subheading">
-                  {content.submissionFormatLabel}
-                </p>
+                {content.submissionFormatLabel ? (
+                  <p className="journal-subheading">{content.submissionFormatLabel}</p>
+                ) : null}
 
                 <h2
                   className="mt-3 text-[30px] font-semibold leading-tight text-slate-950"
@@ -411,9 +456,11 @@ export default async function CallForPapersPage() {
                   {content.submissionFormatTitle}
                 </h2>
 
-                <p className="mt-4 text-[15px] leading-8 text-slate-600">
-                  {content.submissionFormatDescription}
-                </p>
+                {content.submissionFormatDescription ? (
+                  <p className="mt-4 text-[15px] leading-8 text-slate-600">
+                    {content.submissionFormatDescription}
+                  </p>
+                ) : null}
 
                 <div className="mt-6 grid gap-3 md:grid-cols-2">
                   {content.submissionTypes.map((type) => (
@@ -428,7 +475,9 @@ export default async function CallForPapersPage() {
               </div>
 
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-                <p className="journal-subheading">{content.scopeLabel}</p>
+                {content.scopeLabel ? (
+                  <p className="journal-subheading">{content.scopeLabel}</p>
+                ) : null}
 
                 <h2
                   className="mt-3 text-[30px] font-semibold leading-tight text-slate-950"
@@ -437,9 +486,11 @@ export default async function CallForPapersPage() {
                   {content.scopeTitle}
                 </h2>
 
-                <p className="mt-4 text-[15px] leading-8 text-slate-600">
-                  {content.scopeDescription}
-                </p>
+                {content.scopeDescription ? (
+                  <p className="mt-4 text-[15px] leading-8 text-slate-600">
+                    {content.scopeDescription}
+                  </p>
+                ) : null}
 
                 {/* Mobile only: dropdown/accordion view for research areas */}
                 <div className="mt-8 space-y-3 md:hidden">
@@ -523,9 +574,9 @@ export default async function CallForPapersPage() {
               </div>
 
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-                <p className="journal-subheading">
-                  {content.finalSectionLabel}
-                </p>
+                {content.finalSectionLabel ? (
+                  <p className="journal-subheading">{content.finalSectionLabel}</p>
+                ) : null}
 
                 <h2
                   className="mt-3 text-[30px] font-semibold leading-tight text-slate-950"
@@ -534,15 +585,19 @@ export default async function CallForPapersPage() {
                   {content.finalSectionTitle}
                 </h2>
 
-                <p className="mt-4 text-[15px] leading-8 text-slate-600">
-                  {content.finalSectionDescription}
-                </p>
+                {content.finalSectionDescription ? (
+                  <p className="mt-4 text-[15px] leading-8 text-slate-600">
+                    {content.finalSectionDescription}
+                  </p>
+                ) : null}
               </div>
             </section>
 
             <aside className="hidden space-y-6 lg:block">
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <p className="journal-subheading">{content.importantInfoLabel}</p>
+                {content.importantInfoLabel ? (
+                    <p className="journal-subheading">{content.importantInfoLabel}</p>
+                  ) : null}
 
                 <h2
                   className="mt-3 text-[26px] font-semibold leading-tight text-slate-950"
@@ -552,9 +607,9 @@ export default async function CallForPapersPage() {
                 </h2>
 
                 <div className="mt-6 space-y-3">
-                  {activeImportantDates.map((date) => (
+                  {activeImportantDates.map((date, index) => (
                     <div
-                      key={date.label}
+                      key={`${date.label}-${date.date}-${index}`}
                       className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
                     >
                       <p className="text-[13px] text-slate-500">
@@ -569,10 +624,22 @@ export default async function CallForPapersPage() {
                 </div>
               </div>
 
+              {content.posterImage ? (
+                <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
+                  <img
+                    src={content.posterImage}
+                    alt={`${content.title} poster`}
+                    className="h-auto w-full rounded-2xl object-contain"
+                  />
+                </div>
+              ) : null}
+
               <div className="rounded-3xl border border-slate-200 bg-[#111433] p-6 text-white shadow-sm">
-                <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-white/70">
-                  {content.submitSectionLabel}
-                </p>
+                {content.submitSectionLabel ? (
+                  <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-white/70">
+                    {content.submitSectionLabel}
+                  </p>
+                ) : null}
 
                 <h2
                   className="mt-3 text-[26px] font-semibold leading-tight text-white"
@@ -581,12 +648,16 @@ export default async function CallForPapersPage() {
                   {content.submitTitle}
                 </h2>
 
-                <p className="mt-4 text-[14px] leading-7 text-white/80">
-                  {content.submitDescription}
-                </p>
+                {content.submitDescription ? (
+                  <p className="mt-4 text-[14px] leading-7 text-white/80">
+                    {content.submitDescription}
+                  </p>
+                ) : null}
 
                 <a
                   href={normalizeHref(content.submissionButtonLink)}
+                  target={normalizeHref(content.submissionButtonLink).startsWith("http") ? "_blank" : undefined}
+                  rel={normalizeHref(content.submissionButtonLink).startsWith("http") ? "noreferrer" : undefined}
                   className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-full bg-white px-5 text-[14px] font-medium text-[#111433] hover:bg-slate-100"
                 >
                   {content.submissionButtonLabel}
@@ -601,7 +672,9 @@ export default async function CallForPapersPage() {
               </div>
 
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <p className="journal-subheading">{content.contactSectionLabel}</p>
+                {content.contactSectionLabel ? (
+                    <p className="journal-subheading">{content.contactSectionLabel}</p>
+                  ) : null}
 
                 <h2
                   className="mt-3 text-[26px] font-semibold leading-tight text-slate-950"
@@ -637,6 +710,14 @@ export default async function CallForPapersPage() {
                     </span>{" "}
                     {content.contactEmail}
                   </p>
+                  {content.contactPhone ? (
+                    <p>
+                      <span className="font-semibold text-slate-900">
+                        Phone:
+                      </span>{" "}
+                      {content.contactPhone}
+                    </p>
+                  ) : null}
                 </div>
               </div>
             </aside>

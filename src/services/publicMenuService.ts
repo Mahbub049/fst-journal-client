@@ -5,6 +5,7 @@ export type PublicMenuLocation =
   | "about"
   | "issues"
   | "for-authors"
+  | "reviewers"
   | "editorial-board"
   | "footer";
 

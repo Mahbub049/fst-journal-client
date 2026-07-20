@@ -1,6 +1,6 @@
 import { getServerApiBaseUrl } from "@/lib/apiBase";
 
-export type PublicPageGroup = "about" | "for-authors" | "issues" | "custom";
+export type PublicPageGroup = "about" | "for-authors" | "reviewers" | "issues" | "custom";
 
 export type PublicContentBlockType =
   | "paragraph"

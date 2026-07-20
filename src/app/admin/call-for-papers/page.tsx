@@ -164,12 +164,133 @@ const createImportantDate = (order: number): ImportantDate => ({
 
 const serverFileBaseUrl = getBrowserFileOrigin();
 
+const mergeCallForPaperContent = (
+  data: Partial<CallForPaperContent>
+): CallForPaperContent => ({
+  ...defaultForm,
+  ...data,
+  importantDates: Array.isArray(data.importantDates)
+    ? data.importantDates
+    : defaultForm.importantDates,
+  submissionTypes: Array.isArray(data.submissionTypes)
+    ? data.submissionTypes
+    : defaultForm.submissionTypes,
+  engineeringTopics: Array.isArray(data.engineeringTopics)
+    ? data.engineeringTopics
+    : defaultForm.engineeringTopics,
+  environmentalTopics: Array.isArray(data.environmentalTopics)
+    ? data.environmentalTopics
+    : defaultForm.environmentalTopics,
+});
+
 const resolveUploadedFileUrl = (url: string) => {
   if (!url) return "#";
   if (/^https?:\/\//i.test(url)) return url;
   if (url.startsWith("/pdfs/")) return `${serverFileBaseUrl}${url}`;
   return url;
 };
+
+type TextInputProps = {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+};
+
+function TextInput({ label, value, onChange, placeholder }: TextInputProps) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+        {label}
+      </label>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
+      />
+    </div>
+  );
+}
+
+type TextAreaFieldProps = {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  rows?: number;
+};
+
+function TextAreaField({
+  label,
+  value,
+  onChange,
+  rows = 4,
+}: TextAreaFieldProps) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+        {label}
+      </label>
+      <textarea
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        rows={rows}
+        className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
+      />
+    </div>
+  );
+}
+
+type ListEditorProps = {
+  title: string;
+  items: string[];
+  onAdd: () => void;
+  onChange: (index: number, value: string) => void;
+  onRemove: (index: number) => void;
+};
+
+function ListEditor({
+  title,
+  items,
+  onAdd,
+  onChange,
+  onRemove,
+}: ListEditorProps) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <div className="flex items-center justify-between gap-4">
+        <h3 className="text-sm font-bold text-slate-900">{title}</h3>
+        <button
+          type="button"
+          onClick={onAdd}
+          className="inline-flex items-center gap-2 rounded-xl bg-[#005A78] px-3 py-2 text-xs font-bold text-white"
+        >
+          <Plus className="h-4 w-4" /> Add
+        </button>
+      </div>
+
+      <div className="mt-4 space-y-3">
+        {items.map((item, index) => (
+          <div key={`${title}-${index}`} className="flex gap-2">
+            <input
+              value={item}
+              onChange={(event) => onChange(index, event.target.value)}
+              className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"
+            />
+            <button
+              type="button"
+              onClick={() => onRemove(index)}
+              className="rounded-xl border border-rose-200 bg-rose-50 px-3 text-rose-700"
+              aria-label={`Remove ${title} item ${index + 1}`}
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function AdminCallForPapersPage() {
   const [form, setForm] = useState<CallForPaperContent>(defaultForm);
@@ -178,35 +299,25 @@ export default function AdminCallForPapersPage() {
   const [uploading, setUploading] = useState<"pdf" | "poster" | "">("");
   const [message, setMessage] = useState("");
 
-  const fetchCallForPaper = async () => {
-    try {
-      setLoading(true);
-      const data = await getAdminCallForPaper();
-      setForm({
-        ...defaultForm,
-        ...data,
-        importantDates: data.importantDates?.length
-          ? data.importantDates
-          : defaultForm.importantDates,
-        submissionTypes: data.submissionTypes?.length
-          ? data.submissionTypes
-          : defaultForm.submissionTypes,
-        engineeringTopics: data.engineeringTopics?.length
-          ? data.engineeringTopics
-          : defaultForm.engineeringTopics,
-        environmentalTopics: data.environmentalTopics?.length
-          ? data.environmentalTopics
-          : defaultForm.environmentalTopics,
-      });
-    } catch {
-      setMessage("Failed to load call for papers content.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchCallForPaper();
+    let isMounted = true;
+
+    const loadCallForPaper = async () => {
+      try {
+        const data = await getAdminCallForPaper();
+        if (isMounted) setForm(mergeCallForPaperContent(data));
+      } catch {
+        if (isMounted) setMessage("Failed to load call for papers content.");
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    void loadCallForPaper();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const updateField = <K extends keyof CallForPaperContent>(
@@ -281,22 +392,7 @@ export default function AdminCallForPapersPage() {
 
       if (type === "pdf") {
         const updated = await uploadAdminCallForPaperPdf(file);
-        setForm({
-          ...defaultForm,
-          ...updated,
-          importantDates: updated.importantDates?.length
-            ? updated.importantDates
-            : defaultForm.importantDates,
-          submissionTypes: updated.submissionTypes?.length
-            ? updated.submissionTypes
-            : defaultForm.submissionTypes,
-          engineeringTopics: updated.engineeringTopics?.length
-            ? updated.engineeringTopics
-            : defaultForm.engineeringTopics,
-          environmentalTopics: updated.environmentalTopics?.length
-            ? updated.environmentalTopics
-            : defaultForm.environmentalTopics,
-        });
+        setForm(mergeCallForPaperContent(updated));
         setMessage("PDF uploaded and replaced successfully in /pdfs/call-for-papers.pdf.");
         return;
       }
@@ -308,7 +404,7 @@ export default function AdminCallForPapersPage() {
       });
 
       updateField("posterImage", media.fileUrl);
-      setMessage("Poster image uploaded successfully.");
+      setMessage("Poster image uploaded. Click Save Call for Papers to publish the change.");
     } catch {
       setMessage("Upload failed. Please try again.");
     } finally {
@@ -336,11 +432,15 @@ export default function AdminCallForPapersPage() {
       };
 
       const updated = await updateAdminCallForPaper(payload);
-      setForm({ ...defaultForm, ...updated });
+      setForm(mergeCallForPaperContent(updated));
       setMessage("Call for papers content updated successfully.");
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const requestError = error as {
+        response?: { data?: { message?: string } };
+      };
+
       setMessage(
-        error?.response?.data?.message ||
+        requestError.response?.data?.message ||
           "Failed to update call for papers content."
       );
     } finally {
@@ -348,93 +448,6 @@ export default function AdminCallForPapersPage() {
     }
   };
 
-  const Input = ({
-    label,
-    value,
-    onChange,
-    placeholder,
-  }: {
-    label: string;
-    value: string;
-    onChange: (value: string) => void;
-    placeholder?: string;
-  }) => (
-    <div>
-      <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-        {label}
-      </label>
-      <input
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
-      />
-    </div>
-  );
-
-  const Textarea = ({
-    label,
-    value,
-    onChange,
-    rows = 4,
-  }: {
-    label: string;
-    value: string;
-    onChange: (value: string) => void;
-    rows?: number;
-  }) => (
-    <div>
-      <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-        {label}
-      </label>
-      <textarea
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        rows={rows}
-        className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
-      />
-    </div>
-  );
-
-  const ListEditor = ({
-    title,
-    field,
-  }: {
-    title: string;
-    field: "submissionTypes" | "engineeringTopics" | "environmentalTopics";
-  }) => (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-      <div className="flex items-center justify-between gap-4">
-        <h3 className="text-sm font-bold text-slate-900">{title}</h3>
-        <button
-          type="button"
-          onClick={() => addListItem(field)}
-          className="inline-flex items-center gap-2 rounded-xl bg-[#005A78] px-3 py-2 text-xs font-bold text-white"
-        >
-          <Plus className="h-4 w-4" /> Add
-        </button>
-      </div>
-
-      <div className="mt-4 space-y-3">
-        {form[field].map((item, index) => (
-          <div key={`${field}-${index}`} className="flex gap-2">
-            <input
-              value={item}
-              onChange={(event) => updateListItem(field, index, event.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"
-            />
-            <button
-              type="button"
-              onClick={() => removeListItem(field, index)}
-              className="rounded-xl border border-rose-200 bg-rose-50 px-3 text-rose-700"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 
   return (
     <AdminLayout>
@@ -484,15 +497,18 @@ export default function AdminCallForPapersPage() {
               </h2>
 
               <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                <Input label="Small Heading" value={form.invitationLabel} onChange={(value) => updateField("invitationLabel", value)} />
-                <Input label="Page Title" value={form.title} onChange={(value) => updateField("title", value)} />
+                <TextInput label="Small Heading (optional)" placeholder="Leave blank to hide" value={form.invitationLabel} onChange={(value) => updateField("invitationLabel", value)} />
+                <TextInput label="Page Title" value={form.title} onChange={(value) => updateField("title", value)} />
                 <div className="lg:col-span-2">
-                  <Textarea label="Description" value={form.description} rows={5} onChange={(value) => updateField("description", value)} />
+                  <TextInput label="Page Subtitle" value={form.subtitle} onChange={(value) => updateField("subtitle", value)} />
                 </div>
-                <Input label="PDF Title" value={form.pdfTitle} onChange={(value) => updateField("pdfTitle", value)} />
-                <Input label="PDF Subtitle" value={form.pdfSubtitle} onChange={(value) => updateField("pdfSubtitle", value)} />
+                <div className="lg:col-span-2">
+                  <TextAreaField label="Description" value={form.description} rows={5} onChange={(value) => updateField("description", value)} />
+                </div>
+                <TextInput label="PDF Title" value={form.pdfTitle} onChange={(value) => updateField("pdfTitle", value)} />
+                <TextInput label="PDF Subtitle" value={form.pdfSubtitle} onChange={(value) => updateField("pdfSubtitle", value)} />
                 <div>
-                  <Input label="PDF URL" value={form.pdfUrl} onChange={(value) => updateField("pdfUrl", value)} />
+                  <TextInput label="PDF URL" value={form.pdfUrl} onChange={(value) => updateField("pdfUrl", value)} />
                   <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-700 hover:border-[#005A78] hover:text-[#005A78]">
                     {uploading === "pdf" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                     Upload PDF
@@ -514,7 +530,7 @@ export default function AdminCallForPapersPage() {
                   )}
                 </div>
                 <div>
-                  <Input label="Poster Image URL" value={form.posterImage} onChange={(value) => updateField("posterImage", value)} />
+                  <TextInput label="Poster Image URL" value={form.posterImage} onChange={(value) => updateField("posterImage", value)} />
                   <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-700 hover:border-[#005A78] hover:text-[#005A78]">
                     {uploading === "poster" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                     Upload Poster
@@ -543,13 +559,21 @@ export default function AdminCallForPapersPage() {
                 Submission Format
               </h2>
               <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                <Input label="Small Heading" value={form.submissionFormatLabel} onChange={(value) => updateField("submissionFormatLabel", value)} />
-                <Input label="Section Title" value={form.submissionFormatTitle} onChange={(value) => updateField("submissionFormatTitle", value)} />
+                <TextInput label="Small Heading (optional)" placeholder="Leave blank to hide" value={form.submissionFormatLabel} onChange={(value) => updateField("submissionFormatLabel", value)} />
+                <TextInput label="Section Title" value={form.submissionFormatTitle} onChange={(value) => updateField("submissionFormatTitle", value)} />
                 <div className="lg:col-span-2">
-                  <Textarea label="Description" value={form.submissionFormatDescription} onChange={(value) => updateField("submissionFormatDescription", value)} />
+                  <TextAreaField label="Description" value={form.submissionFormatDescription} onChange={(value) => updateField("submissionFormatDescription", value)} />
                 </div>
                 <div className="lg:col-span-2">
-                  <ListEditor title="Types of Manuscripts Accepted" field="submissionTypes" />
+                  <ListEditor
+                    title="Types of Manuscripts Accepted"
+                    items={form.submissionTypes}
+                    onAdd={() => addListItem("submissionTypes")}
+                    onChange={(index, value) =>
+                      updateListItem("submissionTypes", index, value)
+                    }
+                    onRemove={(index) => removeListItem("submissionTypes", index)}
+                  />
                 </div>
               </div>
             </section>
@@ -559,15 +583,31 @@ export default function AdminCallForPapersPage() {
                 Suggested Research Areas
               </h2>
               <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                <Input label="Small Heading" value={form.scopeLabel} onChange={(value) => updateField("scopeLabel", value)} />
-                <Input label="Section Title" value={form.scopeTitle} onChange={(value) => updateField("scopeTitle", value)} />
+                <TextInput label="Small Heading (optional)" placeholder="Leave blank to hide" value={form.scopeLabel} onChange={(value) => updateField("scopeLabel", value)} />
+                <TextInput label="Section Title" value={form.scopeTitle} onChange={(value) => updateField("scopeTitle", value)} />
                 <div className="lg:col-span-2">
-                  <Textarea label="Description" value={form.scopeDescription} onChange={(value) => updateField("scopeDescription", value)} />
+                  <TextAreaField label="Description" value={form.scopeDescription} onChange={(value) => updateField("scopeDescription", value)} />
                 </div>
-                <Input label="Engineering Area Title" value={form.engineeringTitle} onChange={(value) => updateField("engineeringTitle", value)} />
-                <Input label="Environmental Area Title" value={form.environmentalTitle} onChange={(value) => updateField("environmentalTitle", value)} />
-                <ListEditor title="Engineering, ICT and Computing Areas" field="engineeringTopics" />
-                <ListEditor title="Environmental Science and Management Areas" field="environmentalTopics" />
+                <TextInput label="Engineering Area Title" value={form.engineeringTitle} onChange={(value) => updateField("engineeringTitle", value)} />
+                <TextInput label="Environmental Area Title" value={form.environmentalTitle} onChange={(value) => updateField("environmentalTitle", value)} />
+                <ListEditor
+                  title="Engineering, ICT and Computing Areas"
+                  items={form.engineeringTopics}
+                  onAdd={() => addListItem("engineeringTopics")}
+                  onChange={(index, value) =>
+                    updateListItem("engineeringTopics", index, value)
+                  }
+                  onRemove={(index) => removeListItem("engineeringTopics", index)}
+                />
+                <ListEditor
+                  title="Environmental Science and Management Areas"
+                  items={form.environmentalTopics}
+                  onAdd={() => addListItem("environmentalTopics")}
+                  onChange={(index, value) =>
+                    updateListItem("environmentalTopics", index, value)
+                  }
+                  onRemove={(index) => removeListItem("environmentalTopics", index)}
+                />
               </div>
             </section>
 
@@ -576,10 +616,10 @@ export default function AdminCallForPapersPage() {
                 Final Submission Requirements
               </h2>
               <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                <Input label="Small Heading" value={form.finalSectionLabel} onChange={(value) => updateField("finalSectionLabel", value)} />
-                <Input label="Section Title" value={form.finalSectionTitle} onChange={(value) => updateField("finalSectionTitle", value)} />
+                <TextInput label="Small Heading (optional)" placeholder="Leave blank to hide" value={form.finalSectionLabel} onChange={(value) => updateField("finalSectionLabel", value)} />
+                <TextInput label="Section Title" value={form.finalSectionTitle} onChange={(value) => updateField("finalSectionTitle", value)} />
                 <div className="lg:col-span-2">
-                  <Textarea label="Description" value={form.finalSectionDescription} onChange={(value) => updateField("finalSectionDescription", value)} />
+                  <TextAreaField label="Description" value={form.finalSectionDescription} onChange={(value) => updateField("finalSectionDescription", value)} />
                 </div>
               </div>
             </section>
@@ -599,8 +639,8 @@ export default function AdminCallForPapersPage() {
               </div>
 
               <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                <Input label="Small Heading" value={form.importantInfoLabel} onChange={(value) => updateField("importantInfoLabel", value)} />
-                <Input label="Sidebar Title" value={form.timelineTitle} onChange={(value) => updateField("timelineTitle", value)} />
+                <TextInput label="Small Heading (optional)" placeholder="Leave blank to hide" value={form.importantInfoLabel} onChange={(value) => updateField("importantInfoLabel", value)} />
+                <TextInput label="Sidebar Title" value={form.timelineTitle} onChange={(value) => updateField("timelineTitle", value)} />
               </div>
 
               <div className="mt-5 space-y-4">
@@ -645,15 +685,15 @@ export default function AdminCallForPapersPage() {
                 Submit Manuscript Box
               </h2>
               <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                <Input label="Small Heading" value={form.submitSectionLabel} onChange={(value) => updateField("submitSectionLabel", value)} />
-                <Input label="Box Title" value={form.submitTitle} onChange={(value) => updateField("submitTitle", value)} />
+                <TextInput label="Small Heading (optional)" placeholder="Leave blank to hide" value={form.submitSectionLabel} onChange={(value) => updateField("submitSectionLabel", value)} />
+                <TextInput label="Box Title" value={form.submitTitle} onChange={(value) => updateField("submitTitle", value)} />
                 <div className="lg:col-span-2">
-                  <Textarea label="Description" value={form.submitDescription} onChange={(value) => updateField("submitDescription", value)} />
+                  <TextAreaField label="Description" value={form.submitDescription} onChange={(value) => updateField("submitDescription", value)} />
                 </div>
-                <Input label="Email Button Label" value={form.submissionButtonLabel} onChange={(value) => updateField("submissionButtonLabel", value)} />
-                <Input label="Email Button Link" value={form.submissionButtonLink} onChange={(value) => updateField("submissionButtonLink", value)} />
-                <Input label="Guidelines Button Label" value={form.guidelinesButtonLabel} onChange={(value) => updateField("guidelinesButtonLabel", value)} />
-                <Input label="Guidelines Button Link" value={form.guidelinesButtonLink} onChange={(value) => updateField("guidelinesButtonLink", value)} />
+                <TextInput label="Email Button Label" value={form.submissionButtonLabel} onChange={(value) => updateField("submissionButtonLabel", value)} />
+                <TextInput label="Email Button Link" value={form.submissionButtonLink} onChange={(value) => updateField("submissionButtonLink", value)} />
+                <TextInput label="Guidelines Button Label" value={form.guidelinesButtonLabel} onChange={(value) => updateField("guidelinesButtonLabel", value)} />
+                <TextInput label="Guidelines Button Link" value={form.guidelinesButtonLink} onChange={(value) => updateField("guidelinesButtonLink", value)} />
               </div>
             </section>
 
@@ -662,16 +702,16 @@ export default function AdminCallForPapersPage() {
                 Contact Box
               </h2>
               <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                <Input label="Small Heading" value={form.contactSectionLabel} onChange={(value) => updateField("contactSectionLabel", value)} />
-                <Input label="Box Title" value={form.contactTitle} onChange={(value) => updateField("contactTitle", value)} />
-                <Input label="Editor Label" value={form.contactEditorLabel} onChange={(value) => updateField("contactEditorLabel", value)} />
-                <Input label="Editor Name" value={form.contactEditorName} onChange={(value) => updateField("contactEditorName", value)} />
-                <Input label="Published By Label" value={form.publishedByLabel} onChange={(value) => updateField("publishedByLabel", value)} />
-                <Input label="Published By" value={form.publishedBy} onChange={(value) => updateField("publishedBy", value)} />
-                <Input label="Publisher Name" value={form.publisherName} onChange={(value) => updateField("publisherName", value)} />
-                <Input label="Publisher Address" value={form.publisherAddress} onChange={(value) => updateField("publisherAddress", value)} />
-                <Input label="Email" value={form.contactEmail} onChange={(value) => updateField("contactEmail", value)} />
-                <Input label="Phone" value={form.contactPhone} onChange={(value) => updateField("contactPhone", value)} />
+                <TextInput label="Small Heading (optional)" placeholder="Leave blank to hide" value={form.contactSectionLabel} onChange={(value) => updateField("contactSectionLabel", value)} />
+                <TextInput label="Box Title" value={form.contactTitle} onChange={(value) => updateField("contactTitle", value)} />
+                <TextInput label="Editor Label" value={form.contactEditorLabel} onChange={(value) => updateField("contactEditorLabel", value)} />
+                <TextInput label="Editor Name" value={form.contactEditorName} onChange={(value) => updateField("contactEditorName", value)} />
+                <TextInput label="Published By Label" value={form.publishedByLabel} onChange={(value) => updateField("publishedByLabel", value)} />
+                <TextInput label="Published By" value={form.publishedBy} onChange={(value) => updateField("publishedBy", value)} />
+                <TextInput label="Publisher Name" value={form.publisherName} onChange={(value) => updateField("publisherName", value)} />
+                <TextInput label="Publisher Address" value={form.publisherAddress} onChange={(value) => updateField("publisherAddress", value)} />
+                <TextInput label="Email" value={form.contactEmail} onChange={(value) => updateField("contactEmail", value)} />
+                <TextInput label="Phone" value={form.contactPhone} onChange={(value) => updateField("contactPhone", value)} />
               </div>
             </section>
 

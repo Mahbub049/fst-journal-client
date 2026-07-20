@@ -52,6 +52,7 @@ const pageGroups: { label: string; value: PageGroup | "" }[] = [
   { label: "All Groups", value: "" },
   { label: "About", value: "about" },
   { label: "For Authors", value: "for-authors" },
+  { label: "Reviewers", value: "reviewers" },
   { label: "Issues", value: "issues" },
   { label: "Custom", value: "custom" },
 ];
@@ -206,6 +207,7 @@ const replaceChildrenAtPath = (
 const groupLabel = (group: string) => {
   if (group === "for-authors") return "For Authors";
   if (group === "about") return "About";
+  if (group === "reviewers") return "Reviewers";
   if (group === "issues") return "Issues";
   return "Custom";
 };
@@ -214,6 +216,7 @@ const getPublicPageHref = (page: CmsPage) => {
   if (page.group === "about" && page.slug === "contact-us") return "/contact";
   if (page.group === "about") return `/about/${page.slug}`;
   if (page.group === "for-authors") return `/for-authors/${page.slug}`;
+  if (page.group === "reviewers") return `/reviewers/${page.slug}`;
   if (page.group === "issues") return `/issues/${page.slug}`;
   return `/${page.slug}`;
 };
@@ -276,6 +279,27 @@ const pagePresets: Record<PageGroup, { label: string; blocks: ContentBlock[] }[]
           ...createEmptyBlock("section"),
           title: "Section Title",
           children: [createEmptyBlock("paragraph"), createEmptyBlock("list")],
+        },
+      ],
+    },
+  ],
+  reviewers: [
+    {
+      label: "Reviewer information card",
+      blocks: [
+        {
+          ...createEmptyBlock("paragraph"),
+          title: "Section Title",
+        },
+      ],
+    },
+    {
+      label: "Review steps",
+      blocks: [
+        {
+          ...createEmptyBlock("list"),
+          title: "Steps of Review",
+          items: ["First step", "Second step", "Third step"],
         },
       ],
     },
@@ -1414,6 +1438,7 @@ export default function AdminPagesPage() {
                 >
                   <option value="about">About</option>
                   <option value="for-authors">For Authors</option>
+                  <option value="reviewers">Reviewers</option>
                   <option value="issues">Issues</option>
                   <option value="custom">Custom</option>
                 </select>
@@ -1434,13 +1459,15 @@ export default function AdminPagesPage() {
                   ))}
                 </select>
               </div>
-              {form.group === "for-authors" && (
+              {["for-authors", "reviewers"].includes(form.group) && (
                 <div className="lg:col-span-2 rounded-2xl border border-[#005A78]/20 bg-[#005A78]/5 p-4">
                   <p className="text-sm font-bold text-[#005A78]">
-                    For Authors page design
+                    {form.group === "reviewers" ? "Reviewers page design" : "For Authors page design"}
                   </p>
                   <p className="mt-1 text-sm leading-6 text-slate-600">
-                    The page shows the For Authors label, page title, subtitle, optional short description and banner at the top. Below that, the Author Menu remains on the left and each top-level content block is displayed as a separate white card.
+                    {form.group === "reviewers"
+                      ? "The page shows the Reviewers label, page title, subtitle, optional short description and banner at the top. The Reviewers Menu remains on the left and each top-level content block appears as a separate white card."
+                      : "The page shows the For Authors label, page title, subtitle, optional short description and banner at the top. Below that, the Author Menu remains on the left and each top-level content block is displayed as a separate white card."}
                   </p>
                 </div>
               )}

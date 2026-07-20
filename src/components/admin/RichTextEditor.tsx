@@ -55,6 +55,31 @@ const toolbarButtons = [
   { command: "removeFormat", label: "Clear formatting", icon: Eraser },
 ];
 
+const fontOptions = [
+  "Arial",
+  "Calibri",
+  "Georgia",
+  "Tahoma",
+  "Times New Roman",
+  "Trebuchet MS",
+  "Verdana",
+  "Courier New",
+];
+
+const listStyleOptions = [
+  { value: "disc", label: "Bullets: Disc", tag: "ul" },
+  { value: "circle", label: "Bullets: Circle", tag: "ul" },
+  { value: "square", label: "Bullets: Square", tag: "ul" },
+  { value: "dash", label: "Bullets: Dash", tag: "ul" },
+  { value: "check", label: "Bullets: Check", tag: "ul" },
+  { value: "arrow", label: "Bullets: Arrow", tag: "ul" },
+  { value: "decimal", label: "Numbers: 1, 2, 3", tag: "ol" },
+  { value: "lower-alpha", label: "Numbers: a, b, c", tag: "ol" },
+  { value: "upper-alpha", label: "Numbers: A, B, C", tag: "ol" },
+  { value: "lower-roman", label: "Numbers: i, ii, iii", tag: "ol" },
+  { value: "upper-roman", label: "Numbers: I, II, III", tag: "ol" },
+] as const;
+
 const hasVisibleContent = (html: string) => {
   if (!html) return false;
   const text = html
@@ -585,6 +610,58 @@ export default function RichTextEditor({
     emitChange();
   };
 
+  const applyListStyle = (styleName: string) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    editor.focus({ preventScroll: true });
+    restoreSelection();
+
+    const option = listStyleOptions.find((item) => item.value === styleName);
+    if (!option) return;
+
+    let selection = window.getSelection();
+    let range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+    let list = range
+      ? (getClosestElement(range.startContainer, "ul, ol") as
+          | HTMLUListElement
+          | HTMLOListElement
+          | null)
+      : null;
+
+    if (!list || !editor.contains(list)) {
+      toggleList(option.tag);
+      selection = window.getSelection();
+      range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+      list = range
+        ? (getClosestElement(range.startContainer, "ul, ol") as
+            | HTMLUListElement
+            | HTMLOListElement
+            | null)
+        : null;
+    }
+
+    if (!list || !editor.contains(list)) return;
+
+    if (list.tagName.toLowerCase() !== option.tag) {
+      const replacement = document.createElement(option.tag);
+      replacement.append(...Array.from(list.childNodes));
+      list.replaceWith(replacement);
+      list = replacement;
+    }
+
+    list.setAttribute("data-list-style", option.value);
+    list.style.removeProperty("list-style-type");
+
+    const firstItem = Array.from(list.children).find(
+      (child) => child.tagName === "LI",
+    );
+    if (firstItem) placeCaret(firstItem);
+
+    rememberSelection();
+    emitChange();
+  };
+
   const moveCaretToElement = (element: Element) => {
     const range = document.createRange();
     range.selectNodeContents(element);
@@ -650,6 +727,44 @@ export default function RichTextEditor({
           <option value="h5">Heading 5</option>
           <option value="h6">Heading 6</option>
           <option value="pre">Preformatted</option>
+        </select>
+
+        <select
+          defaultValue=""
+          onMouseDown={rememberSelection}
+          onChange={(event) => {
+            if (!event.target.value) return;
+            runCommand("fontName", event.target.value);
+            event.currentTarget.value = "";
+          }}
+          className="h-8 max-w-[155px] rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700"
+          aria-label="Font family"
+        >
+          <option value="" disabled>Font family</option>
+          {fontOptions.map((font) => (
+            <option key={font} value={font} style={{ fontFamily: font }}>
+              {font}
+            </option>
+          ))}
+        </select>
+
+        <select
+          defaultValue=""
+          onMouseDown={rememberSelection}
+          onChange={(event) => {
+            if (!event.target.value) return;
+            applyListStyle(event.target.value);
+            event.currentTarget.value = "";
+          }}
+          className="h-8 max-w-[175px] rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700"
+          aria-label="List style"
+        >
+          <option value="" disabled>List style</option>
+          {listStyleOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
         </select>
 
         <select

@@ -73,10 +73,10 @@ export default async function HomePage() {
     <PublicLayout homepage={homepage}>
       <main className="bg-[#f7f8fb]">
         <Container className="py-10 md:py-14">
-          <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_390px]">
+          <div className="grid items-stretch overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.07)] lg:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.8fr)]">
             <OverviewSection homepage={homepage} />
 
-            <div className="self-start lg:sticky lg:top-[104px]">
+            <div className="border-t border-slate-200 lg:border-l lg:border-t-0">
               <JournalInfoSidebar homepage={homepage} />
             </div>
           </div>

@@ -1,6 +1,6 @@
 import api from "@/lib/api";
 
-export type PageGroup = "about" | "for-authors" | "issues" | "custom";
+export type PageGroup = "about" | "for-authors" | "reviewers" | "issues" | "custom";
 
 export type ContentBlockType =
   | "paragraph"

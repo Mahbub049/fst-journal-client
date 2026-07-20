@@ -65,6 +65,17 @@ const fallbackAuthorItems: DropdownMenuItem[] = [
   { label: "Templates", href: "/for-authors/templates" },
 ];
 
+const fallbackReviewerItems: DropdownMenuItem[] = [
+  {
+    label: "Reviewers Guideline",
+    href: "/reviewers/reviewers-guideline",
+  },
+  {
+    label: "Peer Review Process",
+    href: "/reviewers/peer-review-process",
+  },
+];
+
 const fallbackEditorialItems: DropdownMenuItem[] = [
   { label: "Chief Patron", href: "/editorial-board#chief-patron" },
   { label: "Chief Editor", href: "/editorial-board#chief-editor" },
@@ -584,10 +595,20 @@ export default function PublicNavbar() {
     );
   }, [activeMenus]);
 
+  const reviewerItems = useMemo(() => {
+    return getSafeDropdownItems(
+      activeMenus,
+      "reviewers",
+      fallbackReviewerItems,
+      (href) => href.startsWith("/reviewers/"),
+    );
+  }, [activeMenus]);
+
   const homeMenu = findMainMenu(activeMenus, ["home"]);
   const aboutMenu = findMainMenu(activeMenus, ["about"]);
   const issuesMenu = findMainMenu(activeMenus, ["issues"]);
   const authorsMenu = findMainMenu(activeMenus, ["for authors", "authors"]);
+  const reviewersMenu = findMainMenu(activeMenus, ["reviewers", "review"]);
   const editorialMenu = findMainMenu(activeMenus, [
     "editorial board",
     "editorial",
@@ -606,6 +627,7 @@ export default function PublicNavbar() {
   const issuesHref = "/issues/archive";
   const editorialHref = "/editorial-board";
   const authorsHref = "/for-authors/author-guidelines";
+  const reviewersHref = "/reviewers/reviewers-guideline";
 
   return (
     <header
@@ -668,6 +690,14 @@ export default function PublicNavbar() {
               isExternal={authorsMenu?.isExternal}
               openInNewTab={authorsMenu?.openInNewTab}
               items={authorItems}
+            />
+
+            <JournalDropdownMenu
+              label={reviewersMenu?.label || "Reviewers"}
+              href={reviewersHref}
+              isExternal={reviewersMenu?.isExternal}
+              openInNewTab={reviewersMenu?.openInNewTab}
+              items={reviewerItems}
             />
 
             <SmartLink
@@ -847,6 +877,15 @@ export default function PublicNavbar() {
               isExternal={authorsMenu?.isExternal}
               openInNewTab={authorsMenu?.openInNewTab}
               items={authorItems}
+              onClick={() => setMenuOpen(false)}
+            />
+
+            <MobileGroup
+              title={reviewersMenu?.label || "Reviewers"}
+              href={reviewersHref}
+              isExternal={reviewersMenu?.isExternal}
+              openInNewTab={reviewersMenu?.openInNewTab}
+              items={reviewerItems}
               onClick={() => setMenuOpen(false)}
             />
 

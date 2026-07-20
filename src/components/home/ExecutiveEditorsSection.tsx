@@ -48,6 +48,51 @@ function isVisibleEditorialMember(member: EditorialBoardMember) {
   return member.isActive !== false;
 }
 
+function getHomepageEditorialPriority(category?: string) {
+  const normalized = String(category || "")
+    .toLowerCase()
+    .replace(/[^a-z]+/g, " ")
+    .trim();
+
+  if (normalized.includes("chief editor") || normalized.includes("editor in chief")) {
+    return 0;
+  }
+
+  if (normalized === "editor" || normalized === "editors") {
+    return 1;
+  }
+
+  if (
+    normalized.includes("associate editor") ||
+    normalized.includes("assistant editor")
+  ) {
+    return 2;
+  }
+
+  return 3;
+}
+
+function sortHomepageEditorialMembers(members: EditorialBoardMember[]) {
+  return members
+    .map((member, originalIndex) => ({ member, originalIndex }))
+    .sort((a, b) => {
+      const priorityA = getHomepageEditorialPriority(a.member.category);
+      const priorityB = getHomepageEditorialPriority(b.member.category);
+
+      if (priorityA !== priorityB) return priorityA - priorityB;
+
+      // Keep the server-configured category sequence for all remaining members.
+      if (priorityA === 3) return a.originalIndex - b.originalIndex;
+
+      const orderA = Number(a.member.order ?? 0);
+      const orderB = Number(b.member.order ?? 0);
+      if (orderA !== orderB) return orderA - orderB;
+
+      return a.originalIndex - b.originalIndex;
+    })
+    .map(({ member }) => member);
+}
+
 function getEditorDisplayParts(editor: EditorialBoardMember) {
   const clean = (value?: string) => value?.trim() || "";
 
@@ -124,9 +169,9 @@ export default function ExecutiveEditorsSection({ homepage }: Props) {
     const loadEditors = async () => {
       const data = await getEditorialBoardMembers();
 
-      const executiveEditors = data
-        .filter(isVisibleEditorialMember)
-        .sort((a, b) => Number(a.order ?? 0) - Number(b.order ?? 0));
+      const executiveEditors = sortHomepageEditorialMembers(
+        data.filter(isVisibleEditorialMember)
+      );
 
       setEditors(executiveEditors);
     };
@@ -156,6 +201,7 @@ export default function ExecutiveEditorsSection({ homepage }: Props) {
   }, [editors.length, visibleCount]);
 
   const slideStep = 100 / visibleCount;
+  const currentIndex = Math.min(activeIndex, maxIndex);
 
   const goToSlide = (index: number) => {
     setActiveIndex(Math.max(0, Math.min(maxIndex, index)));
@@ -190,9 +236,9 @@ export default function ExecutiveEditorsSection({ homepage }: Props) {
 
     if (Math.abs(dragDistance) > 45) {
       if (dragDistance < 0) {
-        goToSlide(activeIndex + 1);
+        goToSlide(currentIndex + 1);
       } else {
-        goToSlide(activeIndex - 1);
+        goToSlide(currentIndex - 1);
       }
     }
 
@@ -203,10 +249,6 @@ export default function ExecutiveEditorsSection({ homepage }: Props) {
     setDragOffset(0);
     setIsDragging(false);
   };
-
-  useEffect(() => {
-    setActiveIndex((prev) => Math.min(prev, maxIndex));
-  }, [maxIndex]);
 
   useEffect(() => {
     if (editors.length <= visibleCount) return;
@@ -273,7 +315,7 @@ export default function ExecutiveEditorsSection({ homepage }: Props) {
             className={`flex ${isDragging ? "" : "transition-transform duration-700 ease-in-out"
               }`}
             style={{
-              transform: `translateX(-${activeIndex * slideStep}%) translateX(${dragOffset}px)`,
+              transform: `translateX(-${currentIndex * slideStep}%) translateX(${dragOffset}px)`,
             }}
           >
             {editors.map((editor) => {
@@ -351,7 +393,7 @@ export default function ExecutiveEditorsSection({ homepage }: Props) {
                 key={index}
                 type="button"
                 onClick={() => setActiveIndex(index)}
-                className={`h-2.5 rounded-full transition-all ${activeIndex === index
+                className={`h-2.5 rounded-full transition-all ${currentIndex === index
                   ? "w-8 bg-[#c7a159]"
                   : "w-2.5 bg-white/28 hover:bg-[#0ea5b7]"
                   }`}
