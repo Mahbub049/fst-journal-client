@@ -73,6 +73,9 @@ const listStyleOptions = [
   { value: "dash", label: "Bullets: Dash", tag: "ul" },
   { value: "check", label: "Bullets: Check", tag: "ul" },
   { value: "arrow", label: "Bullets: Arrow", tag: "ul" },
+  { value: "blue-dot", label: "Bullets: Blue dot", tag: "ul" },
+  { value: "blue-diamond", label: "Bullets: Blue ❖", tag: "ul" },
+  { value: "black-diamond", label: "Bullets: Black ❖", tag: "ul" },
   { value: "decimal", label: "Numbers: 1, 2, 3", tag: "ol" },
   { value: "lower-alpha", label: "Numbers: a, b, c", tag: "ol" },
   { value: "upper-alpha", label: "Numbers: A, B, C", tag: "ol" },
@@ -614,31 +617,39 @@ export default function RichTextEditor({
     const editor = editorRef.current;
     if (!editor) return;
 
-    editor.focus({ preventScroll: true });
-    restoreSelection();
-
     const option = listStyleOptions.find((item) => item.value === styleName);
     if (!option) return;
 
-    let selection = window.getSelection();
-    let range = selection?.rangeCount ? selection.getRangeAt(0) : null;
-    let list = range
-      ? (getClosestElement(range.startContainer, "ul, ol") as
-          | HTMLUListElement
-          | HTMLOListElement
-          | null)
-      : null;
+    editor.focus({ preventScroll: true });
+    restoreSelection();
 
-    if (!list || !editor.contains(list)) {
-      toggleList(option.tag);
-      selection = window.getSelection();
-      range = selection?.rangeCount ? selection.getRangeAt(0) : null;
-      list = range
-        ? (getClosestElement(range.startContainer, "ul, ol") as
-            | HTMLUListElement
-            | HTMLOListElement
-            | null)
-        : null;
+    const findSelectedList = () => {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return null;
+
+      const range = selection.getRangeAt(0);
+      const startList = getClosestElement(range.startContainer, "ul, ol");
+      if (!isListElement(startList) || !editor.contains(startList)) return null;
+
+      return startList;
+    };
+
+    let list = findSelectedList();
+
+    // When normal text is selected, create a list first. The fallback is kept
+    // because Chromium can occasionally ignore execCommand after a toolbar
+    // control receives focus.
+    if (!list) {
+      const beforeHtml = editor.innerHTML;
+      const command = option.tag === "ul" ? "insertUnorderedList" : "insertOrderedList";
+      document.execCommand(command, false);
+      list = findSelectedList();
+
+      if (!list || editor.innerHTML === beforeHtml) {
+        restoreSelection();
+        manuallyToggleList(option.tag);
+        list = findSelectedList();
+      }
     }
 
     if (!list || !editor.contains(list)) return;
@@ -650,8 +661,21 @@ export default function RichTextEditor({
       list = replacement;
     }
 
+    // Use both an attribute and a class. The class makes the marker styling
+    // reliable inside contentEditable and after the HTML is saved/rendered.
+    const knownClasses = listStyleOptions.map(
+      (item) => `cms-list-${item.value}`,
+    );
+    list.classList.remove(...knownClasses);
+    list.classList.add(`cms-list-${option.value}`);
     list.setAttribute("data-list-style", option.value);
-    list.style.removeProperty("list-style-type");
+
+    if (["blue-dot", "blue-diamond", "black-diamond", "dash", "check", "arrow"].includes(option.value)) {
+      list.style.setProperty("list-style", "none", "important");
+    } else {
+      list.style.removeProperty("list-style");
+      list.style.removeProperty("list-style-type");
+    }
 
     const firstItem = Array.from(list.children).find(
       (child) => child.tagName === "LI",
@@ -750,13 +774,15 @@ export default function RichTextEditor({
 
         <select
           defaultValue=""
+          onPointerDownCapture={rememberSelection}
           onMouseDown={rememberSelection}
           onChange={(event) => {
-            if (!event.target.value) return;
-            applyListStyle(event.target.value);
+            const selectedStyle = event.currentTarget.value;
+            if (!selectedStyle) return;
+            applyListStyle(selectedStyle);
             event.currentTarget.value = "";
           }}
-          className="h-8 max-w-[175px] rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700"
+          className="h-8 max-w-[205px] rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700"
           aria-label="List style"
         >
           <option value="" disabled>List style</option>

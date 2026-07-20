@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { AnnouncementItem } from "@/services/siteSettingsService";
 import { getPublicSiteSettings } from "@/services/siteSettingsService";
 
@@ -22,12 +22,17 @@ const fallbackAnnouncements: AnnouncementMessage[] = [
   { text: "WELCOME TO THE JOURNAL OF FST" },
   { text: "CALL FOR PAPERS" },
   { text: "EXPLORE CURRENT AND ARCHIVED ISSUES OF THE JOURNAL" },
-  { text: "SUBMIT YOUR RESEARCH MANUSCRIPT THROUGH THE ONLINE SUBMISSION SYSTEM" },
+  {
+    text: "SUBMIT YOUR RESEARCH MANUSCRIPT THROUGH THE ONLINE SUBMISSION SYSTEM",
+  },
 ];
 
 const DEFAULT_SPEED_SECONDS = 100;
 const MIN_SPEED_SECONDS = 10;
 const MAX_SPEED_SECONDS = 300;
+const DEFAULT_GAP_PIXELS = 120;
+const MIN_GAP_PIXELS = 24;
+const MAX_GAP_PIXELS = 480;
 
 function clampSpeed(value: unknown) {
   const numericValue = Number(value);
@@ -36,7 +41,18 @@ function clampSpeed(value: unknown) {
 
   return Math.min(
     Math.max(Math.round(numericValue), MIN_SPEED_SECONDS),
-    MAX_SPEED_SECONDS
+    MAX_SPEED_SECONDS,
+  );
+}
+
+function clampGap(value: unknown) {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue)) return DEFAULT_GAP_PIXELS;
+
+  return Math.min(
+    Math.max(Math.round(numericValue), MIN_GAP_PIXELS),
+    MAX_GAP_PIXELS,
   );
 }
 
@@ -110,6 +126,17 @@ function isExternalUrl(url: string) {
   return /^https?:\/\//i.test(url);
 }
 
+function fillVisibleSlots(messages: AnnouncementMessage[]) {
+  if (messages.length >= 3) return messages;
+
+  const minimumSlots = messages.length === 2 ? 4 : 3;
+
+  return Array.from(
+    { length: minimumSlots },
+    (_, index) => messages[index % messages.length],
+  );
+}
+
 export default function JournalAnnouncement({
   homepage,
   items,
@@ -120,8 +147,15 @@ export default function JournalAnnouncement({
     AnnouncementMessage[]
   >([]);
   const [speedSeconds, setSpeedSeconds] = useState(DEFAULT_SPEED_SECONDS);
+  const [gapPixels, setGapPixels] = useState(DEFAULT_GAP_PIXELS);
   const [loadedSettings, setLoadedSettings] = useState(false);
   const [failedToLoadSettings, setFailedToLoadSettings] = useState(false);
+  const shellRef = useRef<HTMLElement | null>(null);
+  const itemMeasureRefs = useRef<Array<HTMLSpanElement | null>>([]);
+  const [marqueeGeometry, setMarqueeGeometry] = useState({
+    gap: DEFAULT_GAP_PIXELS,
+    cycleWidth: 0,
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -133,9 +167,10 @@ export default function JournalAnnouncement({
         if (!isMounted) return;
 
         setSettingsAnnouncements(
-          getActiveAnnouncementMessages(settings.announcementItems)
+          getActiveAnnouncementMessages(settings.announcementItems),
         );
         setSpeedSeconds(clampSpeed(settings.announcementSpeedSeconds));
+        setGapPixels(clampGap(settings.announcementGapPixels));
         setFailedToLoadSettings(false);
       } catch (error) {
         console.error("Failed to load journal announcements:", error);
@@ -171,12 +206,81 @@ export default function JournalAnnouncement({
     return [];
   }, [announcements, failedToLoadSettings, homepage, items, settingsAnnouncements]);
 
-  if (!loadedSettings && messages.length === 0) return null;
-  if (messages.length === 0) return null;
+  const displayedMessages = useMemo(
+    () => (messages.length > 0 ? fillVisibleSlots(messages) : []),
+    [messages],
+  );
 
-  const loopItems = [...messages, ...messages, ...messages];
+  useEffect(() => {
+    if (displayedMessages.length === 0) return;
+
+    const updateMarqueeGeometry = () => {
+      const shellWidth = shellRef.current?.getBoundingClientRect().width ?? 0;
+      const itemWidths = itemMeasureRefs.current
+        .slice(0, displayedMessages.length)
+        .map((item) => item?.getBoundingClientRect().width ?? 0);
+
+      if (shellWidth <= 0 || itemWidths.some((width) => width <= 0)) return;
+
+      const totalItemWidth = itemWidths.reduce((total, width) => total + width, 0);
+
+      // There are as many equal gaps as there are items: the normal gaps
+      // inside the sequence plus one split equally across its two edges.
+      // That split edge gap joins with the next identical sequence, keeping
+      // R1---R2---R3---R1 spacing exactly the same at every loop boundary.
+      const gapNeededToFillViewport = Math.max(
+        0,
+        (shellWidth - totalItemWidth) / displayedMessages.length,
+      );
+      const equalGap = Math.max(gapPixels, gapNeededToFillViewport);
+      const cycleWidth = totalItemWidth + equalGap * displayedMessages.length;
+
+      setMarqueeGeometry((current) => {
+        const nextGap = Math.round(equalGap * 100) / 100;
+        const nextCycleWidth = Math.ceil(cycleWidth);
+
+        if (
+          Math.abs(current.gap - nextGap) < 0.5 &&
+          Math.abs(current.cycleWidth - nextCycleWidth) < 1
+        ) {
+          return current;
+        }
+
+        return { gap: nextGap, cycleWidth: nextCycleWidth };
+      });
+    };
+
+    updateMarqueeGeometry();
+
+    const resizeObserver = new ResizeObserver(updateMarqueeGeometry);
+    if (shellRef.current) resizeObserver.observe(shellRef.current);
+
+    document.fonts?.ready.then(updateMarqueeGeometry).catch(() => undefined);
+
+    return () => resizeObserver.disconnect();
+  }, [displayedMessages, gapPixels]);
+
+  if (!loadedSettings && displayedMessages.length === 0) return null;
+  if (displayedMessages.length === 0) return null;
+
+  const equalGap = marqueeGeometry.gap || gapPixels;
+  const cycleWidth = marqueeGeometry.cycleWidth;
+
   const trackStyle = {
     "--announcement-duration": `${speedSeconds}s`,
+    "--announcement-gap": `${equalGap}px`,
+    "--announcement-translate": cycleWidth ? `-${cycleWidth}px` : "-100vw",
+    animationPlayState: cycleWidth ? undefined : "paused",
+  } as CSSProperties;
+
+  const groupStyle = {
+    display: "flex",
+    boxSizing: "border-box",
+    flex: cycleWidth ? `0 0 ${cycleWidth}px` : "0 0 auto",
+    width: cycleWidth ? `${cycleWidth}px` : "max-content",
+    minWidth: cycleWidth ? `${cycleWidth}px` : "max-content",
+    columnGap: `${equalGap}px`,
+    paddingInline: `${equalGap / 2}px`,
   } as CSSProperties;
 
   const renderMessageText = (message: AnnouncementMessage) => {
@@ -194,12 +298,24 @@ export default function JournalAnnouncement({
     );
   };
 
-  const renderGroup = (hidden = false) => (
-    <div className="journal-announcement-group" aria-hidden={hidden || undefined}>
-      {loopItems.map((message, index) => (
+  const renderSequence = (hidden = false, collectMeasurements = false) => (
+    <div
+      className="journal-announcement-group"
+      aria-hidden={hidden || undefined}
+      style={groupStyle}
+    >
+      {displayedMessages.map((message, index) => (
         <span
           className="journal-announcement-item"
           key={`${message.text}-${message.url || "text"}-${index}`}
+          ref={
+            collectMeasurements
+              ? (element) => {
+                  itemMeasureRefs.current[index] = element;
+                }
+              : undefined
+          }
+          style={{ flex: "0 0 auto" }}
         >
           <span className="journal-announcement-dot" />
           {renderMessageText(message)}
@@ -210,6 +326,7 @@ export default function JournalAnnouncement({
 
   return (
     <section
+      ref={shellRef}
       className={`journal-announcement-shell ${className}`}
       aria-label="Journal announcements"
     >
@@ -217,8 +334,8 @@ export default function JournalAnnouncement({
       <div className="journal-announcement-fade journal-announcement-fade-right" />
 
       <div className="journal-announcement-track" style={trackStyle}>
-        {renderGroup(false)}
-        {renderGroup(true)}
+        {renderSequence(false, true)}
+        {renderSequence(true)}
       </div>
     </section>
   );

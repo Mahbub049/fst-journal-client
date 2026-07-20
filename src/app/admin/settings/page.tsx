@@ -66,6 +66,7 @@ const emptySettings: SiteSettingsContent = {
     },
   ],
   announcementSpeedSeconds: 100,
+  announcementGapPixels: 120,
 
   usefulLinks: [],
   socialLinks: [],
@@ -112,7 +113,9 @@ export default function AdminSettingsPage() {
         ...data,
         announcementItems: data.announcementItems || emptySettings.announcementItems,
         announcementSpeedSeconds:
-          data.announcementSpeedSeconds || emptySettings.announcementSpeedSeconds,
+          data.announcementSpeedSeconds ?? emptySettings.announcementSpeedSeconds,
+        announcementGapPixels:
+          data.announcementGapPixels ?? emptySettings.announcementGapPixels,
         usefulLinks: data.usefulLinks || [],
         socialLinks: data.socialLinks || [],
       });
@@ -258,6 +261,10 @@ export default function AdminSettingsPage() {
           Math.max(Number(form.announcementSpeedSeconds) || 100, 10),
           300
         ),
+        announcementGapPixels: Math.min(
+          Math.max(Number(form.announcementGapPixels) || 120, 24),
+          480
+        ),
         usefulLinks: form.usefulLinks.map((item, index) => ({
           ...item,
           order: index + 1,
@@ -275,7 +282,9 @@ export default function AdminSettingsPage() {
         ...updated,
         announcementItems: updated.announcementItems || emptySettings.announcementItems,
         announcementSpeedSeconds:
-          updated.announcementSpeedSeconds || emptySettings.announcementSpeedSeconds,
+          updated.announcementSpeedSeconds ?? emptySettings.announcementSpeedSeconds,
+        announcementGapPixels:
+          updated.announcementGapPixels ?? emptySettings.announcementGapPixels,
         usefulLinks: updated.usefulLinks || [],
         socialLinks: updated.socialLinks || [],
       });
@@ -355,26 +364,50 @@ export default function AdminSettingsPage() {
                 </button>
               </div>
 
-              <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                  Marquee Speed <span className="font-normal text-slate-400">(seconds)</span>
-                </label>
-                <input
-                  type="number"
-                  min={10}
-                  max={300}
-                  value={form.announcementSpeedSeconds}
-                  onChange={(event) =>
-                    updateField(
-                      "announcementSpeedSeconds",
-                      Number(event.target.value) as SiteSettingsContent["announcementSpeedSeconds"]
-                    )
-                  }
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78] lg:max-w-xs"
-                />
-                <p className="mt-1.5 text-xs text-slate-500">
-                  Lower value moves faster. Higher value moves slower. Recommended range: 60–140 seconds.
-                </p>
+              <div className="mt-5 grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                    Marquee Speed <span className="font-normal text-slate-400">(seconds)</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={10}
+                    max={300}
+                    value={form.announcementSpeedSeconds}
+                    onChange={(event) =>
+                      updateField(
+                        "announcementSpeedSeconds",
+                        Number(event.target.value) as SiteSettingsContent["announcementSpeedSeconds"]
+                      )
+                    }
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"
+                  />
+                  <p className="mt-1.5 text-xs text-slate-500">
+                    Lower value moves faster. Higher value moves slower. Recommended range: 60–140 seconds.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                    Minimum Gap Between Texts <span className="font-normal text-slate-400">(pixels)</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={24}
+                    max={480}
+                    value={form.announcementGapPixels}
+                    onChange={(event) =>
+                      updateField(
+                        "announcementGapPixels",
+                        Number(event.target.value) as SiteSettingsContent["announcementGapPixels"]
+                      )
+                    }
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"
+                  />
+                  <p className="mt-1.5 text-xs text-slate-500">
+                    Controls the spacing between announcements. Short lists are also distributed across the full screen, such as left, center, and right.
+                  </p>
+                </div>
               </div>
 
               <div className="mt-5 space-y-4">

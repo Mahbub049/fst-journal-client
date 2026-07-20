@@ -22,13 +22,24 @@ const paddingClasses: Record<string, string> = {
 
 const isHtml = (value?: string) => /<\/?[a-z][\s\S]*>/i.test(value || "");
 
-function RichContent({ html }: { html?: string }) {
+const getBodyTextClass = (variant: "about" | "authors" | "contact") =>
+  variant === "contact" ? "text-slate-600" : "text-[#111111]";
+
+function RichContent({
+  html,
+  variant,
+}: {
+  html?: string;
+  variant: "about" | "authors" | "contact";
+}) {
   if (!html) return null;
+
+  const bodyTextClass = getBodyTextClass(variant);
 
   if (isHtml(html)) {
     return (
       <div
-        className="cms-rich-text text-[15px] leading-7 text-slate-600 md:text-[16px] md:leading-8"
+        className={`cms-rich-text text-[15px] leading-7 ${bodyTextClass} md:text-[16px] md:leading-8`}
         dangerouslySetInnerHTML={{ __html: html }}
       />
     );
@@ -43,7 +54,7 @@ function RichContent({ html }: { html?: string }) {
         .map((paragraph, index) => (
           <p
             key={index}
-            className="text-[15px] leading-7 text-slate-600 md:text-[16px] md:leading-8"
+            className={`text-[15px] leading-7 ${bodyTextClass} md:text-[16px] md:leading-8`}
           >
             {paragraph}
           </p>
@@ -122,7 +133,7 @@ function Block({
             {block.title}
           </h3>
         )}
-        <RichContent html={block.content} />
+        <RichContent html={block.content} variant={variant} />
       </div>
     );
   }
@@ -142,7 +153,7 @@ function Block({
             {block.title}
           </h3>
         )}
-        <ul className="space-y-3 text-[15px] leading-7 text-slate-600 md:text-[16px] md:leading-8">
+        <ul className={`space-y-3 text-[15px] leading-7 ${getBodyTextClass(variant)} md:text-[16px] md:leading-8`}>
           {(block.items || []).map((item, index) => (
             <li key={`${item}-${index}`} className="flex gap-3 md:text-justify">
               <span className="mt-3 h-2 w-2 shrink-0 rounded-full bg-[#22b8e8]" />
@@ -184,7 +195,7 @@ function Block({
         )}
         {block.content && (
           <div className={block.title ? "mt-4" : ""}>
-            <RichContent html={block.content} />
+            <RichContent html={block.content} variant={variant} />
           </div>
         )}
         {children.length > 0 && (
@@ -240,10 +251,10 @@ function Block({
   if (block.type === "quote") {
     return (
       <blockquote
-        className={`${width} rounded-2xl border-l-4 border-[#005A78] bg-slate-50 px-6 py-5 text-lg italic leading-8 text-slate-700`}
+        className={`${width} rounded-2xl border-l-4 border-[#005A78] bg-slate-50 px-6 py-5 text-lg italic leading-8 ${getBodyTextClass(variant)}`}
         style={wrapperStyle}
       >
-        <RichContent html={block.content} />
+        <RichContent html={block.content} variant={variant} />
         {block.title && (
           <footer className="mt-3 text-sm font-semibold not-italic">
             — {block.title}

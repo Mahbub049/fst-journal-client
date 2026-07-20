@@ -47,6 +47,7 @@ export type SiteSettingsContent = {
 
   announcementItems: AnnouncementItem[];
   announcementSpeedSeconds: number;
+  announcementGapPixels: number;
 
   usefulLinks: UsefulLink[];
   socialLinks: SocialLink[];

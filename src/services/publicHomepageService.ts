@@ -26,6 +26,14 @@ export type HomepageButton = {
   isActive: boolean;
 };
 
+export type HomepageCarouselImage = {
+  _id?: string;
+  imageUrl: string;
+  altText: string;
+  order: number;
+  isActive: boolean;
+};
+
 export type PublicHomepageContent = {
   _id?: string;
 
@@ -40,6 +48,15 @@ export type PublicHomepageContent = {
 
   overviewTitle: string;
   overviewContent: string;
+
+  countdownEnabled: boolean;
+  countdownTitle: string;
+  countdownTargetDate: string | null;
+  countdownExpiredText: string;
+
+  carouselEnabled: boolean;
+  carouselIntervalSeconds: number;
+  carouselImages: HomepageCarouselImage[];
 
   journalInfoTitle: string;
   journalInfoItems: HomepageInfoItem[];

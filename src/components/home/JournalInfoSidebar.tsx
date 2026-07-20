@@ -12,6 +12,7 @@ import { PublicHomepageContent } from "@/services/publicHomepageService";
 
 type Props = {
   homepage?: PublicHomepageContent | null;
+  compact?: boolean;
 };
 
 type JournalInfoRow = {
@@ -72,7 +73,7 @@ function JournalInfoIcon({ label }: { label: string }) {
   return <BadgeInfo className={className} aria-hidden="true" />;
 }
 
-export default function JournalInfoSidebar({ homepage }: Props) {
+export default function JournalInfoSidebar({ homepage, compact = false }: Props) {
   const activeItems = homepage?.journalInfoItems
     ?.filter((item) => item.isActive)
     .sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
@@ -82,10 +83,10 @@ export default function JournalInfoSidebar({ homepage }: Props) {
     : fallbackJournalInfo;
 
   return (
-    <aside className="flex h-full min-h-[430px] flex-col bg-white">
-      <div className="border-b border-slate-200 px-6 py-5 md:px-8 md:py-6">
+    <aside className={`flex h-full flex-col bg-white ${compact ? "min-h-0" : "min-h-[430px]"}`}>
+      <div className={`border-b border-slate-200 px-6 ${compact ? "py-3.5 md:px-6 md:py-4" : "py-5 md:px-8 md:py-6"}`}>
         <h3
-          className="text-[26px] font-semibold leading-tight text-[#0b1f3a] md:text-[29px]"
+          className={`${compact ? "text-[22px] md:text-[24px]" : "text-[26px] md:text-[29px]"} font-semibold leading-tight text-[#0b1f3a]`}
           style={{ fontFamily: "var(--font-source-serif)" }}
         >
           {homepage?.journalInfoTitle || "Journal Information"}
@@ -97,20 +98,20 @@ export default function JournalInfoSidebar({ homepage }: Props) {
           return (
             <div
               key={`${label}-${index}`}
-              className="grid grid-cols-[42px_minmax(92px,0.75fr)_minmax(0,1.25fr)] items-center gap-4 px-5 py-4 text-[14px] md:grid-cols-[46px_minmax(105px,0.75fr)_1px_minmax(0,1.25fr)] md:gap-5 md:px-7 md:py-[17px]"
+              className={`grid grid-cols-[40px_minmax(88px,0.75fr)_minmax(0,1.25fr)] items-center gap-3.5 px-5 text-[13.5px] md:grid-cols-[42px_minmax(100px,0.75fr)_1px_minmax(0,1.25fr)] md:gap-4 md:px-6 ${compact ? "py-2.5 md:py-[11px]" : "py-4 md:py-[17px]"}`}
             >
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eaf5fb] text-[#0b1f3a] md:h-11 md:w-11">
+              <span className={`flex items-center justify-center rounded-xl bg-[#eaf5fb] text-[#0b1f3a] ${compact ? "h-9 w-9 md:h-10 md:w-10" : "h-10 w-10 md:h-11 md:w-11"}`}>
                 <JournalInfoIcon label={label} />
               </span>
 
-              <span className="leading-6 text-slate-600">{label}</span>
+              <span className={`${compact ? "leading-5" : "leading-6"} text-slate-600`}>{label}</span>
 
               <span
-                className="hidden h-10 w-px bg-slate-200 md:block"
+                className={`hidden w-px bg-slate-200 md:block ${compact ? "h-9" : "h-10"}`}
                 aria-hidden="true"
               />
 
-              <span className="col-span-2 break-words font-semibold leading-6 text-slate-900 md:col-span-1">
+              <span className={`col-span-2 break-words font-semibold text-slate-900 md:col-span-1 ${compact ? "leading-5" : "leading-6"}`}>
                 {value}
               </span>
             </div>

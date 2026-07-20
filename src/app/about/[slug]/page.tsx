@@ -184,7 +184,7 @@ export default async function AboutInnerPage({
                       className={`rounded-2xl px-4 py-3 text-[14px] font-medium transition ${
                         link.href.endsWith(slug)
                           ? "bg-[#111433] text-white"
-                          : "text-slate-600 hover:bg-[#eef8fc] hover:text-[#22b8e8]"
+                          : "text-[#111111] hover:bg-[#eef8fc] hover:text-[#22b8e8]"
                       }`}
                     >
                       {link.label}

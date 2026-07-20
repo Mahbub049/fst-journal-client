@@ -293,7 +293,7 @@ export default async function ForAuthorsInnerPage({
               )}
 
               {data.shortDescription && (
-                <p className="mt-3 max-w-3xl text-[14px] leading-7 text-slate-500 md:text-[15px]">
+                <p className="mt-3 max-w-3xl text-[14px] leading-7 text-[#111111] md:text-[15px]">
                   {data.shortDescription}
                 </p>
               )}
@@ -326,7 +326,7 @@ export default async function ForAuthorsInnerPage({
                         className={`rounded-2xl px-4 py-3 text-[14px] font-medium transition ${
                           link.href.endsWith(slug)
                             ? "bg-[#111433] text-white"
-                            : "text-slate-600 hover:bg-[#eef8fc] hover:text-[#22b8e8]"
+                            : "text-[#111111] hover:bg-[#eef8fc] hover:text-[#22b8e8]"
                         }`}
                       >
                         {link.label}

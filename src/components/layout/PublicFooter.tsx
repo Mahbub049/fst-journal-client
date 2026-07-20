@@ -29,6 +29,7 @@ const fallbackSettings: SiteSettingsContent = {
   language: "English",
   publicationFrequency: "Annual",
   announcementSpeedSeconds: 100,
+  announcementGapPixels: 120,
   announcementItems: [
     {
       text: "Welcome to the official website of Journal of FST",

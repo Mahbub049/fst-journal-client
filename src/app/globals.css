@@ -666,3 +666,118 @@ button:disabled,
 .cms-rich-text ul[data-list-style="dash"] > li::before { content: "–"; }
 .cms-rich-text ul[data-list-style="check"] > li::before { content: "✓"; }
 .cms-rich-text ul[data-list-style="arrow"] > li::before { content: "→"; }
+
+/* Journal-specific rich-text bullets available from the admin editor. */
+.cms-rich-text ul[data-list-style="blue-dot"],
+.cms-rich-text ul[data-list-style="blue-diamond"],
+.cms-rich-text ul[data-list-style="black-diamond"] {
+  list-style: none !important;
+  padding-left: 1.75rem;
+}
+
+.cms-rich-text ul[data-list-style="blue-dot"] > li,
+.cms-rich-text ul[data-list-style="blue-diamond"] > li,
+.cms-rich-text ul[data-list-style="black-diamond"] > li {
+  position: relative;
+}
+
+.cms-rich-text ul[data-list-style="blue-dot"] > li::before,
+.cms-rich-text ul[data-list-style="blue-diamond"] > li::before,
+.cms-rich-text ul[data-list-style="black-diamond"] > li::before {
+  position: absolute;
+  left: -1.45rem;
+}
+
+.cms-rich-text ul[data-list-style="blue-dot"] > li::before {
+  content: "";
+  top: 0.72em;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: #22b8e8;
+}
+
+.cms-rich-text ul[data-list-style="blue-diamond"] > li::before,
+.cms-rich-text ul[data-list-style="black-diamond"] > li::before {
+  content: "❖";
+  top: 0;
+  font-size: 0.95em;
+  font-weight: 700;
+  line-height: inherit;
+}
+
+.cms-rich-text ul[data-list-style="blue-diamond"] > li::before {
+  color: #22b8e8;
+}
+
+.cms-rich-text ul[data-list-style="black-diamond"] > li::before {
+  color: #111111;
+}
+
+
+
+/* Reliable custom list markers for rich-text content. The class selectors are
+   intentionally supported alongside data-list-style because contentEditable
+   can behave inconsistently with attribute-only list formatting. */
+.cms-rich-text ul.cms-list-blue-dot,
+.cms-rich-text ul.cms-list-blue-diamond,
+.cms-rich-text ul.cms-list-black-diamond,
+.cms-rich-text ul[data-list-style="blue-dot"],
+.cms-rich-text ul[data-list-style="blue-diamond"],
+.cms-rich-text ul[data-list-style="black-diamond"] {
+  list-style: none !important;
+  padding-left: 1.75rem !important;
+}
+
+.cms-rich-text ul.cms-list-blue-dot > li,
+.cms-rich-text ul.cms-list-blue-diamond > li,
+.cms-rich-text ul.cms-list-black-diamond > li,
+.cms-rich-text ul[data-list-style="blue-dot"] > li,
+.cms-rich-text ul[data-list-style="blue-diamond"] > li,
+.cms-rich-text ul[data-list-style="black-diamond"] > li {
+  position: relative !important;
+  display: list-item !important;
+}
+
+.cms-rich-text ul.cms-list-blue-dot > li::before,
+.cms-rich-text ul.cms-list-blue-diamond > li::before,
+.cms-rich-text ul.cms-list-black-diamond > li::before,
+.cms-rich-text ul[data-list-style="blue-dot"] > li::before,
+.cms-rich-text ul[data-list-style="blue-diamond"] > li::before,
+.cms-rich-text ul[data-list-style="black-diamond"] > li::before {
+  position: absolute !important;
+  left: -1.4rem !important;
+  display: block !important;
+  pointer-events: none;
+}
+
+.cms-rich-text ul.cms-list-blue-dot > li::before,
+.cms-rich-text ul[data-list-style="blue-dot"] > li::before {
+  content: "" !important;
+  top: 0.72em !important;
+  width: 0.5rem !important;
+  height: 0.5rem !important;
+  border-radius: 9999px !important;
+  background-color: #22b8e8 !important;
+}
+
+.cms-rich-text ul.cms-list-blue-diamond > li::before,
+.cms-rich-text ul.cms-list-black-diamond > li::before,
+.cms-rich-text ul[data-list-style="blue-diamond"] > li::before,
+.cms-rich-text ul[data-list-style="black-diamond"] > li::before {
+  content: "❖" !important;
+  top: 0 !important;
+  font-size: 0.95em !important;
+  font-weight: 700 !important;
+  line-height: inherit !important;
+}
+
+.cms-rich-text ul.cms-list-blue-diamond > li::before,
+.cms-rich-text ul[data-list-style="blue-diamond"] > li::before {
+  color: #22b8e8 !important;
+}
+
+.cms-rich-text ul.cms-list-black-diamond > li::before,
+.cms-rich-text ul[data-list-style="black-diamond"] > li::before {
+  color: #111111 !important;
+}
