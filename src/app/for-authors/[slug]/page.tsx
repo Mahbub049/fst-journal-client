@@ -1,7 +1,9 @@
 import Container from "@/components/common/Container";
+import CmsContentRenderer from "@/components/common/CmsContentRenderer";
 import PageTransition from "@/components/common/PageTransition";
 import PublicLayout from "@/components/layout/PublicLayout";
 import Link from "next/link";
+import { getPublicEditorialBoardConfig } from "@/services/editorialBoardService";
 import {
   getPublicPageByGroupAndSlug,
   getPublicPagesByGroup,
@@ -193,13 +195,6 @@ const fallbackSideLinks = [
 ];
 
 
-const splitContent = (content?: string) => {
-  return (content || "")
-    .split("\n")
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean);
-};
-
 const getFallbackBlocks = (
   sections: { heading: string; body: string | string[] }[]
 ): PublicContentBlock[] => {
@@ -224,141 +219,6 @@ const getFallbackBlocks = (
   });
 };
 
-const ContentBlockCard = ({ block }: { block: PublicContentBlock }) => {
-  if (!block.isActive) return null;
-
-  if (block.type === "heading") {
-    return (
-      <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
-        <h2
-          className="text-[22px] font-semibold leading-tight text-slate-950 md:text-[28px]"
-          style={{ fontFamily: "var(--font-source-serif)" }}
-        >
-          {block.title || block.content}
-        </h2>
-      </article>
-    );
-  }
-
-  if (block.type === "paragraph" || block.type === "card") {
-    const paragraphs = splitContent(block.content);
-
-    return (
-      <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
-        {block.title && (
-          <h2
-            className="text-[22px] font-semibold leading-tight text-slate-950 md:text-[28px]"
-            style={{ fontFamily: "var(--font-source-serif)" }}
-          >
-            {block.title}
-          </h2>
-        )}
-
-        {paragraphs.map((paragraph, index) => (
-          <p
-            key={index}
-            className="mt-4 text-[15px] leading-7 text-slate-600 md:text-justify md:text-[16px] md:leading-8"
-          >
-            {paragraph}
-          </p>
-        ))}
-      </article>
-    );
-  }
-
-  if (block.type === "list") {
-    return (
-      <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
-        {block.title && (
-          <h2
-            className="text-[22px] font-semibold leading-tight text-slate-950 md:text-[28px]"
-            style={{ fontFamily: "var(--font-source-serif)" }}
-          >
-            {block.title}
-          </h2>
-        )}
-
-        <ul className="mt-5 space-y-3 text-[15px] leading-7 text-slate-600 md:text-[16px] md:leading-8">
-          {(block.items || []).map((item) => (
-            <li key={item} className="flex gap-3 md:text-justify">
-              <span className="mt-3 h-2 w-2 shrink-0 rounded-full bg-[#22b8e8]" />
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
-      </article>
-    );
-  }
-
-  if (block.type === "image" && block.imageUrl) {
-    return (
-      <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
-        {block.title && (
-          <h2
-            className="text-[22px] font-semibold leading-tight text-slate-950 md:text-[28px]"
-            style={{ fontFamily: "var(--font-source-serif)" }}
-          >
-            {block.title}
-          </h2>
-        )}
-        <img
-          src={block.imageUrl}
-          alt={block.title || "Page image"}
-          className="mt-5 w-full rounded-2xl border border-slate-200 object-cover"
-        />
-      </article>
-    );
-  }
-
-  if (block.type === "pdf" && block.fileUrl) {
-    return (
-      <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
-        <h2
-          className="text-[22px] font-semibold leading-tight text-slate-950 md:text-[28px]"
-          style={{ fontFamily: "var(--font-source-serif)" }}
-        >
-          {block.title || "Document"}
-        </h2>
-
-        <a
-          href={block.fileUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-5 inline-flex h-11 items-center justify-center rounded-full bg-[#111433] px-6 text-[14px] font-medium text-white hover:bg-[#1b204a]"
-        >
-          Open Document
-        </a>
-      </article>
-    );
-  }
-
-  if (block.type === "button" && block.buttonUrl) {
-    return (
-      <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
-        {block.title && (
-          <h2
-            className="text-[22px] font-semibold leading-tight text-slate-950 md:text-[28px]"
-            style={{ fontFamily: "var(--font-source-serif)" }}
-          >
-            {block.title}
-          </h2>
-        )}
-
-        <a
-          href={block.buttonUrl}
-          target={block.buttonUrl.startsWith("http") ? "_blank" : undefined}
-          rel={block.buttonUrl.startsWith("http") ? "noreferrer" : undefined}
-          className="mt-5 inline-flex h-11 items-center justify-center rounded-full bg-[#111433] px-6 text-[14px] font-medium text-white hover:bg-[#1b204a]"
-        >
-          {block.buttonLabel || "Open Link"}
-        </a>
-      </article>
-    );
-  }
-
-  return null;
-};
-
 export default async function ForAuthorsInnerPage({
   params,
 }: {
@@ -368,25 +228,28 @@ export default async function ForAuthorsInnerPage({
 
   let cmsPage: PublicCmsPage | null = null;
   let cmsPages: PublicCmsPage[] = [];
+  let editorialOfficeEmail = "journal.fst@bup.edu.bd";
 
-  try {
-    const [pageResponse, pagesResponse] = await Promise.all([
-      getPublicPageByGroupAndSlug("for-authors", slug),
-      getPublicPagesByGroup("for-authors"),
-    ]);
+  const [pageResult, pagesResult, officeResult] = await Promise.allSettled([
+    getPublicPageByGroupAndSlug("for-authors", slug),
+    getPublicPagesByGroup("for-authors"),
+    getPublicEditorialBoardConfig(),
+  ]);
 
-    cmsPage = pageResponse;
-    cmsPages = pagesResponse;
-  } catch {
-    cmsPage = null;
-    cmsPages = [];
+  if (pageResult.status === "fulfilled") cmsPage = pageResult.value;
+  if (pagesResult.status === "fulfilled") cmsPages = pagesResult.value;
+  if (officeResult.status === "fulfilled" && officeResult.value.editorialOfficeEmail) {
+    editorialOfficeEmail = officeResult.value.editorialOfficeEmail;
   }
 
   const fallback = pageData[slug] || pageData["author-guidelines"];
   const data = {
     title: cmsPage?.title || fallback.title,
     subtitle: cmsPage?.subtitle || fallback.subtitle,
+    shortDescription: cmsPage?.shortDescription || "",
     bannerImage: cmsPage?.bannerImage || "",
+    buttonLabel: cmsPage?.buttonLabel || "",
+    buttonUrl: cmsPage?.buttonUrl || "",
     contentBlocks:
       cmsPage?.contentBlocks && cmsPage.contentBlocks.length > 0
         ? [...cmsPage.contentBlocks].sort((a, b) => a.order - b.order)
@@ -419,9 +282,17 @@ export default async function ForAuthorsInnerPage({
                 {data.title}
               </h1>
 
-              <p className="mt-5 max-w-3xl text-[15px] leading-7 text-slate-600 md:text-justify md:text-[16px] md:leading-8">
-                {data.subtitle}
-              </p>
+              {data.subtitle && (
+                <p className="mt-5 max-w-3xl text-[15px] leading-7 text-slate-600 md:text-justify md:text-[16px] md:leading-8">
+                  {data.subtitle}
+                </p>
+              )}
+
+              {data.shortDescription && (
+                <p className="mt-3 max-w-3xl text-[14px] leading-7 text-slate-500 md:text-[15px]">
+                  {data.shortDescription}
+                </p>
+              )}
 
               {data.bannerImage && (
                 <div className="mt-8 overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
@@ -437,66 +308,80 @@ export default async function ForAuthorsInnerPage({
 
           <Container className="py-10 md:py-14">
             <div className="grid gap-8 lg:grid-cols-[300px_minmax(0,1fr)]">
-              <aside className="h-fit self-start rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-[106px] lg:max-h-[calc(100vh-126px)] lg:overflow-y-auto">
-                <p className="px-3 text-[12px] font-semibold uppercase tracking-[0.18em] text-[#111433]">
-                  Author Menu
-                </p>
-
-                <div className="mt-4 grid gap-2">
-                  {sideLinks.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={`${link.href}#page-start`}
-                      scroll={false}
-                      className={`rounded-2xl px-4 py-3 text-[14px] font-medium transition ${
-                        link.href.endsWith(slug)
-                          ? "bg-[#111433] text-white"
-                          : "text-slate-600 hover:bg-[#eef8fc] hover:text-[#22b8e8]"
-                      }`}
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-                </div>
-              </aside>
-
-              <section className="space-y-5 text-justify">
-                {data.contentBlocks.map((block, index) => (
-                  <ContentBlockCard key={block._id || index} block={block} />
-                ))}
-
-                <div className="rounded-3xl border border-slate-200 bg-[#111433] p-5 text-white shadow-sm md:p-7">
-                  <h2
-                    className="text-[22px] font-semibold leading-tight md:text-[28px]"
-                    style={{ fontFamily: "var(--font-source-serif)" }}
-                  >
-                    Need help preparing your manuscript?
-                  </h2>
-
-                  <p className="mt-4 text-[15px] leading-7 text-white/80 md:text-justify">
-                    Please review the author guidelines, submission checklist,
-                    and call for papers notice before final submission.
-                    Manuscripts and related documents should be sent to
-                    journal.fst@bup.edu.bd.
+                <aside className="h-fit self-start rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-[106px] lg:max-h-[calc(100vh-126px)] lg:overflow-y-auto">
+                  <p className="px-3 text-[12px] font-semibold uppercase tracking-[0.18em] text-[#111433]">
+                    Author Menu
                   </p>
 
-                  <div className="mt-6 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
-                    <Link
-                      href="/call-for-papers"
-                      className="flex h-12 w-full items-center justify-center rounded-full bg-white px-2 text-center text-[12px] font-medium leading-tight text-[#111433] hover:bg-slate-100 sm:h-11 sm:w-auto sm:px-6 sm:text-[14px]"
-                    >
-                      View Call for Papers
-                    </Link>
-
-                    <a
-                      href="mailto:journal.fst@bup.edu.bd"
-                      className="flex h-12 w-full items-center justify-center rounded-full border border-white/30 px-2 text-center text-[12px] font-medium leading-tight text-white hover:bg-white/10 sm:h-11 sm:w-auto sm:px-6 sm:text-[14px]"
-                    >
-                      Email Editorial Office
-                    </a>
+                  <div className="mt-4 grid gap-2">
+                    {sideLinks.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={`${link.href}#page-start`}
+                        scroll={false}
+                        className={`rounded-2xl px-4 py-3 text-[14px] font-medium transition ${
+                          link.href.endsWith(slug)
+                            ? "bg-[#111433] text-white"
+                            : "text-slate-600 hover:bg-[#eef8fc] hover:text-[#22b8e8]"
+                        }`}
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
                   </div>
-                </div>
-              </section>
+                </aside>
+
+                <section className="space-y-5 text-justify">
+                  <CmsContentRenderer
+                    blocks={data.contentBlocks}
+                    variant="authors"
+                  />
+
+                  {data.buttonLabel && data.buttonUrl && (
+                    <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-7">
+                      <a
+                        href={data.buttonUrl}
+                        target={data.buttonUrl.startsWith("http") ? "_blank" : undefined}
+                        rel={data.buttonUrl.startsWith("http") ? "noreferrer" : undefined}
+                        className="inline-flex items-center justify-center rounded-full bg-[#111433] px-6 py-3 text-sm font-semibold text-white hover:bg-[#1b204a]"
+                      >
+                        {data.buttonLabel}
+                      </a>
+                    </article>
+                  )}
+
+                  <div className="rounded-3xl border border-slate-200 bg-[#111433] p-5 text-white shadow-sm md:p-7">
+                    <h2
+                      className="text-[22px] font-semibold leading-tight md:text-[28px]"
+                      style={{ fontFamily: "var(--font-source-serif)" }}
+                    >
+                      Need help preparing your manuscript?
+                    </h2>
+
+                    <p className="mt-4 text-[15px] leading-7 text-white/80 md:text-justify">
+                      Please review the author guidelines, submission checklist,
+                      and call for papers notice before final submission.
+                      Manuscripts and related documents should be sent to{" "}
+                      {editorialOfficeEmail}.
+                    </p>
+
+                    <div className="mt-6 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
+                      <Link
+                        href="/call-for-papers"
+                        className="flex h-12 w-full items-center justify-center rounded-full bg-white px-2 text-center text-[12px] font-medium leading-tight text-[#111433] hover:bg-slate-100 sm:h-11 sm:w-auto sm:px-6 sm:text-[14px]"
+                      >
+                        View Call for Papers
+                      </Link>
+
+                      <a
+                        href={`mailto:${editorialOfficeEmail}`}
+                        className="flex h-12 w-full items-center justify-center rounded-full border border-white/30 px-2 text-center text-[12px] font-medium leading-tight text-white hover:bg-white/10 sm:h-11 sm:w-auto sm:px-6 sm:text-[14px]"
+                      >
+                        Email Editorial Office
+                      </a>
+                    </div>
+                  </div>
+                </section>
             </div>
           </Container>
         </PageTransition>

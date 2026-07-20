@@ -509,3 +509,124 @@ button:disabled,
 [aria-disabled="true"] {
   cursor: not-allowed;
 }
+/* CMS rich-content output
+   Paragraph spacing is intentionally margin-based, like Microsoft Word.
+   Each block owns the space after it, so “Remove space after” can close the
+   gap between a bullet list and the normal paragraph that follows. Inline
+   spacing written by the editor takes precedence over these defaults. */
+.cms-rich-text > p,
+.cms-rich-text > div,
+.cms-rich-text > pre,
+.cms-rich-text > blockquote,
+.cms-rich-text > table,
+.cms-rich-text > ul,
+.cms-rich-text > ol {
+  margin-top: 0;
+  margin-bottom: 8pt;
+}
+
+.cms-rich-text > :last-child {
+  margin-bottom: 0;
+}
+
+.cms-rich-text h1,
+.cms-rich-text h2,
+.cms-rich-text h3,
+.cms-rich-text h4,
+.cms-rich-text h5,
+.cms-rich-text h6 {
+  color: #0f172a;
+  font-family: var(--font-source-serif);
+  font-weight: 650;
+  line-height: 1.25;
+  margin-top: 14pt;
+  margin-bottom: 6pt;
+}
+
+.cms-rich-text > h1:first-child,
+.cms-rich-text > h2:first-child,
+.cms-rich-text > h3:first-child,
+.cms-rich-text > h4:first-child,
+.cms-rich-text > h5:first-child,
+.cms-rich-text > h6:first-child {
+  margin-top: 0;
+}
+
+.cms-rich-text h1 { font-size: 2rem; }
+.cms-rich-text h2 { font-size: 1.65rem; }
+.cms-rich-text h3 { font-size: 1.35rem; }
+.cms-rich-text h4 { font-size: 1.15rem; }
+
+.cms-rich-text ul,
+.cms-rich-text ol {
+  margin-top: 0;
+  margin-bottom: 8pt;
+  padding-left: 1.65rem;
+  list-style-position: outside;
+}
+
+.cms-rich-text li > ul,
+.cms-rich-text li > ol {
+  margin-top: 4pt;
+  margin-bottom: 0;
+}
+
+/* Tailwind's reset removes native list markers. Restore them explicitly in
+   both the editor and the public CMS renderer. */
+.cms-rich-text ul { list-style-type: disc !important; }
+.cms-rich-text ol { list-style-type: decimal !important; }
+.cms-rich-text ul ul { list-style-type: circle !important; }
+.cms-rich-text ul ul ul { list-style-type: square !important; }
+.cms-rich-text ol ol { list-style-type: lower-alpha !important; }
+.cms-rich-text ol ol ol { list-style-type: lower-roman !important; }
+.cms-rich-text li {
+  display: list-item;
+  margin-top: 0;
+  margin-bottom: 4pt;
+  padding-left: 0.15rem;
+}
+
+.cms-rich-text li:last-child {
+  margin-bottom: 0;
+}
+
+.cms-rich-text blockquote {
+  border-left: 4px solid #005a78;
+  margin: 1rem 0;
+  padding: 0.45rem 0 0.45rem 1rem;
+  color: #475569;
+  font-style: italic;
+}
+
+.cms-rich-text a {
+  color: #005a78;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.cms-rich-text strong { color: #0f172a; }
+
+.cms-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.925rem;
+}
+
+.cms-table th,
+.cms-table td {
+  border: 1px solid #cbd5e1;
+  padding: 0.7rem 0.85rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.cms-table th {
+  background: #f1f5f9;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.cms-table tr:nth-child(even) td {
+  background: #f8fafc;
+}

@@ -65,7 +65,7 @@ const fallbackAuthorItems: DropdownMenuItem[] = [
   { label: "Templates", href: "/for-authors/templates" },
 ];
 
-const editorialItems: DropdownMenuItem[] = [
+const fallbackEditorialItems: DropdownMenuItem[] = [
   { label: "Chief Patron", href: "/editorial-board#chief-patron" },
   { label: "Chief Editor", href: "/editorial-board#chief-editor" },
   { label: "Editor", href: "/editorial-board#editor" },
@@ -192,7 +192,7 @@ const getSafeDropdownItems = (
     isAllowedUrl,
   );
 
-  return mergeWithFallback(apiItems, fallbackItems);
+  return apiItems.length > 0 ? apiItems : fallbackItems;
 };
 
 const getIssueDateValue = (issue: Issue) => {
@@ -543,6 +543,13 @@ export default function PublicNavbar() {
   }, [activeMenus]);
 
   const issueItems = useMemo(() => {
+    const configuredIssueItems = toDropdownItems(
+      getItemsByLocation(activeMenus, "issues"),
+      (href) => href.startsWith("/issues/"),
+    );
+
+    if (configuredIssueItems.length > 0) return configuredIssueItems;
+
     const dynamicIssueItems = sortIssuesLatestToOld(publicIssues).map(
       (issue) => ({
         label: getIssueDropdownLabel(issue),
@@ -557,7 +564,7 @@ export default function PublicNavbar() {
     }
 
     return fallbackIssueItems;
-  }, [publicIssues]);
+  }, [activeMenus, publicIssues]);
 
   const authorItems = useMemo(() => {
     return getSafeDropdownItems(
@@ -565,6 +572,15 @@ export default function PublicNavbar() {
       "for-authors",
       fallbackAuthorItems,
       (href) => href.startsWith("/for-authors/"),
+    );
+  }, [activeMenus]);
+
+  const editorialBoardItems = useMemo(() => {
+    return getSafeDropdownItems(
+      activeMenus,
+      "editorial-board",
+      fallbackEditorialItems,
+      (href) => href.startsWith("/editorial-board"),
     );
   }, [activeMenus]);
 
@@ -643,7 +659,7 @@ export default function PublicNavbar() {
               href={editorialHref}
               isExternal={editorialMenu?.isExternal}
               openInNewTab={editorialMenu?.openInNewTab}
-              items={editorialItems}
+              items={editorialBoardItems}
             />
 
             <JournalDropdownMenu
@@ -821,7 +837,7 @@ export default function PublicNavbar() {
               href={editorialHref}
               isExternal={editorialMenu?.isExternal}
               openInNewTab={editorialMenu?.openInNewTab}
-              items={editorialItems}
+              items={editorialBoardItems}
               onClick={() => setMenuOpen(false)}
             />
 

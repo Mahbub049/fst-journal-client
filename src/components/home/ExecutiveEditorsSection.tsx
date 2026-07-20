@@ -44,19 +44,8 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-function isExecutiveEditor(member: EditorialBoardMember) {
-  const category = member.category?.toLowerCase() || "";
-  const area = member.editorialArea?.toLowerCase() || "";
-
-  return (
-    category.includes("chief patron") ||
-    category.includes("patron") ||
-    category.includes("chief editor") ||
-    category === "editor" ||
-    category.includes("assistant editor") ||
-    area.includes("journal leadership") ||
-    area.includes("assistant editorial")
-  );
+function isVisibleEditorialMember(member: EditorialBoardMember) {
+  return member.isActive !== false;
 }
 
 function getEditorDisplayParts(editor: EditorialBoardMember) {
@@ -136,7 +125,7 @@ export default function ExecutiveEditorsSection({ homepage }: Props) {
       const data = await getEditorialBoardMembers();
 
       const executiveEditors = data
-        .filter(isExecutiveEditor)
+        .filter(isVisibleEditorialMember)
         .sort((a, b) => Number(a.order ?? 0) - Number(b.order ?? 0));
 
       setEditors(executiveEditors);

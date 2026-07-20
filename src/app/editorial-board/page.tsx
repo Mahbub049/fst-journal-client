@@ -1,161 +1,99 @@
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import Container from "@/components/common/Container";
 import PublicLayout from "@/components/layout/PublicLayout";
-import { getServerApiBaseUrl } from "@/lib/apiBase";
+import {
+  EditorialBoardMember,
+  EditorialBoardPageSettings,
+  getPublicEditorialBoard,
+  getPublicEditorialBoardConfig,
+} from "@/services/editorialBoardService";
 
-type EditorialBoardMember = {
-  _id: string;
-  category: string;
-  editorialArea?: string;
-  name: string;
-  designation?: string;
-  institution?: string;
-  department?: string;
-  expertise?: string[];
-  profileImage?: string;
-  bio?: string;
-  email?: string;
-  order?: number;
-  isActive?: boolean;
+export const dynamic = "force-dynamic";
+
+const fallbackConfig: EditorialBoardPageSettings = {
+  eyebrow: "Editorial Leadership",
+  pageTitle: "Editorial Board",
+  intro:
+    "The editorial board of BUP Faculty of Science and Technology Journal supports academic quality, publication ethics, manuscript evaluation, and scholarly direction.",
+  summaryEyebrow: "Board Summary",
+  summaryTitle: "Editorial Review Structure",
+  summaryDescription:
+    "Members are organized according to the official editorial structure and their assigned roles.",
+  chiefEditorResponsibilityTitle: "Chief Editor Responsibilities",
+  chiefEditorResponsibilityDescription:
+    "Our chief editor is accountable for the overall direction of the journal, ensuring that published work is of the highest quality, follows BUP publication policies and procedures, and advances the journal's editorial mission.",
+  showSummaryCards: true,
+  showTotalCard: true,
+  editorialOfficeTitle: "Editorial Office",
+  editorialOfficeDescription:
+    "For journal-related queries, manuscript preparation, publication information, and author support, please contact the editorial office.",
+  editorialOfficePublisher: "Faculty of Science & Technology",
+  editorialOfficeInstitution: "Bangladesh University of Professionals",
+  editorialOfficeAddress: "Mirpur Cantonment, Dhaka - 1216",
+  editorialOfficeEmail: "editor.fstjournal@bup.edu.bd",
+  editorialOfficePhone: "",
+  categories: [
+    {
+      name: "Chief Editor",
+      description: "",
+      order: 0,
+      isActive: true,
+      showInSummary: true,
+    },
+    {
+      name: "Editor",
+      description: "",
+      order: 1,
+      isActive: true,
+      showInSummary: true,
+    },
+    {
+      name: "Associate Editor",
+      description: "",
+      order: 2,
+      isActive: true,
+      showInSummary: true,
+    },
+    {
+      name: "Editorial Advisory Board",
+      description: "",
+      order: 3,
+      isActive: true,
+      showInSummary: true,
+    },
+  ],
+  editorialAreas: [],
 };
 
-type EditorialSection = {
-  id: string;
-  label: string;
-  title: string;
-  acceptedCategories: string[];
-  members: EditorialBoardMember[];
+const normalize = (value?: string) =>
+  (value || "").toLowerCase().replace(/\s+/g, " ").trim();
+
+const isChiefEditorRole = (value?: string) => {
+  const normalized = (value || "")
+    .toLowerCase()
+    .replace(/[^a-z]+/g, " ")
+    .trim();
+
+  return normalized === "chief editor" || normalized === "editor in chief";
 };
 
-const API_BASE_URL = getServerApiBaseUrl();
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 
-const sectionConfig = [
-  {
-    id: "chief-patron",
-    label: "Chief Patron",
-    title: "Chief Patron",
-    acceptedCategories: ["Chief Patron"],
-  },
-  {
-    id: "chief-editor",
-    label: "Chief Editor",
-    title: "Chief Editor",
-    acceptedCategories: ["Chief Editor"],
-  },
-  {
-    id: "editor",
-    label: "Editor",
-    title: "Editor",
-    acceptedCategories: ["Editor"],
-  },
-  {
-    id: "assistant-editors",
-    label: "Assistant Editors",
-    title: "Assistant Editors",
-    acceptedCategories: ["Assistant Editor", "Assistant Editors"],
-  },
-  {
-    id: "editorial-advisory-board",
-    label: "Editorial Advisory Board",
-    title: "Editorial Advisory Board",
-    acceptedCategories: [
-      "Editorial Advisory Board",
-      "Editorial Advisory Board Member",
-      "Editorial Advisory Board Members",
-      "Advisory Board Member",
-      "Advisory Board Members",
-    ],
-  },
-];
-
-async function getEditorialBoardMembers(): Promise<EditorialBoardMember[]> {
-  try {
-    const res = await fetch(`${API_BASE_URL}/editorial-board`, {
-      cache: "no-store",
-    });
-
-    if (!res.ok) {
-      return [];
-    }
-
-    const data = await res.json();
-
-    return Array.isArray(data?.data) ? data.data : [];
-  } catch (error) {
-    console.error("Failed to fetch editorial board members:", error);
-    return [];
-  }
-}
-
-function normalizeCategory(value?: string) {
-  return (value || "").toLowerCase().replace(/\s+/g, " ").trim();
-}
-
-function isCategoryMatch(category: string | undefined, acceptedNames: string[]) {
-  const currentCategory = normalizeCategory(category);
-
-  return acceptedNames.some(
-    (name) => normalizeCategory(name) === currentCategory
-  );
-}
-
-function sortMembers(members: EditorialBoardMember[]) {
-  return [...members].sort((a, b) => {
-    const orderA = Number(a.order ?? 0);
-    const orderB = Number(b.order ?? 0);
-
-    if (orderA !== orderB) return orderA - orderB;
-
-    return (a.name || "").localeCompare(b.name || "");
+const sortMembers = (members: EditorialBoardMember[]) =>
+  [...members].sort((a, b) => {
+    const orderDifference = Number(a.order || 0) - Number(b.order || 0);
+    return orderDifference || a.name.localeCompare(b.name);
   });
-}
 
-function buildEditorialSections(
-  members: EditorialBoardMember[]
-): EditorialSection[] {
-  const configuredSections = sectionConfig.map((section) => ({
-    ...section,
-    members: sortMembers(
-      members.filter((member) =>
-        isCategoryMatch(member.category, section.acceptedCategories)
-      )
-    ),
-  }));
-
-  const knownCategories = sectionConfig
-    .flatMap((section) => section.acceptedCategories)
-    .map((category) => normalizeCategory(category));
-
-  const extraCategories = Array.from(
-    new Set(
-      members
-        .map((member) => member.category)
-        .filter(
-          (category): category is string =>
-            Boolean(category) &&
-            !knownCategories.includes(normalizeCategory(category))
-        )
-    )
-  );
-
-  const extraSections = extraCategories.map((category) => ({
-    id: category
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, ""),
-    label: category,
-    title: category,
-    acceptedCategories: [category],
-    members: sortMembers(
-      members.filter((member) => isCategoryMatch(member.category, [category]))
-    ),
-  }));
-
-  return [...configuredSections, ...extraSections].filter(
-    (section) => section.members.length > 0
-  );
-}
-function getInitials(name: string) {
-  return name
+const getInitials = (name: string) =>
+  name
     .replace(/Dr\.|Professor|Prof\.|Major General|Brigadier General/gi, "")
     .split(" ")
     .map((part) => part.trim())
@@ -164,15 +102,13 @@ function getInitials(name: string) {
     .map((part) => part[0])
     .join("")
     .toUpperCase();
-}
 
-function getCategoryCount(
-  members: EditorialBoardMember[],
-  acceptedNames: string[]
-) {
-  return members.filter((member) =>
-    isCategoryMatch(member.category, acceptedNames)
-  ).length;
+function getDetailsButtonLabel(member: EditorialBoardMember) {
+  if (isChiefEditorRole(member.category)) {
+    return member.professionalProfileLabel?.trim() || "Meet the Chief Editor";
+  }
+
+  return member.biographyLabel?.trim() || "View Full Biography";
 }
 
 function EditorCard({ member }: { member: EditorialBoardMember }) {
@@ -184,61 +120,65 @@ function EditorCard({ member }: { member: EditorialBoardMember }) {
       className="scroll-mt-32 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md sm:p-6"
     >
       <div className="flex flex-col items-center gap-6 text-center md:flex-row md:items-start md:text-left">
-        <div className="shrink-0 self-center md:self-start">
-          <div className="h-[220px] w-[170px] overflow-hidden rounded-2xl border border-slate-200 bg-[#f1f5f9] shadow-sm">
-            {imageUrl ? (
-              <img
-                src={imageUrl}
-                alt={member.name}
-                className="h-full w-full object-cover object-top"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-[40px] font-bold text-[#111433]">
-                {getInitials(member.name)}
-              </div>
-            )}
-          </div>
+        <div className="h-[220px] w-[170px] shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-[#f1f5f9] shadow-sm">
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={member.name}
+              className="h-full w-full object-cover object-top"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-[40px] font-bold text-[#111433]">
+              {getInitials(member.name)}
+            </div>
+          )}
         </div>
 
-        <div className="min-w-0 w-full flex-1 pt-1">
-          <h3 className="text-[20px] font-semibold leading-8 text-slate-950">
-            {member.name}
-          </h3>
+        <div className="flex min-w-0 w-full flex-1 flex-col self-stretch pt-1">
+          <div>
+            <h3 className="text-[20px] font-semibold leading-8 text-slate-950">
+              {member.name}
+            </h3>
 
-          <p className="mt-1 text-[14px] font-semibold text-[#111433]">
-            {member.category}
-          </p>
+            <div className="mt-2 flex flex-wrap justify-center gap-2 md:justify-start">
+              <span className="rounded-full bg-[#eef8fc] px-3 py-1 text-[12px] font-semibold text-[#005A78]">
+                {member.category}
+              </span>
+            </div>
 
-          <div className="mt-5 space-y-2 text-[15px] leading-7 text-slate-700">
-            {member.designation ? <p>{member.designation}</p> : null}
+            <div className="mt-5 space-y-2 text-[15px] leading-7 text-slate-700">
+              {member.designation ? <p>{member.designation}</p> : null}
+              {member.department ? (
+                <p className="text-slate-600">{member.department}</p>
+              ) : null}
+              {member.institution ? (
+                <p className="text-slate-600">{member.institution}</p>
+              ) : null}
+            </div>
 
-            {member.department ? (
-              <p className="text-slate-600">{member.department}</p>
-            ) : null}
-
-            {member.institution ? (
-              <p className="text-slate-600">{member.institution}</p>
+            {member.expertise?.length ? (
+              <div className="mt-4 flex flex-wrap justify-center gap-2 md:justify-start">
+                {member.expertise.map((item) => (
+                  <span
+                    key={item}
+                    className="rounded-full bg-slate-100 px-3 py-1 text-[12px] font-semibold text-slate-600"
+                  >
+                    {item}
+                  </span>
+                ))}
+              </div>
             ) : null}
           </div>
 
-          {member.expertise && member.expertise.length > 0 ? (
-            <div className="mt-4 flex flex-wrap justify-center gap-2 md:justify-start">
-              {member.expertise.map((item) => (
-                <span
-                  key={item}
-                  className="rounded-full bg-slate-100 px-3 py-1 text-[12px] font-semibold text-slate-600"
-                >
-                  {item}
-                </span>
-              ))}
-            </div>
-          ) : null}
-
-          {member.bio ? (
-            <p className="mt-4 text-[14px] leading-7 text-slate-600">
-              {member.bio}
-            </p>
-          ) : null}
+          <div className="mt-auto pt-6">
+            <Link
+              href={`/editorial-board/${member._id}`}
+              className="inline-flex items-center gap-2 rounded-full bg-[#005A78] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#004862]"
+            >
+              {getDetailsButtonLabel(member)}
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          </div>
         </div>
       </div>
     </article>
@@ -246,29 +186,58 @@ function EditorCard({ member }: { member: EditorialBoardMember }) {
 }
 
 export default async function EditorialBoardPage() {
-  const members = await getEditorialBoardMembers();
-  const editorialSections = buildEditorialSections(members);
+  let members: EditorialBoardMember[] = [];
+  let config = fallbackConfig;
 
-  const chiefPatronCount = getCategoryCount(members, ["Chief Patron"]);
-
-  const chiefEditorCount = getCategoryCount(members, ["Chief Editor"]);
-
-  const editorCount = getCategoryCount(members, ["Editor"]);
-
-  const assistantEditorCount = getCategoryCount(members, [
-    "Assistant Editor",
-    "Assistant Editors",
+  const [membersResult, configResult] = await Promise.allSettled([
+    getPublicEditorialBoard(),
+    getPublicEditorialBoardConfig(),
   ]);
 
-  const advisoryBoardCount = getCategoryCount(members, [
-    "Editorial Advisory Board",
-    "Editorial Advisory Board Member",
-    "Editorial Advisory Board Members",
-    "Advisory Board Member",
-    "Advisory Board Members",
-  ]);
+  if (membersResult.status === "fulfilled") members = membersResult.value;
+  if (configResult.status === "fulfilled") {
+    config = {
+      ...fallbackConfig,
+      ...configResult.value,
+      categories:
+        configResult.value.categories?.length > 0
+          ? configResult.value.categories
+          : fallbackConfig.categories,
+      editorialAreas: configResult.value.editorialAreas || [],
+    };
+  }
 
-  const totalMembers = members.length;
+  const activeCategories = [...config.categories]
+    .filter((category) => category.isActive)
+    .sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
+
+  const activeCategoryNames = new Set(
+    activeCategories.map((category) => normalize(category.name))
+  );
+  const visibleMembers = members.filter(
+    (member) => member.isActive && activeCategoryNames.has(normalize(member.category))
+  );
+
+  const sections = activeCategories
+    .map((category) => ({
+      category,
+      members: sortMembers(
+        visibleMembers.filter(
+          (member) => normalize(member.category) === normalize(category.name)
+        )
+      ),
+    }))
+    .filter((section) => section.members.length > 0);
+
+  const summaryCategories = activeCategories.filter(
+    (category) => category.showInSummary
+  );
+
+  const officeDetails = [
+    config.editorialOfficePublisher,
+    config.editorialOfficeInstitution,
+    config.editorialOfficeAddress,
+  ].filter(Boolean);
 
   return (
     <PublicLayout>
@@ -276,112 +245,130 @@ export default async function EditorialBoardPage() {
         <section className="border-b border-slate-200 bg-white">
           <Container className="py-12 md:py-16">
             <div className="max-w-3xl">
-              <p className="journal-subheading">Editorial Leadership</p>
+              <p className="journal-subheading">{config.eyebrow}</p>
 
               <h1
-                className="mt-4 text-[36px] md:text-[40px] font-semibold leading-tight tracking-tight text-slate-950 md:text-[56px]"
+                className="mt-4 text-[36px] font-semibold leading-tight tracking-tight text-slate-950 md:text-[56px]"
                 style={{ fontFamily: "var(--font-source-serif)" }}
               >
-                Editorial Board
+                {config.pageTitle}
               </h1>
 
-              <p className="mt-5 text-[15px] md:text-[16px] text-justify leading-8 text-slate-600">
-                The editorial board of BUP Faculty of Science and Technology
-                Journal supports academic quality, publication ethics,
-                manuscript evaluation, and scholarly direction.
-              </p>
+              {config.intro ? (
+                <p className="mt-5 text-[15px] leading-8 text-slate-600 md:text-justify md:text-[16px]">
+                  {config.intro}
+                </p>
+              ) : null}
             </div>
           </Container>
         </section>
 
         <Container className="py-10 md:py-14">
           <div className="grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
-            <aside className="order-last h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:order-first lg:sticky lg:top-[106px]">
-              <p className="journal-subheading">Board Summary</p>
+            <aside className="order-last h-fit space-y-6 lg:order-first lg:sticky lg:top-[106px]">
+              <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                <p className="journal-subheading">{config.summaryEyebrow}</p>
 
-              <h2
-                className="mt-3 text-[26px] font-semibold leading-tight text-slate-950"
-                style={{ fontFamily: "var(--font-source-serif)" }}
-              >
-                Editorial Review Structure
-              </h2>
+                <h2
+                  className="mt-3 text-[26px] font-semibold leading-tight text-slate-950"
+                  style={{ fontFamily: "var(--font-source-serif)" }}
+                >
+                  {config.summaryTitle}
+                </h2>
 
-              <p className="mt-4 text-[14px] leading-7 text-slate-600">
-                Members are organized according to the official editorial board
-                structure, including chief patron, chief editor, editor,
-                assistant editors, and advisory board members.
-              </p>
+                {config.summaryDescription ? (
+                  <p className="mt-4 text-[14px] leading-7 text-slate-600">
+                    {config.summaryDescription}
+                  </p>
+                ) : null}
 
-              <div className="mt-6 grid grid-cols-2 gap-3">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-[28px] font-semibold text-slate-950">
-                    {chiefPatronCount}
-                  </p>
-                  <p className="mt-1 text-[13px] text-slate-500">
-                    Chief Patron
-                  </p>
-                </div>
+                {config.showSummaryCards ? (
+                  <div className="mt-6 grid grid-cols-2 gap-3">
+                    {summaryCategories.map((category) => {
+                      const count = visibleMembers.filter(
+                        (member) =>
+                          normalize(member.category) === normalize(category.name)
+                      ).length;
 
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-[28px] font-semibold text-slate-950">
-                    {chiefEditorCount}
-                  </p>
-                  <p className="mt-1 text-[13px] text-slate-500">
-                    Chief Editor
-                  </p>
-                </div>
+                      return (
+                        <a
+                          key={category._id || category.name}
+                          href={`#${slugify(category.name)}`}
+                          className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-[#005A78]/30 hover:bg-[#eef8fc]"
+                        >
+                          <p className="text-[28px] font-semibold text-slate-950">
+                            {count}
+                          </p>
+                          <p className="mt-1 text-[13px] leading-5 text-slate-500">
+                            {category.name}
+                          </p>
+                        </a>
+                      );
+                    })}
 
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-[28px] font-semibold text-slate-950">
-                    {editorCount}
-                  </p>
-                  <p className="mt-1 text-[13px] text-slate-500">Editor</p>
-                </div>
+                    {config.showTotalCard ? (
+                      <div className="col-span-2 rounded-2xl border border-[#111433]/10 bg-[#111433] p-4 text-white">
+                        <p className="text-[28px] font-semibold">
+                          {visibleMembers.length}
+                        </p>
+                        <p className="mt-1 text-[13px] text-white/70">
+                          Total Active Members
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </section>
 
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-[28px] font-semibold text-slate-950">
-                    {assistantEditorCount}
-                  </p>
-                  <p className="mt-1 text-[13px] text-slate-500">
-                    Assistant Editors
-                  </p>
-                </div>
+              <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                <p className="journal-subheading">Editorial Office</p>
+                <h2
+                  className="mt-3 text-[24px] font-semibold leading-tight text-slate-950"
+                  style={{ fontFamily: "var(--font-source-serif)" }}
+                >
+                  {config.editorialOfficeTitle}
+                </h2>
 
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-[28px] font-semibold text-slate-950">
-                    {advisoryBoardCount}
+                {config.editorialOfficeDescription ? (
+                  <p className="mt-4 text-[14px] leading-7 text-slate-600">
+                    {config.editorialOfficeDescription}
                   </p>
-                  <p className="mt-1 text-[13px] text-slate-500">
-                    Advisory Board Members
-                  </p>
-                </div>
+                ) : null}
 
-                <div className="col-span-2 rounded-2xl border border-[#111433]/10 bg-[#111433] p-4 text-white">
-                  <p className="text-[28px] font-semibold">{totalMembers}</p>
-                  <p className="mt-1 text-[13px] text-white/70">
-                    Total Members
-                  </p>
-                </div>
-              </div>
+                {officeDetails.length ? (
+                  <div className="mt-4 space-y-1 text-sm leading-6 text-slate-600">
+                    {officeDetails.map((detail) => (
+                      <p key={detail}>{detail}</p>
+                    ))}
+                  </div>
+                ) : null}
 
-              {/* <div className="mt-6 rounded-2xl bg-[#f5c84b] p-5 text-[#111433]">
-                <p className="text-[13px] font-bold uppercase tracking-[0.16em]">
-                  Note
-                </p>
+                {config.editorialOfficeEmail ? (
+                  <a
+                    href={`mailto:${config.editorialOfficeEmail}`}
+                    className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-[#111433] px-5 py-3 text-sm font-semibold text-white hover:bg-[#1b204a]"
+                  >
+                    Email Editorial Office
+                  </a>
+                ) : null}
 
-                <p className="mt-3 text-[14px] leading-7">
-                  This page is connected with the admin editorial board data.
-                  Active members will appear here automatically.
-                </p>
-              </div> */}
+                {config.editorialOfficePhone ? (
+                  <a
+                    href={`tel:${config.editorialOfficePhone}`}
+                    className="mt-3 block text-center text-sm font-semibold text-[#005A78]"
+                  >
+                    {config.editorialOfficePhone}
+                  </a>
+                ) : null}
+              </section>
             </aside>
 
             <section className="space-y-10">
-              {editorialSections.length > 0 ? (
-                editorialSections.map((section) => (
+              {sections.length > 0 ? (
+                sections.map(({ category, members: categoryMembers }) => (
                   <section
-                    key={section.id}
-                    id={section.id}
+                    key={category._id || category.name}
+                    id={slugify(category.name)}
                     className="scroll-mt-32"
                   >
                     <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -389,12 +376,17 @@ export default async function EditorialBoardPage() {
                         className="text-center text-[28px] font-semibold leading-tight text-slate-950 md:text-left"
                         style={{ fontFamily: "var(--font-source-serif)" }}
                       >
-                        {section.title}
+                        {category.name}
                       </h2>
+                      {category.description ? (
+                        <p className="mt-3 text-center text-sm leading-7 text-slate-600 md:text-left">
+                          {category.description}
+                        </p>
+                      ) : null}
                     </div>
 
                     <div className="mt-5 grid gap-5">
-                      {section.members.map((member) => (
+                      {categoryMembers.map((member) => (
                         <EditorCard key={member._id} member={member} />
                       ))}
                     </div>
@@ -406,8 +398,8 @@ export default async function EditorialBoardPage() {
                     No editorial board members found
                   </h2>
                   <p className="mt-3 text-sm leading-7 text-slate-600">
-                    Add active members from the admin editorial board panel to
-                    show them on this page.
+                    Add active members and assign them to an active role from the
+                    editorial board admin panel.
                   </p>
                 </div>
               )}

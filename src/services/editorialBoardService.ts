@@ -1,4 +1,5 @@
 import api from "@/lib/api";
+import { getServerApiBaseUrl } from "@/lib/apiBase";
 
 export type EditorialBoardMember = {
   _id: string;
@@ -12,6 +13,10 @@ export type EditorialBoardMember = {
   profileImage: string;
   bio: string;
   email: string;
+  professionalProfileUrl: string;
+  biographyUrl: string;
+  professionalProfileLabel: string;
+  biographyLabel: string;
   order?: number;
   isActive: boolean;
   createdAt?: string;
@@ -29,8 +34,52 @@ export type EditorialBoardPayload = {
   profileImage: string;
   bio: string;
   email: string;
+  professionalProfileUrl: string;
+  biographyUrl: string;
+  professionalProfileLabel: string;
+  biographyLabel: string;
   order?: number;
   isActive: boolean;
+};
+
+export type EditorialCategorySetting = {
+  _id?: string;
+  name: string;
+  description?: string;
+  order: number;
+  isActive: boolean;
+  showInSummary: boolean;
+};
+
+export type EditorialAreaSetting = {
+  _id?: string;
+  name: string;
+  description?: string;
+  order: number;
+  isActive: boolean;
+};
+
+export type EditorialBoardPageSettings = {
+  _id?: string;
+  eyebrow: string;
+  pageTitle: string;
+  intro: string;
+  summaryEyebrow: string;
+  summaryTitle: string;
+  summaryDescription: string;
+  chiefEditorResponsibilityTitle: string;
+  chiefEditorResponsibilityDescription: string;
+  showSummaryCards: boolean;
+  showTotalCard: boolean;
+  editorialOfficeTitle: string;
+  editorialOfficeDescription: string;
+  editorialOfficePublisher: string;
+  editorialOfficeInstitution: string;
+  editorialOfficeAddress: string;
+  editorialOfficeEmail: string;
+  editorialOfficePhone: string;
+  categories: EditorialCategorySetting[];
+  editorialAreas: EditorialAreaSetting[];
 };
 
 type EditorialBoardListResponse = {
@@ -43,6 +92,11 @@ type EditorialBoardSingleResponse = {
   data: EditorialBoardMember;
 };
 
+type EditorialBoardConfigResponse = {
+  success: boolean;
+  data: EditorialBoardPageSettings;
+};
+
 export const getAdminEditorialBoard = async (params?: {
   search?: string;
   category?: string;
@@ -50,28 +104,17 @@ export const getAdminEditorialBoard = async (params?: {
   status?: "all" | "active" | "inactive";
 }) => {
   const query: Record<string, string> = {};
-
   if (params?.search) query.search = params.search;
-
-  if (params?.category && params.category !== "all") {
-    query.category = params.category;
-  }
-
+  if (params?.category && params.category !== "all") query.category = params.category;
   if (params?.editorialArea && params.editorialArea !== "all") {
     query.editorialArea = params.editorialArea;
   }
-
-  if (params?.status && params.status !== "all") {
-    query.status = params.status;
-  }
+  if (params?.status && params.status !== "all") query.status = params.status;
 
   const { data } = await api.get<EditorialBoardListResponse>(
     "/editorial-board/admin/all",
-    {
-      params: query,
-    }
+    { params: query }
   );
-
   return data.data || [];
 };
 
@@ -79,7 +122,6 @@ export const getAdminEditorialBoardById = async (id: string) => {
   const { data } = await api.get<EditorialBoardSingleResponse>(
     `/editorial-board/admin/${id}`
   );
-
   return data.data;
 };
 
@@ -90,7 +132,6 @@ export const createAdminEditorialBoard = async (
     "/editorial-board/admin",
     payload
   );
-
   return data.data;
 };
 
@@ -102,7 +143,6 @@ export const updateAdminEditorialBoard = async (
     `/editorial-board/admin/${id}`,
     payload
   );
-
   return data.data;
 };
 
@@ -115,14 +155,56 @@ export const reorderAdminEditorialBoard = async (orderedIds: string[]) => {
   const { data } = await api.put("/editorial-board/admin/reorder", {
     orderedIds,
   });
-
   return data;
 };
 
+export const getAdminEditorialBoardConfig = async () => {
+  const { data } = await api.get<EditorialBoardConfigResponse>(
+    "/editorial-board/admin/config"
+  );
+  return data.data;
+};
+
+export const updateAdminEditorialBoardConfig = async (
+  payload: EditorialBoardPageSettings
+) => {
+  const { data } = await api.put<EditorialBoardConfigResponse>(
+    "/editorial-board/admin/config",
+    payload
+  );
+  return data.data;
+};
+
+const fetchPublicEditorialApi = async <T>(path: string): Promise<T> => {
+  const response = await fetch(`${getServerApiBaseUrl()}${path}`, {
+    cache: "no-store",
+    headers: { Accept: "application/json" },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Editorial board API request failed with ${response.status}.`);
+  }
+
+  return (await response.json()) as T;
+};
+
 export const getPublicEditorialBoard = async () => {
-  const { data } = await api.get<EditorialBoardListResponse>(
+  const data = await fetchPublicEditorialApi<EditorialBoardListResponse>(
     "/editorial-board"
   );
-
   return data.data || [];
+};
+
+export const getPublicEditorialBoardById = async (id: string) => {
+  const data = await fetchPublicEditorialApi<EditorialBoardSingleResponse>(
+    `/editorial-board/${encodeURIComponent(id)}`
+  );
+  return data.data;
+};
+
+export const getPublicEditorialBoardConfig = async () => {
+  const data = await fetchPublicEditorialApi<EditorialBoardConfigResponse>(
+    "/editorial-board/config"
+  );
+  return data.data;
 };

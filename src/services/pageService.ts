@@ -7,9 +7,29 @@ export type ContentBlockType =
   | "heading"
   | "list"
   | "card"
+  | "section"
+  | "columns"
+  | "quote"
+  | "notice"
   | "image"
   | "pdf"
-  | "button";
+  | "button"
+  | "video"
+  | "table"
+  | "code"
+  | "divider"
+  | "spacer";
+
+export type ContentBlockStyle = {
+  alignment?: "left" | "center" | "right" | "justify";
+  backgroundColor?: string;
+  textColor?: string;
+  width?: "full" | "wide" | "normal" | "narrow";
+  padding?: "none" | "small" | "medium" | "large";
+  columns?: number;
+  headingLevel?: number;
+  variant?: string;
+};
 
 export type ContentBlock = {
   _id?: string;
@@ -21,6 +41,11 @@ export type ContentBlock = {
   fileUrl?: string;
   buttonLabel?: string;
   buttonUrl?: string;
+  caption?: string;
+  altText?: string;
+  codeLanguage?: string;
+  style?: ContentBlockStyle;
+  children?: ContentBlock[];
   order: number;
   isActive: boolean;
 };
@@ -56,7 +81,6 @@ export type PagePayload = {
   buttonUrl?: string;
   metaTitle?: string;
   metaDescription?: string;
-  order?: number;
   isPublished?: boolean;
 };
 
@@ -64,7 +88,6 @@ export const getAdminPages = async (group?: string) => {
   const { data } = await api.get("/pages/admin/all", {
     params: group ? { group } : {},
   });
-
   return data.pages as CmsPage[];
 };
 
@@ -81,6 +104,17 @@ export const createAdminPage = async (payload: PagePayload) => {
 export const updateAdminPage = async (id: string, payload: PagePayload) => {
   const { data } = await api.put(`/pages/admin/${id}`, payload);
   return data.page as CmsPage;
+};
+
+export const reorderAdminPages = async (
+  group: PageGroup,
+  orderedIds: string[]
+) => {
+  const { data } = await api.patch("/pages/admin/reorder", {
+    group,
+    orderedIds,
+  });
+  return data;
 };
 
 export const deleteAdminPage = async (id: string) => {

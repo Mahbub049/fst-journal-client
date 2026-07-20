@@ -1,4 +1,5 @@
 import Container from "@/components/common/Container";
+import CmsContentRenderer from "@/components/common/CmsContentRenderer";
 import PageTransition from "@/components/common/PageTransition";
 import PublicLayout from "@/components/layout/PublicLayout";
 import Link from "next/link";
@@ -86,134 +87,6 @@ const getFallbackBlocks = (content: string[]): PublicContentBlock[] => {
     order: index + 1,
     isActive: true,
   }));
-};
-
-const splitContent = (content?: string) => {
-  return (content || "")
-    .split("\n")
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean);
-};
-
-const ContentBlockView = ({ block }: { block: PublicContentBlock }) => {
-  if (!block.isActive) return null;
-
-  if (block.type === "heading") {
-    return (
-      <h2
-        className="mb-4 mt-6 text-[22px] font-semibold leading-tight text-slate-950 first:mt-0 md:text-[28px]"
-        style={{ fontFamily: "var(--font-source-serif)" }}
-      >
-        {block.title || block.content}
-      </h2>
-    );
-  }
-
-  if (block.type === "paragraph") {
-    const paragraphs = splitContent(block.content);
-
-    return (
-      <div>
-        {block.title && (
-          <h3 className="mb-3 text-xl font-bold text-slate-950">
-            {block.title}
-          </h3>
-        )}
-
-        {paragraphs.map((paragraph, index) => (
-          <p
-            key={index}
-            className="text-[15px] leading-7 text-slate-600 md:text-justify md:text-[16px] md:leading-8"
-          >
-            {paragraph}
-          </p>
-        ))}
-      </div>
-    );
-  }
-
-  if (block.type === "list") {
-    return (
-      <div>
-        {block.title && (
-          <h3 className="mb-4 text-xl font-bold text-slate-950">
-            {block.title}
-          </h3>
-        )}
-        <ul className="space-y-3 text-[15px] leading-7 text-slate-600 md:text-[16px] md:leading-8">
-          {(block.items || []).map((item) => (
-            <li key={item} className="flex gap-3 md:text-justify">
-              <span className="mt-3 h-2 w-2 shrink-0 rounded-full bg-[#22b8e8]" />
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    );
-  }
-
-  if (block.type === "card") {
-    return (
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-        {block.title && (
-          <h3 className="text-xl font-bold text-slate-950">{block.title}</h3>
-        )}
-        {splitContent(block.content).map((paragraph, index) => (
-          <p
-            key={index}
-            className="mt-3 text-[14px] leading-7 text-slate-600 md:text-justify md:text-[15px]"
-          >
-            {paragraph}
-          </p>
-        ))}
-      </div>
-    );
-  }
-
-  if (block.type === "image" && block.imageUrl) {
-    return (
-      <figure className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-3">
-        <img
-          src={block.imageUrl}
-          alt={block.title || "Page image"}
-          className="w-full rounded-xl object-cover"
-        />
-        {block.title && (
-          <figcaption className="mt-3 text-center text-sm text-slate-500">
-            {block.title}
-          </figcaption>
-        )}
-      </figure>
-    );
-  }
-
-  if (block.type === "pdf" && block.fileUrl) {
-    return (
-      <a
-        href={block.fileUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex items-center justify-center rounded-full bg-[#111433] px-6 py-3 text-sm font-semibold text-white hover:bg-[#1b204a]"
-      >
-        {block.title || "Open Document"}
-      </a>
-    );
-  }
-
-  if (block.type === "button" && block.buttonUrl) {
-    return (
-      <a
-        href={block.buttonUrl}
-        target={block.buttonUrl.startsWith("http") ? "_blank" : undefined}
-        rel={block.buttonUrl.startsWith("http") ? "noreferrer" : undefined}
-        className="inline-flex items-center justify-center rounded-full bg-[#111433] px-6 py-3 text-sm font-semibold text-white hover:bg-[#1b204a]"
-      >
-        {block.buttonLabel || block.title || "Learn More"}
-      </a>
-    );
-  }
-
-  return null;
 };
 
 export default async function AboutInnerPage({
@@ -318,11 +191,7 @@ export default async function AboutInnerPage({
               </aside>
 
               <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-9">
-                <div className="space-y-5 text-justify">
-                  {data.contentBlocks.map((block, index) => (
-                    <ContentBlockView key={block._id || index} block={block} />
-                  ))}
-                </div>
+                <CmsContentRenderer blocks={data.contentBlocks} variant="about" />
               </section>
             </div>
           </Container>

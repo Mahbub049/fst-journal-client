@@ -7,9 +7,18 @@ export type PublicContentBlockType =
   | "heading"
   | "list"
   | "card"
+  | "section"
+  | "columns"
+  | "quote"
+  | "notice"
   | "image"
   | "pdf"
-  | "button";
+  | "button"
+  | "video"
+  | "table"
+  | "code"
+  | "divider"
+  | "spacer";
 
 export type PublicContentBlock = {
   _id?: string;
@@ -21,6 +30,20 @@ export type PublicContentBlock = {
   fileUrl?: string;
   buttonLabel?: string;
   buttonUrl?: string;
+  caption?: string;
+  altText?: string;
+  codeLanguage?: string;
+  style?: {
+    alignment?: "left" | "center" | "right" | "justify";
+    backgroundColor?: string;
+    textColor?: string;
+    width?: "full" | "wide" | "normal" | "narrow";
+    padding?: "none" | "small" | "medium" | "large";
+    columns?: number;
+    headingLevel?: number;
+    variant?: string;
+  };
+  children?: PublicContentBlock[];
   order: number;
   isActive: boolean;
 };
@@ -42,22 +65,13 @@ export type PublicCmsPage = {
   isPublished: boolean;
 };
 
-type PublicPagesResponse = {
-  success: boolean;
-  pages: PublicCmsPage[];
-};
-
-type PublicPageResponse = {
-  success: boolean;
-  page: PublicCmsPage;
-};
+type PublicPagesResponse = { success: boolean; pages: PublicCmsPage[] };
+type PublicPageResponse = { success: boolean; page: PublicCmsPage };
 
 const fetchPublicPageApi = async <T>(path: string): Promise<T> => {
   const response = await fetch(`${getServerApiBaseUrl()}${path}`, {
     cache: "no-store",
-    headers: {
-      Accept: "application/json",
-    },
+    headers: { Accept: "application/json" },
   });
 
   if (!response.ok) {
@@ -72,7 +86,6 @@ export const getPublicPagesByGroup = async (group: PublicPageGroup) => {
   const data = await fetchPublicPageApi<PublicPagesResponse>(
     `/pages?${query.toString()}`
   );
-
   return data.pages || [];
 };
 
@@ -83,6 +96,5 @@ export const getPublicPageByGroupAndSlug = async (
   const data = await fetchPublicPageApi<PublicPageResponse>(
     `/pages/${encodeURIComponent(group)}/${encodeURIComponent(slug)}`
   );
-
   return data.page;
 };
