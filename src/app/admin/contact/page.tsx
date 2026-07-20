@@ -11,6 +11,7 @@ import {
 } from "@/services/contactPageService";
 
 const defaultForm: ContactPageContent = {
+  showEyebrow: true,
   eyebrow: "Contact",
   title: "Contact Us",
   subtitle: "Contact information for journal communication.",
@@ -160,6 +161,20 @@ export default function AdminContactPage() {
             <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-bold text-slate-950">Page Header</h2>
               <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                <label className="lg:col-span-2 flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={form.showEyebrow !== false}
+                    onChange={(event) => updateField("showEyebrow", event.target.checked)}
+                    className="mt-0.5 h-4 w-4 accent-[#005A78]"
+                  />
+                  <span>
+                    Show the small heading above the page title
+                    <span className="mt-1 block text-xs font-normal leading-5 text-slate-500">
+                      When disabled, the small heading is removed and the main title moves up without leaving blank space.
+                    </span>
+                  </span>
+                </label>
                 <TextInput label="Small Heading" value={form.eyebrow} onChange={(value) => updateField("eyebrow", value)} />
                 <TextInput label="Page Title" value={form.title} onChange={(value) => updateField("title", value)} />
                 <div className="lg:col-span-2">

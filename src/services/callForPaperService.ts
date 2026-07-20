@@ -11,6 +11,7 @@ export type ImportantDate = {
 export type CallForPaperContent = {
   _id?: string;
 
+  showInvitationLabel: boolean;
   invitationLabel: string;
   title: string;
   subtitle: string;

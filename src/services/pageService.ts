@@ -55,6 +55,7 @@ export type CmsPage = {
   title: string;
   slug: string;
   group: PageGroup;
+  showTopLabel?: boolean;
   subtitle?: string;
   bannerImage?: string;
   shortDescription?: string;
@@ -73,6 +74,7 @@ export type PagePayload = {
   title: string;
   slug?: string;
   group: PageGroup;
+  showTopLabel?: boolean;
   subtitle?: string;
   bannerImage?: string;
   shortDescription?: string;

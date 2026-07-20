@@ -138,6 +138,7 @@ export default async function ReviewersPage({
 
   const data = {
     title: cmsPage?.title || fallback.title,
+    showTopLabel: cmsPage?.showTopLabel !== false,
     subtitle: cmsPage?.subtitle || fallback.subtitle,
     shortDescription: cmsPage?.shortDescription || "",
     bannerImage: cmsPage?.bannerImage || "",
@@ -168,10 +169,12 @@ export default async function ReviewersPage({
             className="scroll-mt-[78px] border-b border-slate-200 bg-white"
           >
             <Container className="py-12 md:py-16">
-              <p className="journal-subheading">Reviewers</p>
+              {data.showTopLabel ? (
+                <p className="journal-subheading">Reviewers</p>
+              ) : null}
 
               <h1
-                className="mt-4 text-[32px] font-semibold leading-tight tracking-tight text-slate-950 md:text-[56px]"
+                className={`${data.showTopLabel ? "mt-4" : "mt-0"} text-[32px] font-semibold leading-tight tracking-tight text-slate-950 md:text-[56px]`}
                 style={{ fontFamily: "var(--font-source-serif)" }}
               >
                 {data.title}

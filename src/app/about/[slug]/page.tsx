@@ -115,6 +115,7 @@ export default async function AboutInnerPage({
   const fallback = fallbackPageData[slug] || fallbackPageData["about-the-journal"];
   const data = {
     title: cmsPage?.title || fallback.title,
+    showTopLabel: cmsPage?.showTopLabel !== false,
     subtitle: cmsPage?.subtitle || fallback.subtitle,
     bannerImage: cmsPage?.bannerImage || "",
     contentBlocks:
@@ -140,10 +141,12 @@ export default async function AboutInnerPage({
             className="scroll-mt-[78px] border-b border-slate-200 bg-white"
           >
             <Container className="py-12 md:py-16">
-              <p className="journal-subheading">About</p>
+              {data.showTopLabel ? (
+                <p className="journal-subheading">About</p>
+              ) : null}
 
               <h1
-                className="mt-4 text-[32px] font-semibold leading-tight tracking-tight text-slate-950 md:text-[56px]"
+                className={`${data.showTopLabel ? "mt-4" : "mt-0"} text-[32px] font-semibold leading-tight tracking-tight text-slate-950 md:text-[56px]`}
                 style={{ fontFamily: "var(--font-source-serif)" }}
               >
                 {data.title}

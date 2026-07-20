@@ -47,6 +47,13 @@ type EditorFormState = {
   bio: string;
   email: string;
   professionalProfileUrl: string;
+  googleScholarUrl: string;
+  researchGateUrl: string;
+  linkedinUrl: string;
+  orcidUrl: string;
+  scopusUrl: string;
+  webOfScienceUrl: string;
+  personalWebsiteUrl: string;
   biographyUrl: string;
   professionalProfileLabel: string;
   biographyLabel: string;
@@ -54,6 +61,7 @@ type EditorFormState = {
 };
 
 const defaultConfig: EditorialBoardPageSettings = {
+  showEyebrow: true,
   eyebrow: "Editorial Leadership",
   pageTitle: "Editorial Board",
   intro:
@@ -102,6 +110,13 @@ const emptyEditor = (config: EditorialBoardPageSettings): EditorFormState => ({
   bio: "",
   email: "",
   professionalProfileUrl: "",
+  googleScholarUrl: "",
+  researchGateUrl: "",
+  linkedinUrl: "",
+  orcidUrl: "",
+  scopusUrl: "",
+  webOfScienceUrl: "",
+  personalWebsiteUrl: "",
   biographyUrl: "",
   professionalProfileLabel: "",
   biographyLabel: "View Full Biography",
@@ -203,6 +218,13 @@ export default function AdminEditorialBoardPage() {
     bio: form.bio.trim(),
     email: form.email.trim(),
     professionalProfileUrl: form.professionalProfileUrl.trim(),
+    googleScholarUrl: form.googleScholarUrl.trim(),
+    researchGateUrl: form.researchGateUrl.trim(),
+    linkedinUrl: form.linkedinUrl.trim(),
+    orcidUrl: form.orcidUrl.trim(),
+    scopusUrl: form.scopusUrl.trim(),
+    webOfScienceUrl: form.webOfScienceUrl.trim(),
+    personalWebsiteUrl: form.personalWebsiteUrl.trim(),
     biographyUrl: form.biographyUrl.trim(),
     professionalProfileLabel: form.professionalProfileLabel.trim(),
     biographyLabel: form.biographyLabel.trim() || "View Full Biography",
@@ -223,6 +245,13 @@ export default function AdminEditorialBoardPage() {
       bio: member.bio || "",
       email: member.email || "",
       professionalProfileUrl: member.professionalProfileUrl || "",
+      googleScholarUrl: member.googleScholarUrl || "",
+      researchGateUrl: member.researchGateUrl || "",
+      linkedinUrl: member.linkedinUrl || "",
+      orcidUrl: member.orcidUrl || "",
+      scopusUrl: member.scopusUrl || "",
+      webOfScienceUrl: member.webOfScienceUrl || "",
+      personalWebsiteUrl: member.personalWebsiteUrl || "",
       biographyUrl: member.biographyUrl || "",
       professionalProfileLabel: member.professionalProfileLabel || "",
       biographyLabel: member.biographyLabel || "View Full Biography",
@@ -388,6 +417,13 @@ export default function AdminEditorialBoardPage() {
         bio: member.bio,
         email: member.email,
         professionalProfileUrl: member.professionalProfileUrl || "",
+        googleScholarUrl: member.googleScholarUrl || "",
+        researchGateUrl: member.researchGateUrl || "",
+        linkedinUrl: member.linkedinUrl || "",
+        orcidUrl: member.orcidUrl || "",
+        scopusUrl: member.scopusUrl || "",
+        webOfScienceUrl: member.webOfScienceUrl || "",
+        personalWebsiteUrl: member.personalWebsiteUrl || "",
         biographyUrl: member.biographyUrl || "",
         professionalProfileLabel: member.professionalProfileLabel || "",
         biographyLabel: member.biographyLabel || "View Full Biography",
@@ -467,6 +503,20 @@ export default function AdminEditorialBoardPage() {
           </div>
 
           <div className="grid gap-5 lg:grid-cols-2">
+            <label className="lg:col-span-2 flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700">
+              <input
+                type="checkbox"
+                checked={config.showEyebrow !== false}
+                onChange={(e) => setConfig((p) => ({ ...p, showEyebrow: e.target.checked }))}
+                className="mt-0.5 h-4 w-4 accent-[#005A78]"
+              />
+              <span>
+                Show the small heading above the page title
+                <span className="mt-1 block text-xs font-normal leading-5 text-slate-500">
+                  When disabled, the editorial page title moves up and no blank heading space remains.
+                </span>
+              </span>
+            </label>
             <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Page Eyebrow</label><input value={config.eyebrow} onChange={(e) => setConfig((p) => ({ ...p, eyebrow: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" /></div>
             <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Page Title</label><input value={config.pageTitle} onChange={(e) => setConfig((p) => ({ ...p, pageTitle: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" /></div>
             <div className="lg:col-span-2"><label className="mb-1.5 block text-sm font-semibold text-slate-700">Page Introduction</label><textarea value={config.intro} onChange={(e) => setConfig((p) => ({ ...p, intro: e.target.value }))} rows={3} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" /></div>
@@ -556,6 +606,44 @@ export default function AdminEditorialBoardPage() {
                     <label className="mb-1.5 block text-sm font-semibold text-slate-700">Professional Profile URL (optional)</label>
                     <input type="url" value={form.professionalProfileUrl} onChange={(e) => setForm((p) => ({ ...p, professionalProfileUrl: e.target.value }))} placeholder="https://example.com/professional-profile" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
                   </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                    <h4 className="text-sm font-bold text-slate-950">Research and social profile links</h4>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      Only links containing a value are shown on the public profile page.
+                    </p>
+                    <div className="mt-4 grid gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">Google Scholar URL</label>
+                        <input type="url" value={form.googleScholarUrl} onChange={(e) => setForm((p) => ({ ...p, googleScholarUrl: e.target.value }))} placeholder="https://scholar.google.com/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">ResearchGate URL</label>
+                        <input type="url" value={form.researchGateUrl} onChange={(e) => setForm((p) => ({ ...p, researchGateUrl: e.target.value }))} placeholder="https://www.researchgate.net/profile/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">LinkedIn URL</label>
+                        <input type="url" value={form.linkedinUrl} onChange={(e) => setForm((p) => ({ ...p, linkedinUrl: e.target.value }))} placeholder="https://www.linkedin.com/in/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">ORCID URL</label>
+                        <input type="url" value={form.orcidUrl} onChange={(e) => setForm((p) => ({ ...p, orcidUrl: e.target.value }))} placeholder="https://orcid.org/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">Scopus URL</label>
+                        <input type="url" value={form.scopusUrl} onChange={(e) => setForm((p) => ({ ...p, scopusUrl: e.target.value }))} placeholder="https://www.scopus.com/authid/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">Web of Science URL</label>
+                        <input type="url" value={form.webOfScienceUrl} onChange={(e) => setForm((p) => ({ ...p, webOfScienceUrl: e.target.value }))} placeholder="https://www.webofscience.com/wos/author/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">Personal / Institutional Website URL</label>
+                        <input type="url" value={form.personalWebsiteUrl} onChange={(e) => setForm((p) => ({ ...p, personalWebsiteUrl: e.target.value }))} placeholder="https://www.example.edu/profile/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                      </div>
+                    </div>
+                  </div>
+
                   {isChiefEditorRole(form.category) ? (
                     <div>
                       <label className="mb-1.5 block text-sm font-semibold text-slate-700">Chief Editor Card Button Label</label>

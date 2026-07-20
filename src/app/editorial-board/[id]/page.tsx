@@ -2,9 +2,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
+  BadgeCheck,
   BookOpen,
   ExternalLink,
+  FlaskConical,
+  Globe2,
+  GraduationCap,
+  LibraryBig,
   Mail,
+  Orbit,
+  UserRound,
 } from "lucide-react";
 import Container from "@/components/common/Container";
 import PublicLayout from "@/components/layout/PublicLayout";
@@ -19,6 +26,7 @@ import {
 export const dynamic = "force-dynamic";
 
 const fallbackConfig: EditorialBoardPageSettings = {
+  showEyebrow: true,
   eyebrow: "Editorial Leadership",
   pageTitle: "Editorial Board",
   intro: "",
@@ -68,11 +76,24 @@ const getInitials = (name: string) =>
     .join("")
     .toUpperCase();
 
-function formatBiography(value: string) {
-  return value
+const formatBiography = (value: string) =>
+  value
     .split(/\n{2,}/)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean);
+
+function LinkedInIcon({ size = 19 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d="M5.2 7.2A2.2 2.2 0 1 0 5.2 2.8a2.2 2.2 0 0 0 0 4.4ZM3.3 21h3.8V8.9H3.3V21ZM9.4 8.9V21h3.8v-6.7c0-1.8.3-3.5 2.5-3.5 2.2 0 2.2 2 2.2 3.6V21h3.8v-7.4c0-3.6-.8-6.4-5-6.4-2 0-3.4 1.1-4 2.1h-.1V8.9H9.4Z" />
+    </svg>
+  );
 }
 
 export default async function EditorialMemberDetailsPage({
@@ -99,45 +120,67 @@ export default async function EditorialMemberDetailsPage({
 
   const imageUrl = member.profileImage?.trim();
   const biographyParagraphs = formatBiography(member.bio || "");
-  const professionalProfileUrl = normalizeExternalHref(
-    member.professionalProfileUrl
-  );
-  const externalBiographyUrl = normalizeExternalHref(member.biographyUrl);
   const chiefEditor = isChiefEditorRole(member.category);
+  const externalBiographyUrl = normalizeExternalHref(member.biographyUrl);
+
+  const socialProfiles = [
+    {
+      label: "Google Scholar",
+      href: normalizeExternalHref(member.googleScholarUrl),
+      icon: GraduationCap,
+    },
+    {
+      label: "ResearchGate",
+      href: normalizeExternalHref(member.researchGateUrl),
+      icon: FlaskConical,
+    },
+    {
+      label: "LinkedIn",
+      href: normalizeExternalHref(member.linkedinUrl),
+      icon: LinkedInIcon,
+    },
+    {
+      label: "ORCID",
+      href: normalizeExternalHref(member.orcidUrl),
+      icon: BadgeCheck,
+    },
+    {
+      label: "Scopus",
+      href: normalizeExternalHref(member.scopusUrl),
+      icon: LibraryBig,
+    },
+    {
+      label: "Web of Science",
+      href: normalizeExternalHref(member.webOfScienceUrl),
+      icon: Orbit,
+    },
+    {
+      label: "Website",
+      href: normalizeExternalHref(member.personalWebsiteUrl),
+      icon: Globe2,
+    },
+    {
+      label: "Professional Profile",
+      href: normalizeExternalHref(member.professionalProfileUrl),
+      icon: UserRound,
+    },
+  ].filter((profile) => Boolean(profile.href));
 
   return (
     <PublicLayout>
-      <main className="min-h-screen bg-[#f7f8fb]">
-        <section className="border-b border-slate-200 bg-white">
-          <Container className="py-10 md:py-14">
-            <Link
-              href="/editorial-board"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-[#005A78] hover:underline"
-            >
-              <ArrowLeft size={16} aria-hidden="true" />
-              Back to Editorial Board
-            </Link>
+      <main className="min-h-screen bg-white">
+        <Container className="py-8 md:py-12 lg:py-14">
+          <Link
+            href="/editorial-board"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-[#005A78] transition hover:text-[#003f59] hover:underline"
+          >
+            <ArrowLeft size={16} aria-hidden="true" />
+            Back to Editorial Board
+          </Link>
 
-            <p className="journal-subheading mt-8">{member.category}</p>
-            <h1
-              className="mt-3 max-w-4xl text-[36px] font-semibold leading-tight tracking-tight text-slate-950 md:text-[54px]"
-              style={{ fontFamily: "var(--font-source-serif)" }}
-            >
-              {member.name}
-            </h1>
-
-            {member.designation ? (
-              <p className="mt-4 text-lg font-semibold text-[#005A78]">
-                {member.designation}
-              </p>
-            ) : null}
-          </Container>
-        </section>
-
-        <Container className="py-10 md:py-14">
-          <article className="overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-sm">
-            <div className="grid lg:min-h-[520px] lg:grid-cols-[330px_minmax(0,1fr)]">
-              <div className="h-[420px] overflow-hidden border-b border-slate-200 bg-slate-100 lg:h-full lg:min-h-[520px] lg:border-b-0 lg:border-r">
+          <div className="mt-8 grid items-start gap-10 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)] xl:gap-14">
+            <aside className="lg:sticky lg:top-28">
+              <div className="aspect-[4/5] w-full overflow-hidden border border-slate-200 bg-slate-100 shadow-sm">
                 {imageUrl ? (
                   <img
                     src={imageUrl}
@@ -145,118 +188,129 @@ export default async function EditorialMemberDetailsPage({
                     className="h-full w-full object-cover object-top"
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center text-[72px] font-bold text-[#111433]">
+                  <div className="flex h-full w-full items-center justify-center text-[72px] font-bold text-[#122b49]">
                     {getInitials(member.name)}
                   </div>
                 )}
               </div>
 
-              <div className="p-6 sm:p-8 lg:p-10">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <span className="inline-flex rounded-full bg-[#eef8fc] px-3 py-1.5 text-xs font-semibold text-[#005A78]">
-                      {member.category}
-                    </span>
-
-                    <div className="mt-5 space-y-2 text-[15px] leading-7 text-slate-600">
-                      {member.department ? <p>{member.department}</p> : null}
-                      {member.institution ? <p>{member.institution}</p> : null}
-                    </div>
-                  </div>
-                </div>
-
-                {member.expertise?.length ? (
-                  <section className="mt-8">
-                    <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-slate-500">
-                      Area of Expertise
-                    </h2>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {member.expertise.map((item) => (
-                        <span
-                          key={item}
-                          className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600"
-                        >
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  </section>
-                ) : null}
-
-                {chiefEditor && config.chiefEditorResponsibilityDescription ? (
-                  <section className="mt-8 rounded-2xl border border-[#005A78]/15 bg-[#eef8fc] p-5">
-                    <h2 className="text-base font-bold text-slate-950">
-                      {config.chiefEditorResponsibilityTitle ||
-                        "Chief Editor Responsibilities"}
-                    </h2>
-                    <p className="mt-3 text-[15px] leading-8 text-slate-600">
-                      {config.chiefEditorResponsibilityDescription}
-                    </p>
-                  </section>
-                ) : null}
-
-                {biographyParagraphs.length ? (
-                  <section className="mt-8">
-                    <h2
-                      className="text-[28px] font-semibold text-slate-950"
-                      style={{ fontFamily: "var(--font-source-serif)" }}
-                    >
-                      Biography
-                    </h2>
-                    <div className="mt-4 space-y-4 text-[15px] leading-8 text-slate-600 md:text-justify">
-                      {biographyParagraphs.map((paragraph, index) => (
-                        <p key={`${index}-${paragraph.slice(0, 24)}`}>
-                          {paragraph}
-                        </p>
-                      ))}
-                    </div>
-                  </section>
-                ) : null}
-
-                <div className="mt-9 flex flex-wrap gap-3">
-                  {professionalProfileUrl ? (
-                    <a
-                      href={professionalProfileUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-full bg-[#005A78] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#004862]"
-                    >
-                      View Professional Profile
-                      <ExternalLink size={15} aria-hidden="true" />
-                    </a>
+              <div className="border-b border-slate-200 py-6">
+                <div className="space-y-2 text-[15px] leading-6 text-slate-700">
+                  {member.category ? (
+                    <p className="font-bold text-[#005A78]">{member.category}</p>
                   ) : null}
-
-                  {externalBiographyUrl ? (
-                    <a
-                      href={externalBiographyUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-[#005A78] hover:text-[#005A78]"
-                    >
-                      <BookOpen size={16} aria-hidden="true" />
-                      External Biography
-                      <ExternalLink size={14} aria-hidden="true" />
-                    </a>
-                  ) : null}
-
-                  {member.email ? (
-                    <a
-                      href={buildGmailComposeUrl(
-                        member.email,
-                        "Journal of FST editorial board inquiry"
-                      )}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-[#005A78] hover:text-[#005A78]"
-                    >
-                      <Mail size={16} aria-hidden="true" />
-                      Email
-                    </a>
-                  ) : null}
+                  {member.designation ? <p>{member.designation}</p> : null}
+                  {member.department ? <p>{member.department}</p> : null}
+                  {member.institution ? <p>{member.institution}</p> : null}
                 </div>
               </div>
-            </div>
-          </article>
+
+              {member.expertise?.length ? (
+                <section className="border-b border-slate-200 py-6">
+                  <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                    Areas of Expertise
+                  </h2>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {member.expertise.map((item) => (
+                      <span
+                        key={item}
+                        className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700"
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              {socialProfiles.length || member.email ? (
+                <section className="py-6">
+                  <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                    Research Profiles & Contact
+                  </h2>
+                  <div className="mt-4 flex flex-wrap gap-2.5">
+                    {socialProfiles.map((profile) => {
+                      const Icon = profile.icon;
+                      return (
+                        <a
+                          key={profile.label}
+                          href={profile.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          title={profile.label}
+                          aria-label={profile.label}
+                          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-[#005A78] shadow-sm transition hover:-translate-y-0.5 hover:border-[#005A78] hover:bg-[#005A78] hover:text-white"
+                        >
+                          <Icon size={19} />
+                        </a>
+                      );
+                    })}
+
+                    {member.email ? (
+                      <a
+                        href={buildGmailComposeUrl(
+                          member.email,
+                          "Journal of FST editorial board inquiry"
+                        )}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Email"
+                        aria-label={`Email ${member.name}`}
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-[#005A78] shadow-sm transition hover:-translate-y-0.5 hover:border-[#005A78] hover:bg-[#005A78] hover:text-white"
+                      >
+                        <Mail size={19} aria-hidden="true" />
+                      </a>
+                    ) : null}
+                  </div>
+                </section>
+              ) : null}
+            </aside>
+
+            <article className="min-w-0">
+              <h1
+                className="text-[40px] font-semibold leading-[1.08] tracking-tight text-[#064779] md:text-[52px]"
+                style={{ fontFamily: "var(--font-source-serif)" }}
+              >
+                {member.name}
+              </h1>
+
+              {biographyParagraphs.length ? (
+                <div className="mt-6 space-y-5 text-[16px] leading-8 text-slate-700 md:text-justify">
+                  {biographyParagraphs.map((paragraph, index) => (
+                    <p key={`${index}-${paragraph.slice(0, 24)}`}>{paragraph}</p>
+                  ))}
+                </div>
+              ) : null}
+
+              {chiefEditor && config.chiefEditorResponsibilityDescription ? (
+                <section className="mt-9 border-t border-slate-200 pt-7">
+                  <h2
+                    className="text-[28px] font-semibold text-slate-950"
+                    style={{ fontFamily: "var(--font-source-serif)" }}
+                  >
+                    {config.chiefEditorResponsibilityTitle ||
+                      "Chief Editor Responsibilities"}
+                  </h2>
+                  <p className="mt-4 text-[16px] leading-8 text-slate-700 md:text-justify">
+                    {config.chiefEditorResponsibilityDescription}
+                  </p>
+                </section>
+              ) : null}
+
+              {externalBiographyUrl ? (
+                <a
+                  href={externalBiographyUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-9 inline-flex items-center gap-2 rounded-full border border-[#005A78] px-5 py-3 text-sm font-bold text-[#005A78] transition hover:bg-[#005A78] hover:text-white"
+                >
+                  <BookOpen size={17} aria-hidden="true" />
+                  External Biography
+                  <ExternalLink size={14} aria-hidden="true" />
+                </a>
+              ) : null}
+            </article>
+          </div>
         </Container>
       </main>
     </PublicLayout>

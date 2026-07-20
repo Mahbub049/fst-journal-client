@@ -53,6 +53,7 @@ export type PublicCmsPage = {
   title: string;
   slug: string;
   group: PublicPageGroup;
+  showTopLabel?: boolean;
   subtitle?: string;
   bannerImage?: string;
   shortDescription?: string;

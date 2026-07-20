@@ -13,6 +13,7 @@ import {
 export const dynamic = "force-dynamic";
 
 const fallbackConfig: EditorialBoardPageSettings = {
+  showEyebrow: true,
   eyebrow: "Editorial Leadership",
   pageTitle: "Editorial Board",
   intro:
@@ -240,10 +241,12 @@ export default async function EditorialBoardPage() {
         <section className="border-b border-slate-200 bg-white">
           <Container className="py-12 md:py-16">
             <div>
-              <p className="journal-subheading">{config.eyebrow}</p>
+              {config.showEyebrow !== false && config.eyebrow ? (
+                <p className="journal-subheading">{config.eyebrow}</p>
+              ) : null}
 
               <h1
-                className="mt-4 text-[36px] font-semibold leading-tight tracking-tight text-slate-950 md:text-[56px]"
+                className={`${config.showEyebrow !== false && config.eyebrow ? "mt-4" : "mt-0"} text-[36px] font-semibold leading-tight tracking-tight text-slate-950 md:text-[56px]`}
                 style={{ fontFamily: "var(--font-source-serif)" }}
               >
                 {config.pageTitle}

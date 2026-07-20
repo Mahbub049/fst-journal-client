@@ -14,6 +14,7 @@ import { uploadMedia } from "@/services/mediaService";
 import { getBrowserFileOrigin } from "@/lib/apiBase";
 
 const defaultForm: CallForPaperContent = {
+  showInvitationLabel: true,
   invitationLabel: "Publication Invitation",
   title: "Call for Papers",
   subtitle: "",
@@ -497,7 +498,21 @@ export default function AdminCallForPapersPage() {
               </h2>
 
               <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                <TextInput label="Small Heading (optional)" placeholder="Leave blank to hide" value={form.invitationLabel} onChange={(value) => updateField("invitationLabel", value)} />
+                <label className="lg:col-span-2 flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={form.showInvitationLabel !== false}
+                    onChange={(event) => updateField("showInvitationLabel", event.target.checked)}
+                    className="mt-0.5 h-4 w-4 accent-[#005A78]"
+                  />
+                  <span>
+                    Show the small heading above the Call for Papers title
+                    <span className="mt-1 block text-xs font-normal leading-5 text-slate-500">
+                      Disable this to remove “Publication Invitation” completely. The title moves up and no blank space remains.
+                    </span>
+                  </span>
+                </label>
+                <TextInput label="Small Heading" value={form.invitationLabel} onChange={(value) => updateField("invitationLabel", value)} />
                 <TextInput label="Page Title" value={form.title} onChange={(value) => updateField("title", value)} />
                 <div className="lg:col-span-2">
                   <TextInput label="Page Subtitle" value={form.subtitle} onChange={(value) => updateField("subtitle", value)} />

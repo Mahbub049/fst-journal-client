@@ -3,6 +3,7 @@ import { getServerApiBaseUrl } from "@/lib/apiBase";
 
 export type ContactPageContent = {
   _id?: string;
+  showEyebrow: boolean;
   eyebrow: string;
   title: string;
   subtitle: string;

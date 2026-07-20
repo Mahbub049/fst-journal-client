@@ -14,6 +14,13 @@ export type EditorialBoardMember = {
   bio: string;
   email: string;
   professionalProfileUrl: string;
+  googleScholarUrl: string;
+  researchGateUrl: string;
+  linkedinUrl: string;
+  orcidUrl: string;
+  scopusUrl: string;
+  webOfScienceUrl: string;
+  personalWebsiteUrl: string;
   biographyUrl: string;
   professionalProfileLabel: string;
   biographyLabel: string;
@@ -35,6 +42,13 @@ export type EditorialBoardPayload = {
   bio: string;
   email: string;
   professionalProfileUrl: string;
+  googleScholarUrl: string;
+  researchGateUrl: string;
+  linkedinUrl: string;
+  orcidUrl: string;
+  scopusUrl: string;
+  webOfScienceUrl: string;
+  personalWebsiteUrl: string;
   biographyUrl: string;
   professionalProfileLabel: string;
   biographyLabel: string;
@@ -61,6 +75,7 @@ export type EditorialAreaSetting = {
 
 export type EditorialBoardPageSettings = {
   _id?: string;
+  showEyebrow: boolean;
   eyebrow: string;
   pageTitle: string;
   intro: string;

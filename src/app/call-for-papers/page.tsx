@@ -17,6 +17,7 @@ type ImportantDate = {
 };
 
 type CallForPaperContent = {
+  showInvitationLabel: boolean;
   invitationLabel: string;
   title: string;
   subtitle: string;
@@ -75,6 +76,7 @@ type CallForPaperResponse = {
 };
 
 const fallbackContent: CallForPaperContent = {
+  showInvitationLabel: true,
   invitationLabel: "Publication Invitation",
   title: "Call for Papers",
   subtitle: "",
@@ -279,12 +281,12 @@ export default async function CallForPapersPage() {
                 <div className="border-b border-slate-200 pb-6">
                   <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
                     <div>
-                      {content.invitationLabel ? (
+                      {content.showInvitationLabel !== false && content.invitationLabel ? (
                         <p className="journal-subheading">{content.invitationLabel}</p>
                       ) : null}
 
                       <h1
-                        className="mt-3 text-[34px] font-semibold leading-tight text-slate-950 md:text-[42px]"
+                        className={`${content.showInvitationLabel !== false && content.invitationLabel ? "mt-3" : "mt-0"} text-[34px] font-semibold leading-tight text-slate-950 md:text-[42px]`}
                         style={{ fontFamily: "var(--font-source-serif)" }}
                       >
                         {content.title}

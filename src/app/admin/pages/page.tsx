@@ -86,6 +86,7 @@ const nestedBlockTypes = new Set<ContentBlockType>([
 const emptyForm: PagePayload = {
   title: "",
   group: "about",
+  showTopLabel: true,
   subtitle: "",
   bannerImage: "",
   shortDescription: "",
@@ -902,11 +903,13 @@ function PagePreviewModal({
             <main className="min-h-full bg-[#f7f8fb]">
               <section className="border-b border-slate-200 bg-white">
                 <div className="mx-auto w-full max-w-6xl px-5 py-10 md:px-8 md:py-14">
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#111433]">
-                    For Authors
-                  </p>
+                  {form.showTopLabel !== false ? (
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#111433]">
+                      For Authors
+                    </p>
+                  ) : null}
                   <h1
-                    className="mt-4 text-[32px] font-semibold leading-tight tracking-tight text-slate-950 md:text-[52px]"
+                    className={`${form.showTopLabel !== false ? "mt-4" : "mt-0"} text-[32px] font-semibold leading-tight tracking-tight text-slate-950 md:text-[52px]`}
                     style={{ fontFamily: "var(--font-source-serif)" }}
                   >
                     {currentPreviewTitle}
@@ -1002,11 +1005,13 @@ function PagePreviewModal({
             <main className="min-h-full bg-[#f7f8fb]">
               <section className="border-b border-slate-200 bg-white">
                 <div className="mx-auto w-full max-w-6xl px-5 py-10 md:px-8 md:py-14">
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#005A78]">
-                    {groupLabel(form.group)}
-                  </p>
+                  {form.showTopLabel !== false ? (
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#005A78]">
+                      {groupLabel(form.group)}
+                    </p>
+                  ) : null}
                   <h1
-                    className="mt-4 text-[32px] font-semibold leading-tight tracking-tight text-slate-950 md:text-[52px]"
+                    className={`${form.showTopLabel !== false ? "mt-4" : "mt-0"} text-[32px] font-semibold leading-tight tracking-tight text-slate-950 md:text-[52px]`}
                     style={{ fontFamily: "var(--font-source-serif)" }}
                   >
                     {currentPreviewTitle}
@@ -1123,6 +1128,7 @@ export default function AdminPagesPage() {
     setForm({
       title: page.title || "",
       group: page.group,
+      showTopLabel: page.showTopLabel !== false,
       subtitle: page.subtitle || "",
       bannerImage: page.bannerImage || "",
       shortDescription: page.shortDescription || "",
@@ -1295,6 +1301,7 @@ export default function AdminPagesPage() {
       await updateAdminPage(page._id, {
         title: page.title,
         group: page.group,
+        showTopLabel: page.showTopLabel !== false,
         subtitle: page.subtitle,
         bannerImage: page.bannerImage,
         shortDescription: page.shortDescription,
@@ -1459,6 +1466,22 @@ export default function AdminPagesPage() {
                   ))}
                 </select>
               </div>
+              <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <label className="flex items-start gap-3 text-sm font-semibold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={form.showTopLabel !== false}
+                    onChange={(event) => updateField("showTopLabel", event.target.checked)}
+                    className="mt-0.5 h-4 w-4 accent-[#005A78]"
+                  />
+                  <span>
+                    Show the section label above the page title
+                    <span className="mt-1 block text-xs font-normal leading-5 text-slate-500">
+                      Displays {groupLabel(form.group)} above the main heading. When disabled, the heading moves up and no empty space remains.
+                    </span>
+                  </span>
+                </label>
+              </div>
               {["for-authors", "reviewers"].includes(form.group) && (
                 <div className="lg:col-span-2 rounded-2xl border border-[#005A78]/20 bg-[#005A78]/5 p-4">
                   <p className="text-sm font-bold text-[#005A78]">
@@ -1466,8 +1489,8 @@ export default function AdminPagesPage() {
                   </p>
                   <p className="mt-1 text-sm leading-6 text-slate-600">
                     {form.group === "reviewers"
-                      ? "The page shows the Reviewers label, page title, subtitle, optional short description and banner at the top. The Reviewers Menu remains on the left and each top-level content block appears as a separate white card."
-                      : "The page shows the For Authors label, page title, subtitle, optional short description and banner at the top. Below that, the Author Menu remains on the left and each top-level content block is displayed as a separate white card."}
+                      ? "The optional Reviewers label, page title, subtitle, optional short description and banner appear at the top. The Reviewers Menu remains on the left and each top-level content block appears as a separate white card."
+                      : "The optional For Authors label, page title, subtitle, optional short description and banner appear at the top. Below that, the Author Menu remains on the left and each top-level content block is displayed as a separate white card."}
                   </p>
                 </div>
               )}

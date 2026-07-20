@@ -9,6 +9,7 @@ import { buildGmailComposeUrl } from "@/lib/emailLinks";
 export const dynamic = "force-dynamic";
 
 const fallbackContact: ContactPageContent = {
+  showEyebrow: true,
   eyebrow: "Contact",
   title: "Contact Us",
   subtitle: "Contact information for journal communication.",
@@ -70,13 +71,13 @@ export default async function ContactPage() {
       <main className="bg-[#f7f8fb]">
         <section className="border-b border-slate-200 bg-white">
           <Container className="py-12 md:py-16">
-            {content.eyebrow ? (
+            {content.showEyebrow !== false && content.eyebrow ? (
               <p className="journal-subheading">{content.eyebrow}</p>
             ) : null}
 
             {content.title ? (
               <h1
-                className="mt-4 text-[40px] font-semibold leading-tight tracking-tight text-slate-950 md:text-[56px]"
+                className={`${content.showEyebrow !== false && content.eyebrow ? "mt-4" : "mt-0"} text-[40px] font-semibold leading-tight tracking-tight text-slate-950 md:text-[56px]`}
                 style={{ fontFamily: "var(--font-source-serif)" }}
               >
                 {content.title}
