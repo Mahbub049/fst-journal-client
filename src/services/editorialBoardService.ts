@@ -86,6 +86,8 @@ export type EditorialBoardPageSettings = {
   chiefEditorResponsibilityDescription: string;
   showSummaryCards: boolean;
   showTotalCard: boolean;
+  showEditorialOffice: boolean;
+  editorialOfficeEyebrow: string;
   editorialOfficeTitle: string;
   editorialOfficeDescription: string;
   editorialOfficePublisher: string;
@@ -93,6 +95,9 @@ export type EditorialBoardPageSettings = {
   editorialOfficeAddress: string;
   editorialOfficeEmail: string;
   editorialOfficePhone: string;
+  showEditorialOfficeEmailButton: boolean;
+  editorialOfficeEmailButtonLabel: string;
+  editorialOfficeEmailSubject: string;
   categories: EditorialCategorySetting[];
   editorialAreas: EditorialAreaSetting[];
 };

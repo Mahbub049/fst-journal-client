@@ -32,6 +32,7 @@ import {
   updateAdminEditorialBoardConfig,
 } from "@/services/editorialBoardService";
 import { uploadMedia } from "@/services/mediaService";
+import { confirmAdminAction, promptAdminText } from "@/lib/adminDialogs";
 
 type StatusFilter = "all" | "active" | "inactive";
 
@@ -75,6 +76,8 @@ const defaultConfig: EditorialBoardPageSettings = {
     "Our chief editor is accountable for the overall direction of the journal, ensuring that published work is of the highest quality, follows BUP publication policies and procedures, and advances the journal's editorial mission.",
   showSummaryCards: true,
   showTotalCard: true,
+  showEditorialOffice: true,
+  editorialOfficeEyebrow: "Editorial Office",
   editorialOfficeTitle: "Editorial Office",
   editorialOfficeDescription:
     "For journal-related queries, manuscript preparation, publication information, and author support, please contact the editorial office.",
@@ -83,6 +86,9 @@ const defaultConfig: EditorialBoardPageSettings = {
   editorialOfficeAddress: "Mirpur Cantonment, Dhaka - 1216",
   editorialOfficeEmail: "editor.fstjournal@bup.edu.bd",
   editorialOfficePhone: "",
+  showEditorialOfficeEmailButton: true,
+  editorialOfficeEmailButtonLabel: "Email Editorial Office",
+  editorialOfficeEmailSubject: "Journal of FST editorial office inquiry",
   categories: [
     { name: "Chief Patron", description: "", order: 0, isActive: true, showInSummary: true },
     { name: "Chief Editor", description: "", order: 1, isActive: true, showInSummary: true },
@@ -316,8 +322,13 @@ export default function AdminEditorialBoardPage() {
     }
   };
 
-  const addCategory = () => {
-    const name = window.prompt("Enter the new category / role name:")?.trim();
+  const addCategory = async () => {
+    const name = await promptAdminText({
+      title: "Add category or role",
+      text: "Enter the name that should appear in the editorial board grouping.",
+      placeholder: "For example: Associate Editor",
+      confirmButtonText: "Add category",
+    });
     if (!name) return;
     if (config.categories.some((item) => item.name.toLowerCase() === name.toLowerCase())) {
       setMessage("That role already exists.");
@@ -332,8 +343,13 @@ export default function AdminEditorialBoardPage() {
     }));
   };
 
-  const addArea = () => {
-    const name = window.prompt("Enter the new editorial area name:")?.trim();
+  const addArea = async () => {
+    const name = await promptAdminText({
+      title: "Add editorial area",
+      text: "Enter the subject or editorial area name.",
+      placeholder: "For example: Artificial Intelligence",
+      confirmButtonText: "Add area",
+    });
     if (!name) return;
     if (config.editorialAreas.some((item) => item.name.toLowerCase() === name.toLowerCase())) {
       setMessage("That editorial area already exists.");
@@ -437,7 +453,13 @@ export default function AdminEditorialBoardPage() {
   };
 
   const deleteMember = async (member: EditorialBoardMember) => {
-    if (!window.confirm(`Delete "${member.name}"?`)) return;
+    const confirmed = await confirmAdminAction({
+      title: `Delete ${member.name}?`,
+      text: "This editorial board member will be removed permanently.",
+      confirmButtonText: "Delete member",
+      destructive: true,
+    });
+    if (!confirmed) return;
     try {
       await deleteAdminEditorialBoard(member._id);
       setMessage("Editorial board member deleted successfully.");
@@ -546,15 +568,89 @@ export default function AdminEditorialBoardPage() {
           </div>
 
           <div className="mt-8 border-t border-slate-200 pt-6">
-            <h3 className="text-lg font-bold text-slate-950">Editorial Office</h3>
-            <div className="mt-4 grid gap-5 lg:grid-cols-2">
-              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Office Title</label><input value={config.editorialOfficeTitle} onChange={(e) => setConfig((p) => ({ ...p, editorialOfficeTitle: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" /></div>
-              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Email</label><input value={config.editorialOfficeEmail} onChange={(e) => setConfig((p) => ({ ...p, editorialOfficeEmail: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" /></div>
-              <div className="lg:col-span-2"><label className="mb-1.5 block text-sm font-semibold text-slate-700">Description</label><textarea value={config.editorialOfficeDescription} onChange={(e) => setConfig((p) => ({ ...p, editorialOfficeDescription: e.target.value }))} rows={2} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" /></div>
-              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Publisher / Faculty</label><input value={config.editorialOfficePublisher} onChange={(e) => setConfig((p) => ({ ...p, editorialOfficePublisher: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" /></div>
-              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Institution</label><input value={config.editorialOfficeInstitution} onChange={(e) => setConfig((p) => ({ ...p, editorialOfficeInstitution: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" /></div>
-              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Address</label><input value={config.editorialOfficeAddress} onChange={(e) => setConfig((p) => ({ ...p, editorialOfficeAddress: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" /></div>
-              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Phone</label><input value={config.editorialOfficePhone} onChange={(e) => setConfig((p) => ({ ...p, editorialOfficePhone: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" /></div>
+            <div className="rounded-3xl border border-[#005A78]/15 bg-[#f3fafc] p-5 sm:p-6">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-950">Editorial Office Card</h3>
+                  <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+                    Control every heading, contact detail, and email button shown in the Editorial Office sidebar card. Empty optional fields are hidden automatically.
+                  </p>
+                </div>
+                <label className="inline-flex items-center gap-2 rounded-xl border border-[#005A78]/15 bg-white px-4 py-3 text-sm font-bold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={config.showEditorialOffice !== false}
+                    onChange={(e) =>
+                      setConfig((p) => ({
+                        ...p,
+                        showEditorialOffice: e.target.checked,
+                      }))
+                    }
+                    className="h-4 w-4 accent-[#005A78]"
+                  />
+                  Show Editorial Office card
+                </label>
+              </div>
+
+              <div className="mt-5 grid gap-5 lg:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Small Heading / Eyebrow</label>
+                  <input value={config.editorialOfficeEyebrow} onChange={(e) => setConfig((p) => ({ ...p, editorialOfficeEyebrow: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Office Title</label>
+                  <input value={config.editorialOfficeTitle} onChange={(e) => setConfig((p) => ({ ...p, editorialOfficeTitle: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                </div>
+                <div className="lg:col-span-2">
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Description</label>
+                  <textarea value={config.editorialOfficeDescription} onChange={(e) => setConfig((p) => ({ ...p, editorialOfficeDescription: e.target.value }))} rows={3} className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Publisher / Faculty</label>
+                  <input value={config.editorialOfficePublisher} onChange={(e) => setConfig((p) => ({ ...p, editorialOfficePublisher: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Institution</label>
+                  <input value={config.editorialOfficeInstitution} onChange={(e) => setConfig((p) => ({ ...p, editorialOfficeInstitution: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Address</label>
+                  <input value={config.editorialOfficeAddress} onChange={(e) => setConfig((p) => ({ ...p, editorialOfficeAddress: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Phone</label>
+                  <input value={config.editorialOfficePhone} onChange={(e) => setConfig((p) => ({ ...p, editorialOfficePhone: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Email Address</label>
+                  <input type="email" value={config.editorialOfficeEmail} onChange={(e) => setConfig((p) => ({ ...p, editorialOfficeEmail: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Email Subject</label>
+                  <input value={config.editorialOfficeEmailSubject} onChange={(e) => setConfig((p) => ({ ...p, editorialOfficeEmailSubject: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 lg:col-span-2">
+                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={config.showEditorialOfficeEmailButton !== false}
+                      onChange={(e) =>
+                        setConfig((p) => ({
+                          ...p,
+                          showEditorialOfficeEmailButton: e.target.checked,
+                        }))
+                      }
+                      className="h-4 w-4 accent-[#005A78]"
+                    />
+                    Show email action button
+                  </label>
+                  <div className="mt-4">
+                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">Email Button Text</label>
+                    <input value={config.editorialOfficeEmailButtonLabel} onChange={(e) => setConfig((p) => ({ ...p, editorialOfficeEmailButtonLabel: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>

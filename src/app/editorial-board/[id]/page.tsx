@@ -38,6 +38,8 @@ const fallbackConfig: EditorialBoardPageSettings = {
     "Our chief editor is accountable for the overall direction of the journal, ensuring that published work is of the highest quality, follows BUP publication policies and procedures, and advances the journal's editorial mission.",
   showSummaryCards: true,
   showTotalCard: true,
+  showEditorialOffice: true,
+  editorialOfficeEyebrow: "Editorial Office",
   editorialOfficeTitle: "Editorial Office",
   editorialOfficeDescription: "",
   editorialOfficePublisher: "",
@@ -45,6 +47,9 @@ const fallbackConfig: EditorialBoardPageSettings = {
   editorialOfficeAddress: "",
   editorialOfficeEmail: "",
   editorialOfficePhone: "",
+  showEditorialOfficeEmailButton: true,
+  editorialOfficeEmailButtonLabel: "Email Editorial Office",
+  editorialOfficeEmailSubject: "Journal of FST editorial office inquiry",
   categories: [],
   editorialAreas: [],
 };

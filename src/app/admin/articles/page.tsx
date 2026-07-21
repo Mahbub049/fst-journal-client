@@ -36,6 +36,7 @@ import {
 import { getAdminIssues } from "@/services/issues.service";
 import { Article, Issue, PopulatedIssue } from "@/types/issue";
 import { getBrowserFileOrigin } from "@/lib/apiBase";
+import { confirmAdminAction } from "@/lib/adminDialogs";
 
 type PublicationFilter = "all" | "published" | "draft";
 
@@ -364,9 +365,12 @@ export default function AdminArticlesPage() {
   };
 
   const handleDelete = async (article: Article) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${article.title}"?`
-    );
+    const confirmed = await confirmAdminAction({
+      title: "Delete article?",
+      text: `"${article.title}" will be removed permanently.`,
+      confirmButtonText: "Delete article",
+      destructive: true,
+    });
 
     if (!confirmed) return;
 

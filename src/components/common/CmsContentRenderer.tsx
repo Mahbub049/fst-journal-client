@@ -1,9 +1,26 @@
-import type { CSSProperties, JSX } from "react";
-import type { PublicContentBlock } from "@/services/publicPageService";
+import type { CSSProperties, JSX, ReactNode } from "react";
+import CmsActionButton, {
+  CmsButtonIcon,
+  CmsButtonVariant,
+} from "@/components/common/CmsActionButton";
+import type {
+  CmsButtonLayout,
+  PublicContentBlock,
+} from "@/services/publicPageService";
+
+type PageAction = {
+  label?: string;
+  url?: string;
+  show?: boolean;
+  icon?: CmsButtonIcon;
+  variant?: CmsButtonVariant;
+  openInNewTab?: boolean;
+};
 
 type CmsContentRendererProps = {
   blocks: PublicContentBlock[];
   variant?: "about" | "authors" | "contact";
+  pageAction?: PageAction;
 };
 
 const widthClasses: Record<string, string> = {
@@ -75,14 +92,101 @@ const getBlockTitleClass = (
   return `${marginClass} text-xl font-bold text-slate-950`;
 };
 
-function Block({
+const getBlockAction = (block: PublicContentBlock) => {
+  if (
+    block.showButton === false ||
+    !block.buttonLabel?.trim() ||
+    !block.buttonUrl?.trim()
+  ) {
+    return null;
+  }
+
+  return (
+    <CmsActionButton
+      label={block.buttonLabel}
+      url={block.buttonUrl}
+      icon={block.buttonIcon || "none"}
+      variant={block.buttonVariant || "primary"}
+      openInNewTab={block.buttonOpenInNewTab}
+      className="shrink-0"
+    />
+  );
+};
+
+function TitleWithAction({
   block,
   variant,
   depth,
+  marginClass = "mb-3",
 }: {
   block: PublicContentBlock;
   variant: "about" | "authors" | "contact";
   depth: number;
+  marginClass?: string;
+}) {
+  const action = getBlockAction(block);
+  if (!block.title && !action) return null;
+
+  return (
+    <div className={`${marginClass} flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between`}>
+      {block.title ? (
+        <h3
+          className={getBlockTitleClass(variant, depth, "mb-0")}
+          style={
+            variant === "authors" && depth === 0
+              ? { fontFamily: "var(--font-source-serif)" }
+              : undefined
+          }
+        >
+          {block.title}
+        </h3>
+      ) : (
+        <span />
+      )}
+      {action}
+    </div>
+  );
+}
+
+const renderActionChildren = (
+  children: PublicContentBlock[],
+  layout: CmsButtonLayout,
+  variant: "about" | "authors" | "contact",
+  depth: number
+) => {
+  if (!children.length) return null;
+
+  return (
+    <div
+      className={
+        layout === "horizontal"
+          ? "mt-5 flex flex-wrap items-center gap-3"
+          : "mt-5 flex flex-col items-start gap-3"
+      }
+    >
+      {children.map((child, index) => (
+        <Block
+          key={child._id || `${child.type}-${index}`}
+          block={child}
+          variant={variant}
+          depth={depth + 1}
+          actionGroup
+        />
+      ))}
+    </div>
+  );
+};
+
+function Block({
+  block,
+  variant,
+  depth,
+  actionGroup = false,
+}: {
+  block: PublicContentBlock;
+  variant: "about" | "authors" | "contact";
+  depth: number;
+  actionGroup?: boolean;
 }) {
   if (!block.isActive) return null;
 
@@ -93,12 +197,20 @@ function Block({
     color: style.textColor || undefined,
     textAlign: style.alignment || undefined,
   } as CSSProperties;
-  const width = isAuthorTopLevel
-    ? "w-full"
-    : widthClasses[style.width || "normal"];
+  const width = actionGroup
+    ? "w-auto"
+    : isAuthorTopLevel
+      ? "w-full"
+      : widthClasses[style.width || "normal"];
   const padding = paddingClasses[style.padding || "medium"];
   const children = [...(block.children || [])].sort(
     (a, b) => Number(a.order || 0) - Number(b.order || 0)
+  );
+  const actionChildren = children.filter((child) =>
+    ["button", "pdf"].includes(child.type)
+  );
+  const contentChildren = children.filter(
+    (child) => !["button", "pdf"].includes(child.type)
   );
   const cardShell =
     variant === "authors"
@@ -121,18 +233,7 @@ function Block({
   if (block.type === "paragraph") {
     return (
       <div className={width} style={wrapperStyle}>
-        {block.title && (
-          <h3
-            className={getBlockTitleClass(variant, depth, "mb-3")}
-            style={
-              isAuthorTopLevel
-                ? { fontFamily: "var(--font-source-serif)" }
-                : undefined
-            }
-          >
-            {block.title}
-          </h3>
-        )}
+        <TitleWithAction block={block} variant={variant} depth={depth} />
         <RichContent html={block.content} variant={variant} />
       </div>
     );
@@ -141,18 +242,7 @@ function Block({
   if (block.type === "list") {
     return (
       <div className={width} style={wrapperStyle}>
-        {block.title && (
-          <h3
-            className={getBlockTitleClass(variant, depth)}
-            style={
-              isAuthorTopLevel
-                ? { fontFamily: "var(--font-source-serif)" }
-                : undefined
-            }
-          >
-            {block.title}
-          </h3>
-        )}
+        <TitleWithAction block={block} variant={variant} depth={depth} marginClass="mb-4" />
         <ul className={`space-y-3 text-[15px] leading-7 ${getBodyTextClass(variant)} md:text-[16px] md:leading-8`}>
           {(block.items || []).map((item, index) => (
             <li key={`${item}-${index}`} className="flex gap-3 md:text-justify">
@@ -181,26 +271,15 @@ function Block({
 
     return (
       <section className={containerClass} style={wrapperStyle}>
-        {block.title && (
-          <h3
-            className={getBlockTitleClass(variant, depth, "mb-0")}
-            style={
-              isAuthorTopLevel
-                ? { fontFamily: "var(--font-source-serif)" }
-                : undefined
-            }
-          >
-            {block.title}
-          </h3>
-        )}
-        {block.content && (
-          <div className={block.title ? "mt-4" : ""}>
+        <TitleWithAction block={block} variant={variant} depth={depth} marginClass="mb-0" />
+        {block.content ? (
+          <div className={block.title || getBlockAction(block) ? "mt-4" : ""}>
             <RichContent html={block.content} variant={variant} />
           </div>
-        )}
-        {children.length > 0 && (
+        ) : null}
+        {contentChildren.length > 0 ? (
           <div className="mt-5 space-y-5">
-            {children.map((child, index) => (
+            {contentChildren.map((child, index) => (
               <Block
                 key={child._id || index}
                 block={child}
@@ -209,6 +288,12 @@ function Block({
               />
             ))}
           </div>
+        ) : null}
+        {renderActionChildren(
+          actionChildren,
+          style.buttonLayout || "vertical",
+          variant,
+          depth
         )}
       </section>
     );
@@ -218,18 +303,7 @@ function Block({
     const columnCount = Math.min(Math.max(Number(style.columns || 2), 1), 4);
     return (
       <section className={width} style={wrapperStyle}>
-        {block.title && (
-          <h3
-            className={getBlockTitleClass(variant, depth, "mb-5")}
-            style={
-              isAuthorTopLevel
-                ? { fontFamily: "var(--font-source-serif)" }
-                : undefined
-            }
-          >
-            {block.title}
-          </h3>
-        )}
+        <TitleWithAction block={block} variant={variant} depth={depth} marginClass="mb-5" />
         <div
           className={[
             "grid grid-cols-1 gap-5",
@@ -238,12 +312,18 @@ function Block({
             columnCount === 4 ? "md:grid-cols-2 xl:grid-cols-4" : "",
           ].join(" ")}
         >
-          {children.map((child, index) => (
+          {contentChildren.map((child, index) => (
             <div key={child._id || index} className="min-w-0">
               <Block block={child} variant={variant} depth={depth + 1} />
             </div>
           ))}
         </div>
+        {renderActionChildren(
+          actionChildren,
+          style.buttonLayout || "horizontal",
+          variant,
+          depth
+        )}
       </section>
     );
   }
@@ -255,73 +335,57 @@ function Block({
         style={wrapperStyle}
       >
         <RichContent html={block.content} variant={variant} />
-        {block.title && (
-          <footer className="mt-3 text-sm font-semibold not-italic">
-            — {block.title}
-          </footer>
-        )}
+        {block.title ? (
+          <footer className="mt-3 text-sm font-semibold not-italic">— {block.title}</footer>
+        ) : null}
       </blockquote>
     );
   }
 
   if (block.type === "image" && block.imageUrl) {
     return (
-      <figure
-        className={`${width} overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-3`}
-      >
+      <figure className={`${width} overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-3`}>
         <img
           src={block.imageUrl}
           alt={block.altText || block.title || "Page image"}
           className="w-full rounded-xl object-cover"
         />
-        {(block.caption || block.title) && (
+        {block.caption || block.title ? (
           <figcaption className="mt-3 text-center text-sm text-slate-500">
             {block.caption || block.title}
           </figcaption>
-        )}
+        ) : null}
       </figure>
     );
   }
 
-  if (block.type === "pdf" && block.fileUrl) {
+  if (block.type === "pdf" && block.fileUrl && block.showButton !== false) {
     return (
       <div className={width} style={wrapperStyle}>
-        {block.title && (
-          <h3
-            className={getBlockTitleClass(variant, depth)}
-            style={
-              isAuthorTopLevel
-                ? { fontFamily: "var(--font-source-serif)" }
-                : undefined
-            }
-          >
-            {block.title}
-          </h3>
-        )}
-        <a
-          href={block.fileUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center justify-center rounded-full bg-[#111433] px-6 py-3 text-sm font-semibold text-white hover:bg-[#1b204a]"
-        >
-          {block.buttonLabel || "Open Document"}
-        </a>
+        {block.title && !actionGroup ? (
+          <h3 className={getBlockTitleClass(variant, depth)}>{block.title}</h3>
+        ) : null}
+        <CmsActionButton
+          label={block.buttonLabel || "Open Document"}
+          url={block.fileUrl}
+          icon={block.buttonIcon || "pdf"}
+          variant={block.buttonVariant || "primary"}
+          openInNewTab={block.buttonOpenInNewTab ?? true}
+        />
       </div>
     );
   }
 
-  if (block.type === "button" && block.buttonUrl) {
-    const external = block.buttonUrl.startsWith("http");
+  if (block.type === "button" && block.buttonUrl && block.showButton !== false) {
     return (
       <div className={width} style={wrapperStyle}>
-        <a
-          href={block.buttonUrl}
-          target={external ? "_blank" : undefined}
-          rel={external ? "noreferrer" : undefined}
-          className="inline-flex items-center justify-center rounded-full bg-[#111433] px-6 py-3 text-sm font-semibold text-white hover:bg-[#1b204a]"
-        >
-          {block.buttonLabel || block.title || "Learn More"}
-        </a>
+        <CmsActionButton
+          label={block.buttonLabel || block.title || "Learn More"}
+          url={block.buttonUrl}
+          icon={block.buttonIcon || "none"}
+          variant={block.buttonVariant || "primary"}
+          openInNewTab={block.buttonOpenInNewTab}
+        />
       </div>
     );
   }
@@ -329,9 +393,7 @@ function Block({
   if (block.type === "video" && (block.fileUrl || block.buttonUrl)) {
     const source = block.fileUrl || block.buttonUrl || "";
     return (
-      <div
-        className={`${width} overflow-hidden rounded-2xl border border-slate-200 bg-black`}
-      >
+      <div className={`${width} overflow-hidden rounded-2xl border border-slate-200 bg-black`}>
         <iframe
           src={source}
           title={block.title || "Embedded video"}
@@ -348,22 +410,8 @@ function Block({
         className={`${width} overflow-x-auto rounded-2xl border border-slate-200 bg-white p-4`}
         style={wrapperStyle}
       >
-        {block.title && (
-          <h3
-            className={getBlockTitleClass(variant, depth)}
-            style={
-              isAuthorTopLevel
-                ? { fontFamily: "var(--font-source-serif)" }
-                : undefined
-            }
-          >
-            {block.title}
-          </h3>
-        )}
-        <div
-          className="cms-table"
-          dangerouslySetInnerHTML={{ __html: block.content || "" }}
-        />
+        <TitleWithAction block={block} variant={variant} depth={depth} />
+        <div className="cms-table" dangerouslySetInnerHTML={{ __html: block.content || "" }} />
       </div>
     );
   }
@@ -371,18 +419,9 @@ function Block({
   if (block.type === "code") {
     return (
       <div className={width} style={wrapperStyle}>
-        {block.title && (
-          <h3
-            className={getBlockTitleClass(variant, depth, "mb-3")}
-            style={
-              isAuthorTopLevel
-                ? { fontFamily: "var(--font-source-serif)" }
-                : undefined
-            }
-          >
-            {block.title}
-          </h3>
-        )}
+        {block.title ? (
+          <h3 className={getBlockTitleClass(variant, depth, "mb-3")}>{block.title}</h3>
+        ) : null}
         <pre className="overflow-x-auto rounded-2xl bg-slate-950 p-5 text-sm leading-6 text-slate-100">
           <code data-language={block.codeLanguage || "text"}>{block.content}</code>
         </pre>
@@ -390,17 +429,10 @@ function Block({
     );
   }
 
-  if (block.type === "divider") {
-    return <hr className={`${width} border-slate-200`} />;
-  }
+  if (block.type === "divider") return <hr className={`${width} border-slate-200`} />;
 
   if (block.type === "spacer") {
-    const size =
-      style.padding === "large"
-        ? "h-20"
-        : style.padding === "small"
-          ? "h-6"
-          : "h-12";
+    const size = style.padding === "large" ? "h-20" : style.padding === "small" ? "h-6" : "h-12";
     return <div className={size} aria-hidden="true" />;
   }
 
@@ -410,45 +442,124 @@ function Block({
 export default function CmsContentRenderer({
   blocks,
   variant = "about",
+  pageAction,
 }: CmsContentRendererProps) {
   const sorted = [...blocks]
     .filter((block) => block.isActive)
     .sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
 
-  return (
-    <div className="space-y-5">
-      {sorted.map((block, index) => {
-        const renderedBlock = (
-          <Block
-            key={block._id || `${block.type}-${index}`}
-            block={block}
-            variant={variant}
-            depth={0}
-          />
-        );
+  const firstContentIndex = sorted.findIndex(
+    (block) => !["button", "pdf", "spacer", "divider"].includes(block.type)
+  );
 
-        if (variant !== "authors" || block.type === "spacer") {
-          return renderedBlock;
+  const blocksWithPageAction = sorted.map((block, index) =>
+    index === firstContentIndex &&
+    pageAction?.show !== false &&
+    pageAction?.label?.trim() &&
+    pageAction?.url?.trim()
+      ? {
+          ...block,
+          showButton: true,
+          buttonLabel: pageAction.label,
+          buttonUrl: pageAction.url,
+          buttonIcon: pageAction.icon || "none",
+          buttonVariant: pageAction.variant || "primary",
+          buttonOpenInNewTab: pageAction.openInNewTab,
         }
+      : block
+  );
 
-        const style = block.style || {};
-        const width = widthClasses[style.width || "normal"];
-        const padding = paddingClasses[style.padding || "medium"];
-        const outerStyle = {
-          backgroundColor: style.backgroundColor || undefined,
-          color: style.textColor || undefined,
-        } as CSSProperties;
+  const rendered: ReactNode[] = [];
 
-        return (
+  for (let index = 0; index < blocksWithPageAction.length; index += 1) {
+    const block = blocksWithPageAction[index];
+    const isActionBlock = ["button", "pdf"].includes(block.type);
+
+    // An action placed directly after a content block belongs to that card.
+    // This keeps existing page data compatible while allowing the admin to
+    // choose vertical or side-by-side button layouts without rebuilding blocks.
+    if (isActionBlock) {
+      const standalone = (
+        <Block
+          key={block._id || `${block.type}-${index}`}
+          block={block}
+          variant={variant}
+          depth={0}
+          actionGroup
+        />
+      );
+
+      if (variant === "authors") {
+        rendered.push(
           <article
             key={block._id || `${block.type}-${index}`}
-            className={`${width} ${padding} rounded-3xl border border-slate-200 bg-white shadow-sm`}
-            style={outerStyle}
+            className="mx-auto w-full max-w-4xl rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-7"
           >
-            {renderedBlock}
+            {standalone}
           </article>
         );
-      })}
-    </div>
-  );
+      } else {
+        rendered.push(standalone);
+      }
+      continue;
+    }
+
+    const followingActions: PublicContentBlock[] = [];
+    let cursor = index + 1;
+    while (
+      cursor < blocksWithPageAction.length &&
+      ["button", "pdf"].includes(blocksWithPageAction[cursor].type)
+    ) {
+      followingActions.push(blocksWithPageAction[cursor]);
+      cursor += 1;
+    }
+    if (followingActions.length > 0) index = cursor - 1;
+
+    const renderedBlock = (
+      <Block
+        key={block._id || `${block.type}-${index}`}
+        block={block}
+        variant={variant}
+        depth={0}
+      />
+    );
+
+    const followingActionGroup = renderActionChildren(
+      followingActions,
+      block.style?.buttonLayout || "vertical",
+      variant,
+      0
+    );
+
+    if (variant !== "authors" || block.type === "spacer") {
+      rendered.push(
+        <div key={block._id || `${block.type}-${index}`}>
+          {renderedBlock}
+          {followingActionGroup}
+        </div>
+      );
+      continue;
+    }
+
+    const style = block.style || {};
+    const width = widthClasses[style.width || "normal"];
+    const padding = paddingClasses[style.padding || "medium"];
+    const outerStyle = {
+      backgroundColor: style.backgroundColor || undefined,
+      color: style.textColor || undefined,
+    } as CSSProperties;
+
+    rendered.push(
+      <article
+        key={block._id || `${block.type}-${index}`}
+        className={`${width} ${padding} rounded-3xl border border-slate-200 bg-white shadow-sm`}
+        style={outerStyle}
+      >
+        {renderedBlock}
+        {followingActionGroup}
+      </article>
+    );
+  }
+
+  return <div className="space-y-5">{rendered}</div>;
 }

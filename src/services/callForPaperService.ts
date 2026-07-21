@@ -8,6 +8,14 @@ export type ImportantDate = {
   isActive: boolean;
 };
 
+export type SubmissionType = {
+  _id?: string;
+  title: string;
+  description: string;
+  order: number;
+  isActive: boolean;
+};
+
 export type CallForPaperContent = {
   _id?: string;
 
@@ -16,16 +24,24 @@ export type CallForPaperContent = {
   title: string;
   subtitle: string;
   description: string;
+  descriptionWidth: "normal" | "full";
+  descriptionAlignment: "left" | "center" | "right" | "justify";
 
   posterImage: string;
   pdfUrl: string;
   pdfTitle: string;
   pdfSubtitle: string;
+  showPdfActionButton: boolean;
+  pdfActionButtonLabel: string;
+  pdfActionButtonLink: string;
+  showPdfActionButtonIcon: boolean;
+  showEmbeddedPdfViewer: boolean;
 
   submissionFormatLabel: string;
   submissionFormatTitle: string;
   submissionFormatDescription: string;
   submissionTypes: string[];
+  submissionTypeDetails: SubmissionType[];
 
   scopeLabel: string;
   scopeTitle: string;

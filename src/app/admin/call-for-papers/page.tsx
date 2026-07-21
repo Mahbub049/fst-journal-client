@@ -3,9 +3,11 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { ExternalLink, FileText, Loader2, Plus, Save, Trash2, Upload } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
+import RichTextEditor from "@/components/admin/RichTextEditor";
 import {
   CallForPaperContent,
   ImportantDate,
+  SubmissionType,
   getAdminCallForPaper,
   updateAdminCallForPaper,
   uploadAdminCallForPaperPdf,
@@ -18,6 +20,8 @@ const defaultForm: CallForPaperContent = {
   invitationLabel: "Publication Invitation",
   title: "Call for Papers",
   subtitle: "",
+  descriptionWidth: "normal",
+  descriptionAlignment: "justify",
   description:
     "The Faculty of Science and Technology, Bangladesh University of Professionals, invites authors to submit original and high-quality manuscripts for the upcoming issue of the Journal of FST. The journal welcomes research contributions in engineering, computer science, communication technology, environmental science, management, and related interdisciplinary fields.",
 
@@ -25,6 +29,11 @@ const defaultForm: CallForPaperContent = {
   pdfUrl: "/pdfs/call-for-papers.pdf",
   pdfTitle: "Call for Papers Document",
   pdfSubtitle: "Volume 4, Issue 1",
+  showPdfActionButton: true,
+  pdfActionButtonLabel: "View PDF",
+  pdfActionButtonLink: "/pdfs/call-for-papers.pdf",
+  showPdfActionButtonIcon: true,
+  showEmbeddedPdfViewer: true,
 
   submissionFormatLabel: "Submission Format",
   submissionFormatTitle: "Types of Manuscripts Accepted",
@@ -36,6 +45,43 @@ const defaultForm: CallForPaperContent = {
     "Book reviews",
     "Policy analysis",
     "Review articles",
+  ],
+  submissionTypeDetails: [
+    {
+      title: "Full research articles",
+      description:
+        "Complete original studies presenting a clear research problem, methodology, results, analysis, and contribution.",
+      order: 1,
+      isActive: true,
+    },
+    {
+      title: "Short communications",
+      description:
+        "Concise reports of significant new findings, methods, or early results that deserve rapid scholarly communication.",
+      order: 2,
+      isActive: true,
+    },
+    {
+      title: "Book reviews",
+      description:
+        "Critical and balanced evaluations of recently published academic books relevant to the journal's scope.",
+      order: 3,
+      isActive: true,
+    },
+    {
+      title: "Policy analysis",
+      description:
+        "Evidence-based examination of scientific, technological, environmental, or institutional policies and their implications.",
+      order: 4,
+      isActive: true,
+    },
+    {
+      title: "Review articles",
+      description:
+        "Structured synthesis and critical assessment of existing literature, trends, gaps, and future research directions.",
+      order: 5,
+      isActive: true,
+    },
   ],
 
   scopeLabel: "Scope of Submission",
@@ -163,26 +209,51 @@ const createImportantDate = (order: number): ImportantDate => ({
   isActive: true,
 });
 
+const createSubmissionType = (order: number): SubmissionType => ({
+  title: "",
+  description: "",
+  order,
+  isActive: true,
+});
+
 const serverFileBaseUrl = getBrowserFileOrigin();
 
 const mergeCallForPaperContent = (
   data: Partial<CallForPaperContent>
-): CallForPaperContent => ({
-  ...defaultForm,
-  ...data,
-  importantDates: Array.isArray(data.importantDates)
-    ? data.importantDates
-    : defaultForm.importantDates,
-  submissionTypes: Array.isArray(data.submissionTypes)
+): CallForPaperContent => {
+  const legacyTypes = Array.isArray(data.submissionTypes)
     ? data.submissionTypes
-    : defaultForm.submissionTypes,
-  engineeringTopics: Array.isArray(data.engineeringTopics)
-    ? data.engineeringTopics
-    : defaultForm.engineeringTopics,
-  environmentalTopics: Array.isArray(data.environmentalTopics)
-    ? data.environmentalTopics
-    : defaultForm.environmentalTopics,
-});
+    : defaultForm.submissionTypes;
+
+  const hasStructuredTypes =
+    Array.isArray(data.submissionTypeDetails) &&
+    (data.submissionTypeDetails.length > 0 || legacyTypes.length === 0);
+
+  const submissionTypeDetails = hasStructuredTypes
+    ? data.submissionTypeDetails!
+    : legacyTypes.map((title, index) => ({
+        title,
+        description: "",
+        order: index + 1,
+        isActive: true,
+      }));
+
+  return {
+    ...defaultForm,
+    ...data,
+    importantDates: Array.isArray(data.importantDates)
+      ? data.importantDates
+      : defaultForm.importantDates,
+    submissionTypes: legacyTypes,
+    submissionTypeDetails,
+    engineeringTopics: Array.isArray(data.engineeringTopics)
+      ? data.engineeringTopics
+      : defaultForm.engineeringTopics,
+    environmentalTopics: Array.isArray(data.environmentalTopics)
+      ? data.environmentalTopics
+      : defaultForm.environmentalTopics,
+  };
+};
 
 const resolveUploadedFileUrl = (url: string) => {
   if (!url) return "#";
@@ -293,6 +364,109 @@ function ListEditor({
   );
 }
 
+type SubmissionTypeEditorProps = {
+  items: SubmissionType[];
+  onAdd: () => void;
+  onChange: (
+    index: number,
+    field: keyof SubmissionType,
+    value: string | boolean
+  ) => void;
+  onRemove: (index: number) => void;
+};
+
+function SubmissionTypeEditor({
+  items,
+  onAdd,
+  onChange,
+  onRemove,
+}: SubmissionTypeEditorProps) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h3 className="text-sm font-bold text-slate-900">
+            Types of Manuscripts Accepted
+          </h3>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Each type can have its own title, short description, and visibility.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onAdd}
+          className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#005A78] px-3 py-2 text-xs font-bold text-white"
+        >
+          <Plus className="h-4 w-4" /> Add Type
+        </button>
+      </div>
+
+      <div className="mt-4 space-y-4">
+        {items.map((item, index) => (
+          <div
+            key={item._id || `submission-type-${index}`}
+            className="rounded-2xl border border-slate-200 bg-white p-4"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                Type {index + 1}
+              </p>
+              <button
+                type="button"
+                onClick={() => onRemove(index)}
+                className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700"
+                aria-label={`Remove manuscript type ${index + 1}`}
+              >
+                <Trash2 className="h-4 w-4" /> Remove
+              </button>
+            </div>
+
+            <div className="mt-4 grid gap-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                  Type Title
+                </label>
+                <input
+                  value={item.title}
+                  onChange={(event) =>
+                    onChange(index, "title", event.target.value)
+                  }
+                  placeholder="Example: Full research articles"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                  Rich Description
+                </label>
+                <RichTextEditor
+                  value={item.description}
+                  onChange={(value) => onChange(index, "description", value)}
+                  placeholder="Explain this manuscript type. Font, color, alignment, links, and other formatting can be applied here."
+                  minHeight={120}
+                />
+              </div>
+
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={item.isActive !== false}
+                  onChange={(event) =>
+                    onChange(index, "isActive", event.target.checked)
+                  }
+                  className="h-4 w-4 accent-[#005A78]"
+                />
+                Show this manuscript type on the public page
+              </label>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminCallForPapersPage() {
   const [form, setForm] = useState<CallForPaperContent>(defaultForm);
   const [loading, setLoading] = useState(true);
@@ -329,7 +503,7 @@ export default function AdminCallForPapersPage() {
   };
 
   const updateListItem = (
-    field: "submissionTypes" | "engineeringTopics" | "environmentalTopics",
+    field: "engineeringTopics" | "environmentalTopics",
     index: number,
     value: string
   ) => {
@@ -339,18 +513,44 @@ export default function AdminCallForPapersPage() {
   };
 
   const addListItem = (
-    field: "submissionTypes" | "engineeringTopics" | "environmentalTopics"
+    field: "engineeringTopics" | "environmentalTopics"
   ) => {
     updateField(field, [...form[field], ""]);
   };
 
   const removeListItem = (
-    field: "submissionTypes" | "engineeringTopics" | "environmentalTopics",
+    field: "engineeringTopics" | "environmentalTopics",
     index: number
   ) => {
     updateField(
       field,
       form[field].filter((_, itemIndex) => itemIndex !== index)
+    );
+  };
+
+  const updateSubmissionType = (
+    index: number,
+    field: keyof SubmissionType,
+    value: string | boolean
+  ) => {
+    const updated = [...form.submissionTypeDetails];
+    updated[index] = { ...updated[index], [field]: value };
+    updateField("submissionTypeDetails", updated);
+  };
+
+  const addSubmissionType = () => {
+    updateField("submissionTypeDetails", [
+      ...form.submissionTypeDetails,
+      createSubmissionType(form.submissionTypeDetails.length + 1),
+    ]);
+  };
+
+  const removeSubmissionType = (index: number) => {
+    updateField(
+      "submissionTypeDetails",
+      form.submissionTypeDetails
+        .filter((_, itemIndex) => itemIndex !== index)
+        .map((item, itemIndex) => ({ ...item, order: itemIndex + 1 }))
     );
   };
 
@@ -427,7 +627,17 @@ export default function AdminCallForPapersPage() {
           ...item,
           order: index + 1,
         })),
-        submissionTypes: form.submissionTypes.filter((item) => item.trim()),
+        submissionTypes: form.submissionTypeDetails
+          .map((item) => item.title.trim())
+          .filter(Boolean),
+        submissionTypeDetails: form.submissionTypeDetails
+          .map((item, index) => ({
+            ...item,
+            title: item.title.trim(),
+            description: item.description.trim(),
+            order: index + 1,
+          }))
+          .filter((item) => item.title),
         engineeringTopics: form.engineeringTopics.filter((item) => item.trim()),
         environmentalTopics: form.environmentalTopics.filter((item) => item.trim()),
       };
@@ -517,8 +727,41 @@ export default function AdminCallForPapersPage() {
                 <div className="lg:col-span-2">
                   <TextInput label="Page Subtitle" value={form.subtitle} onChange={(value) => updateField("subtitle", value)} />
                 </div>
-                <div className="lg:col-span-2">
-                  <TextAreaField label="Description" value={form.description} rows={5} onChange={(value) => updateField("description", value)} />
+                <div className="lg:col-span-2 space-y-3">
+                  <label className="block text-sm font-semibold text-slate-700">Introduction Rich Text</label>
+                  <RichTextEditor
+                    value={form.description}
+                    onChange={(value) => updateField("description", value)}
+                    placeholder="Write and format the Call for Papers introduction..."
+                    minHeight={170}
+                  />
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Maximum Text Width</label>
+                      <select
+                        value={form.descriptionWidth || "normal"}
+                        onChange={(event) => updateField("descriptionWidth", event.target.value as "normal" | "full")}
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm"
+                      >
+                        <option value="normal">Normal readable width</option>
+                        <option value="full">Stretch to maximum card width</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Default Alignment</label>
+                      <select
+                        value={form.descriptionAlignment || "justify"}
+                        onChange={(event) => updateField("descriptionAlignment", event.target.value as "left" | "center" | "right" | "justify")}
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm"
+                      >
+                        <option value="left">Left</option>
+                        <option value="center">Center</option>
+                        <option value="right">Right</option>
+                        <option value="justify">Justify</option>
+                      </select>
+                    </div>
+                  </div>
+                  <p className="text-xs leading-5 text-slate-500">Text color, font, links, and individual paragraph alignment can also be set inside the rich-text editor.</p>
                 </div>
                 <TextInput label="PDF Title" value={form.pdfTitle} onChange={(value) => updateField("pdfTitle", value)} />
                 <TextInput label="PDF Subtitle" value={form.pdfSubtitle} onChange={(value) => updateField("pdfSubtitle", value)} />
@@ -538,12 +781,71 @@ export default function AdminCallForPapersPage() {
                     <a
                       href={resolveUploadedFileUrl(form.pdfUrl)}
                       target="_blank"
+                      rel="noopener noreferrer"
                       className="ml-3 inline-flex items-center gap-2 text-sm font-bold text-[#005A78]"
                     >
                       <FileText className="h-4 w-4" /> Open PDF
                     </a>
                   )}
                 </div>
+
+                <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Top-right PDF Button
+                  </h3>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    This button opens the PDF in a new browser tab using the browser&apos;s PDF viewer.
+                  </p>
+
+                  <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                    <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm font-semibold text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={form.showPdfActionButton !== false}
+                        onChange={(event) => updateField("showPdfActionButton", event.target.checked)}
+                        className="mt-0.5 h-4 w-4 accent-[#005A78]"
+                      />
+                      Show the PDF button
+                    </label>
+
+                    <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm font-semibold text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={form.showPdfActionButtonIcon !== false}
+                        onChange={(event) => updateField("showPdfActionButtonIcon", event.target.checked)}
+                        className="mt-0.5 h-4 w-4 accent-[#005A78]"
+                      />
+                      Show the PDF icon inside the button
+                    </label>
+
+                    <TextInput
+                      label="Button Text"
+                      value={form.pdfActionButtonLabel}
+                      onChange={(value) => updateField("pdfActionButtonLabel", value)}
+                    />
+                    <TextInput
+                      label="Button Link"
+                      value={form.pdfActionButtonLink}
+                      onChange={(value) => updateField("pdfActionButtonLink", value)}
+                      placeholder="/pdfs/call-for-papers.pdf"
+                    />
+                  </div>
+                </div>
+
+                <label className="lg:col-span-2 flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={form.showEmbeddedPdfViewer !== false}
+                    onChange={(event) => updateField("showEmbeddedPdfViewer", event.target.checked)}
+                    className="mt-0.5 h-4 w-4 accent-[#005A78]"
+                  />
+                  <span>
+                    Show the embedded PDF viewer below the Call for Papers introduction
+                    <span className="mt-1 block text-xs font-normal leading-5 text-slate-500">
+                      Disable this to hide the embedded viewer completely. The Types of Manuscripts Accepted section will follow the introduction.
+                    </span>
+                  </span>
+                </label>
                 <div>
                   <TextInput label="Poster Image URL" value={form.posterImage} onChange={(value) => updateField("posterImage", value)} />
                   <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-700 hover:border-[#005A78] hover:text-[#005A78]">
@@ -577,17 +879,20 @@ export default function AdminCallForPapersPage() {
                 <TextInput label="Small Heading (optional)" placeholder="Leave blank to hide" value={form.submissionFormatLabel} onChange={(value) => updateField("submissionFormatLabel", value)} />
                 <TextInput label="Section Title" value={form.submissionFormatTitle} onChange={(value) => updateField("submissionFormatTitle", value)} />
                 <div className="lg:col-span-2">
-                  <TextAreaField label="Description" value={form.submissionFormatDescription} onChange={(value) => updateField("submissionFormatDescription", value)} />
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">Section Rich Description</label>
+                  <RichTextEditor
+                    value={form.submissionFormatDescription}
+                    onChange={(value) => updateField("submissionFormatDescription", value)}
+                    placeholder="Write and format the introductory description for manuscript types..."
+                    minHeight={140}
+                  />
                 </div>
                 <div className="lg:col-span-2">
-                  <ListEditor
-                    title="Types of Manuscripts Accepted"
-                    items={form.submissionTypes}
-                    onAdd={() => addListItem("submissionTypes")}
-                    onChange={(index, value) =>
-                      updateListItem("submissionTypes", index, value)
-                    }
-                    onRemove={(index) => removeListItem("submissionTypes", index)}
+                  <SubmissionTypeEditor
+                    items={form.submissionTypeDetails}
+                    onAdd={addSubmissionType}
+                    onChange={updateSubmissionType}
+                    onRemove={removeSubmissionType}
                   />
                 </div>
               </div>

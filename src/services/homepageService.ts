@@ -62,6 +62,7 @@ export type HomepageContent = {
 
   executiveEditorsTitle: string;
   executiveEditorsSubtitle: string;
+  executiveEditorsShowBiographyPreview: boolean;
 
   articlesSectionTitle: string;
   articlesSectionSubtitle: string;

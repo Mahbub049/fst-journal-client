@@ -27,6 +27,7 @@ import {
 import { CmsPage, getAdminPages } from "@/services/pageService";
 import { getAdminIssues } from "@/services/issues.service";
 import { Issue } from "@/types/issue";
+import { confirmAdminAction } from "@/lib/adminDialogs";
 import {
   EditorialCategorySetting,
   getAdminEditorialBoardConfig,
@@ -438,7 +439,13 @@ export default function AdminMenusPage() {
   };
 
   const handleDelete = async (menu: MenuItem) => {
-    if (!window.confirm(`Delete "${menu.label}"?`)) return;
+    const confirmed = await confirmAdminAction({
+      title: `Delete ${menu.label}?`,
+      text: "This menu item will be removed permanently.",
+      confirmButtonText: "Delete menu item",
+      destructive: true,
+    });
+    if (!confirmed) return;
     try {
       await deleteAdminMenu(menu._id);
       setMessage("Menu item deleted successfully.");

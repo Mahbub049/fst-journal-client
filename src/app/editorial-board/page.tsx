@@ -27,6 +27,8 @@ const fallbackConfig: EditorialBoardPageSettings = {
     "Our chief editor is accountable for the overall direction of the journal, ensuring that published work is of the highest quality, follows BUP publication policies and procedures, and advances the journal's editorial mission.",
   showSummaryCards: true,
   showTotalCard: true,
+  showEditorialOffice: true,
+  editorialOfficeEyebrow: "Editorial Office",
   editorialOfficeTitle: "Editorial Office",
   editorialOfficeDescription:
     "For journal-related queries, manuscript preparation, publication information, and author support, please contact the editorial office.",
@@ -35,6 +37,9 @@ const fallbackConfig: EditorialBoardPageSettings = {
   editorialOfficeAddress: "Mirpur Cantonment, Dhaka - 1216",
   editorialOfficeEmail: "editor.fstjournal@bup.edu.bd",
   editorialOfficePhone: "",
+  showEditorialOfficeEmailButton: true,
+  editorialOfficeEmailButtonLabel: "Email Editorial Office",
+  editorialOfficeEmailSubject: "Journal of FST editorial office inquiry",
   categories: [
     {
       name: "Chief Editor",
@@ -292,7 +297,7 @@ export default async function EditorialBoardPage() {
                         <a
                           key={category._id || category.name}
                           href={`#${slugify(category.name)}`}
-                          className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-[#005A78]/30 hover:bg-[#eef8fc]"
+                          className="flex min-h-[92px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center transition hover:border-[#005A78]/30 hover:bg-[#eef8fc]"
                         >
                           <p className="text-[28px] font-semibold text-slate-950">
                             {count}
@@ -305,7 +310,7 @@ export default async function EditorialBoardPage() {
                     })}
 
                     {config.showTotalCard ? (
-                      <div className="col-span-2 rounded-2xl border border-[#111433]/10 bg-[#111433] p-4 text-white">
+                      <div className="col-span-2 flex min-h-[88px] flex-col items-center justify-center rounded-2xl border border-[#005A78]/15 bg-[#005A78] p-4 text-center text-white transition hover:bg-[#004862]">
                         <p className="text-[28px] font-semibold">
                           {visibleMembers.length}
                         </p>
@@ -318,52 +323,61 @@ export default async function EditorialBoardPage() {
                 ) : null}
               </section>
 
-              <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <p className="journal-subheading">Editorial Office</p>
-                <h2
-                  className="mt-3 text-[24px] font-semibold leading-tight text-slate-950"
-                  style={{ fontFamily: "var(--font-source-serif)" }}
-                >
-                  {config.editorialOfficeTitle}
-                </h2>
-
-                {config.editorialOfficeDescription ? (
-                  <p className="mt-4 text-[14px] leading-7 text-slate-600">
-                    {config.editorialOfficeDescription}
-                  </p>
-                ) : null}
-
-                {officeDetails.length ? (
-                  <div className="mt-4 space-y-1 text-sm leading-6 text-slate-600">
-                    {officeDetails.map((detail) => (
-                      <p key={detail}>{detail}</p>
-                    ))}
-                  </div>
-                ) : null}
-
-                {config.editorialOfficeEmail ? (
-                  <a
-                    href={buildGmailComposeUrl(
-                      config.editorialOfficeEmail,
-                      "Journal of FST editorial office inquiry"
-                    )}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-[#111433] px-5 py-3 text-sm font-semibold text-white hover:bg-[#1b204a]"
+              {config.showEditorialOffice !== false ? (
+                <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  {config.editorialOfficeEyebrow ? (
+                    <p className="journal-subheading">
+                      {config.editorialOfficeEyebrow}
+                    </p>
+                  ) : null}
+                  <h2
+                    className={`${config.editorialOfficeEyebrow ? "mt-3" : ""} text-[24px] font-semibold leading-tight text-slate-950`}
+                    style={{ fontFamily: "var(--font-source-serif)" }}
                   >
-                    Email Editorial Office
-                  </a>
-                ) : null}
+                    {config.editorialOfficeTitle}
+                  </h2>
 
-                {config.editorialOfficePhone ? (
-                  <a
-                    href={`tel:${config.editorialOfficePhone}`}
-                    className="mt-3 block text-center text-sm font-semibold text-[#005A78]"
-                  >
-                    {config.editorialOfficePhone}
-                  </a>
-                ) : null}
-              </section>
+                  {config.editorialOfficeDescription ? (
+                    <p className="mt-4 text-[14px] leading-7 text-slate-600">
+                      {config.editorialOfficeDescription}
+                    </p>
+                  ) : null}
+
+                  {officeDetails.length ? (
+                    <div className="mt-4 space-y-1 text-sm leading-6 text-slate-600">
+                      {officeDetails.map((detail) => (
+                        <p key={detail}>{detail}</p>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {config.showEditorialOfficeEmailButton !== false &&
+                  config.editorialOfficeEmail ? (
+                    <a
+                      href={buildGmailComposeUrl(
+                        config.editorialOfficeEmail,
+                        config.editorialOfficeEmailSubject ||
+                          "Journal of FST editorial office inquiry"
+                      )}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-[#005A78] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#004862]"
+                    >
+                      {config.editorialOfficeEmailButtonLabel ||
+                        "Email Editorial Office"}
+                    </a>
+                  ) : null}
+
+                  {config.editorialOfficePhone ? (
+                    <a
+                      href={`tel:${config.editorialOfficePhone}`}
+                      className="mt-3 block text-center text-sm font-semibold text-[#005A78]"
+                    >
+                      {config.editorialOfficePhone}
+                    </a>
+                  ) : null}
+                </section>
+              ) : null}
             </aside>
 
             <section className="space-y-10">

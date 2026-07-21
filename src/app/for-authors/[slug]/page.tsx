@@ -1,5 +1,6 @@
 import Container from "@/components/common/Container";
 import CmsContentRenderer from "@/components/common/CmsContentRenderer";
+import CmsActionButton from "@/components/common/CmsActionButton";
 import PageTransition from "@/components/common/PageTransition";
 import PublicLayout from "@/components/layout/PublicLayout";
 import Link from "next/link";
@@ -252,6 +253,43 @@ export default async function ForAuthorsInnerPage({
     bannerImage: cmsPage?.bannerImage || "",
     buttonLabel: cmsPage?.buttonLabel || "",
     buttonUrl: cmsPage?.buttonUrl || "",
+    showButton: cmsPage?.showButton !== false,
+    buttonIcon: cmsPage?.buttonIcon || "none",
+    buttonVariant: cmsPage?.buttonVariant || "primary",
+    buttonOpenInNewTab: cmsPage?.buttonOpenInNewTab ?? false,
+    showHelpCard: cmsPage?.showHelpCard !== false,
+    helpCardTitle:
+      cmsPage?.helpCardTitle || "Need help preparing your manuscript?",
+    helpCardContent:
+      cmsPage?.helpCardContent ||
+      `Please review the author guidelines, submission checklist, and call for papers notice before final submission. Manuscripts and related documents should be sent to ${editorialOfficeEmail}.`,
+    helpCardButtonLayout: cmsPage?.helpCardButtonLayout || "horizontal",
+    helpCardButtons:
+      cmsPage?.helpCardButtons && cmsPage.helpCardButtons.length > 0
+        ? cmsPage.helpCardButtons
+        : [
+            {
+              label: "View Call for Papers",
+              url: "/call-for-papers",
+              icon: "none" as const,
+              variant: "light" as const,
+              openInNewTab: false,
+              order: 0,
+              isActive: true,
+            },
+            {
+              label: "Email Editorial Office",
+              url: buildGmailComposeUrl(
+                editorialOfficeEmail,
+                "Journal of FST editorial office inquiry"
+              ),
+              icon: "none" as const,
+              variant: "outline" as const,
+              openInNewTab: true,
+              order: 1,
+              isActive: true,
+            },
+          ],
     contentBlocks:
       cmsPage?.contentBlocks && cmsPage.contentBlocks.length > 0
         ? [...cmsPage.contentBlocks].sort((a, b) => a.order - b.order)
@@ -339,57 +377,56 @@ export default async function ForAuthorsInnerPage({
                   <CmsContentRenderer
                     blocks={data.contentBlocks}
                     variant="authors"
+                    pageAction={{
+                      show: data.showButton,
+                      label: data.buttonLabel,
+                      url: data.buttonUrl,
+                      icon: data.buttonIcon,
+                      variant: data.buttonVariant,
+                      openInNewTab: data.buttonOpenInNewTab,
+                    }}
                   />
 
-                  {data.buttonLabel && data.buttonUrl && (
-                    <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-7">
-                      <a
-                        href={data.buttonUrl}
-                        target={data.buttonUrl.startsWith("http") ? "_blank" : undefined}
-                        rel={data.buttonUrl.startsWith("http") ? "noreferrer" : undefined}
-                        className="inline-flex items-center justify-center rounded-full bg-[#111433] px-6 py-3 text-sm font-semibold text-white hover:bg-[#1b204a]"
+                  {data.showHelpCard ? (
+                    <div className="rounded-3xl border border-slate-200 bg-[#111433] p-5 text-white shadow-sm md:p-7">
+                      <h2
+                        className="text-[22px] font-semibold leading-tight md:text-[28px]"
+                        style={{ fontFamily: "var(--font-source-serif)" }}
                       >
-                        {data.buttonLabel}
-                      </a>
-                    </article>
-                  )}
+                        {data.helpCardTitle}
+                      </h2>
 
-                  <div className="rounded-3xl border border-slate-200 bg-[#111433] p-5 text-white shadow-sm md:p-7">
-                    <h2
-                      className="text-[22px] font-semibold leading-tight md:text-[28px]"
-                      style={{ fontFamily: "var(--font-source-serif)" }}
-                    >
-                      Need help preparing your manuscript?
-                    </h2>
+                      {data.helpCardContent ? (
+                        <div
+                          className="cms-rich-text mt-4 text-[15px] leading-7 text-white/80 md:text-justify"
+                          dangerouslySetInnerHTML={{ __html: data.helpCardContent }}
+                        />
+                      ) : null}
 
-                    <p className="mt-4 text-[15px] leading-7 text-white/80 md:text-justify">
-                      Please review the author guidelines, submission checklist,
-                      and call for papers notice before final submission.
-                      Manuscripts and related documents should be sent to{" "}
-                      {editorialOfficeEmail}.
-                    </p>
-
-                    <div className="mt-6 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
-                      <Link
-                        href="/call-for-papers"
-                        className="flex h-12 w-full items-center justify-center rounded-full bg-white px-2 text-center text-[12px] font-medium leading-tight text-[#111433] hover:bg-slate-100 sm:h-11 sm:w-auto sm:px-6 sm:text-[14px]"
+                      <div
+                        className={
+                          data.helpCardButtonLayout === "vertical"
+                            ? "mt-6 flex flex-col items-start gap-3"
+                            : "mt-6 flex flex-wrap items-center gap-3"
+                        }
                       >
-                        View Call for Papers
-                      </Link>
-
-                      <a
-                        href={buildGmailComposeUrl(
-                          editorialOfficeEmail,
-                          "Journal of FST editorial office inquiry"
-                        )}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex h-12 w-full items-center justify-center rounded-full border border-white/30 px-2 text-center text-[12px] font-medium leading-tight text-white hover:bg-white/10 sm:h-11 sm:w-auto sm:px-6 sm:text-[14px]"
-                      >
-                        Email Editorial Office
-                      </a>
+                        {[...data.helpCardButtons]
+                          .filter((button) => button.isActive !== false)
+                          .sort((a, b) => Number(a.order || 0) - Number(b.order || 0))
+                          .map((button, index) => (
+                            <CmsActionButton
+                              key={button._id || `${button.label}-${index}`}
+                              label={button.label}
+                              url={button.url}
+                              icon={button.icon}
+                              variant={button.variant}
+                              openInNewTab={button.openInNewTab}
+                              darkBackground
+                            />
+                          ))}
+                      </div>
                     </div>
-                  </div>
+                  ) : null}
                 </section>
             </div>
           </Container>

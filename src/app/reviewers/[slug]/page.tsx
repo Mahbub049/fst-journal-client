@@ -144,6 +144,10 @@ export default async function ReviewersPage({
     bannerImage: cmsPage?.bannerImage || "",
     buttonLabel: cmsPage?.buttonLabel || "",
     buttonUrl: cmsPage?.buttonUrl || "",
+    showButton: cmsPage?.showButton !== false,
+    buttonIcon: cmsPage?.buttonIcon || "none",
+    buttonVariant: cmsPage?.buttonVariant || "primary",
+    buttonOpenInNewTab: cmsPage?.buttonOpenInNewTab,
     contentBlocks:
       cmsPage?.contentBlocks && cmsPage.contentBlocks.length > 0
         ? [...cmsPage.contentBlocks].sort((a, b) => a.order - b.order)
@@ -233,26 +237,15 @@ export default async function ReviewersPage({
                 <CmsContentRenderer
                   blocks={data.contentBlocks}
                   variant="authors"
+                  pageAction={{
+                    label: data.buttonLabel,
+                    url: data.buttonUrl,
+                    show: data.showButton,
+                    icon: data.buttonIcon,
+                    variant: data.buttonVariant,
+                    openInNewTab: data.buttonOpenInNewTab,
+                  }}
                 />
-
-                {data.buttonLabel && data.buttonUrl && (
-                  <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-7">
-                    <a
-                      href={data.buttonUrl}
-                      target={
-                        data.buttonUrl.startsWith("http") ? "_blank" : undefined
-                      }
-                      rel={
-                        data.buttonUrl.startsWith("http")
-                          ? "noreferrer"
-                          : undefined
-                      }
-                      className="inline-flex items-center justify-center rounded-full bg-[#111433] px-6 py-3 text-sm font-semibold text-white hover:bg-[#1b204a]"
-                    >
-                      {data.buttonLabel}
-                    </a>
-                  </article>
-                )}
               </section>
             </div>
           </Container>

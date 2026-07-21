@@ -63,6 +63,7 @@ export type PublicHomepageContent = {
 
   executiveEditorsTitle: string;
   executiveEditorsSubtitle: string;
+  executiveEditorsShowBiographyPreview: boolean;
 
   articlesSectionTitle: string;
   articlesSectionSubtitle: string;

@@ -33,8 +33,12 @@ import {
 import AdminLayout from "@/components/admin/AdminLayout";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import CmsContentRenderer from "@/components/common/CmsContentRenderer";
+import CmsActionButton from "@/components/common/CmsActionButton";
 import {
+  CmsButtonIcon,
+  CmsButtonVariant,
   CmsPage,
+  CmsPageActionButton,
   ContentBlock,
   ContentBlockType,
   createAdminPage,
@@ -47,6 +51,37 @@ import {
 } from "@/services/pageService";
 import { uploadMedia } from "@/services/mediaService";
 import type { PublicContentBlock } from "@/services/publicPageService";
+import { confirmAdminAction, promptTableDimensions } from "@/lib/adminDialogs";
+
+
+const buttonIconOptions: { label: string; value: CmsButtonIcon }[] = [
+  { label: "No icon", value: "none" },
+  { label: "Download", value: "download" },
+  { label: "PDF", value: "pdf" },
+  { label: "LaTeX", value: "latex" },
+  { label: "Document", value: "document" },
+  { label: "Submit", value: "submit" },
+  { label: "External link", value: "external" },
+  { label: "Arrow right", value: "arrow-right" },
+  { label: "Arrow up-right", value: "arrow-up-right" },
+];
+
+const buttonVariantOptions: { label: string; value: CmsButtonVariant }[] = [
+  { label: "Primary", value: "primary" },
+  { label: "Secondary", value: "secondary" },
+  { label: "Outline", value: "outline" },
+  { label: "Light", value: "light" },
+];
+
+const createPageActionButton = (order = 0): CmsPageActionButton => ({
+  label: "",
+  url: "",
+  icon: "none",
+  variant: "primary",
+  openInNewTab: false,
+  order,
+  isActive: true,
+});
 
 const pageGroups: { label: string; value: PageGroup | "" }[] = [
   { label: "All Groups", value: "" },
@@ -93,6 +128,35 @@ const emptyForm: PagePayload = {
   contentBlocks: [],
   buttonLabel: "",
   buttonUrl: "",
+  showButton: true,
+  buttonIcon: "none",
+  buttonVariant: "primary",
+  buttonOpenInNewTab: false,
+  showHelpCard: false,
+  helpCardTitle: "Need help preparing your manuscript?",
+  helpCardContent:
+    "Please review the author guidelines, submission checklist, and call for papers notice before final submission.",
+  helpCardButtonLayout: "horizontal",
+  helpCardButtons: [
+    {
+      label: "View Call for Papers",
+      url: "/call-for-papers",
+      icon: "none",
+      variant: "light",
+      openInNewTab: false,
+      order: 0,
+      isActive: true,
+    },
+    {
+      label: "Email Editorial Office",
+      url: "mailto:journal.fst@bup.edu.bd",
+      icon: "none",
+      variant: "outline",
+      openInNewTab: false,
+      order: 1,
+      isActive: true,
+    },
+  ],
   metaTitle: "",
   metaDescription: "",
   isPublished: true,
@@ -128,6 +192,10 @@ const createEmptyBlock = (type: ContentBlockType, order = 0): ContentBlock => ({
   fileUrl: "",
   buttonLabel: "",
   buttonUrl: "",
+  showButton: true,
+  buttonIcon: "none",
+  buttonVariant: "primary",
+  buttonOpenInNewTab: false,
   caption: "",
   altText: "",
   codeLanguage: "",
@@ -140,6 +208,7 @@ const createEmptyBlock = (type: ContentBlockType, order = 0): ContentBlock => ({
     columns: 2,
     headingLevel: 2,
     variant: "default",
+    buttonLayout: "vertical",
   },
   children: [],
   order,
@@ -325,6 +394,94 @@ const pagePresets: Record<PageGroup, { label: string; blocks: ContentBlock[] }[]
   ],
 };
 
+function ButtonConfiguration({
+  label,
+  url,
+  show,
+  icon,
+  variant,
+  openInNewTab,
+  onLabelChange,
+  onUrlChange,
+  onShowChange,
+  onIconChange,
+  onVariantChange,
+  onOpenInNewTabChange,
+  title = "Button settings",
+}: {
+  label: string;
+  url: string;
+  show: boolean;
+  icon: CmsButtonIcon;
+  variant: CmsButtonVariant;
+  openInNewTab: boolean;
+  onLabelChange: (value: string) => void;
+  onUrlChange: (value: string) => void;
+  onShowChange: (value: boolean) => void;
+  onIconChange: (value: CmsButtonIcon) => void;
+  onVariantChange: (value: CmsButtonVariant) => void;
+  onOpenInNewTabChange: (value: boolean) => void;
+  title?: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-[#005A78]/20 bg-[#005A78]/5 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm font-bold text-[#005A78]">{title}</p>
+        <label className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+          <input
+            type="checkbox"
+            checked={show}
+            onChange={(event) => onShowChange(event.target.checked)}
+            className="accent-[#005A78]"
+          />
+          Show button
+        </label>
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <input
+          value={label}
+          onChange={(event) => onLabelChange(event.target.value)}
+          placeholder="Button text"
+          className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm"
+        />
+        <input
+          value={url}
+          onChange={(event) => onUrlChange(event.target.value)}
+          placeholder="Button link"
+          className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm"
+        />
+        <select
+          value={icon}
+          onChange={(event) => onIconChange(event.target.value as CmsButtonIcon)}
+          className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm"
+        >
+          {buttonIconOptions.map((item) => (
+            <option key={item.value} value={item.value}>{item.label}</option>
+          ))}
+        </select>
+        <select
+          value={variant}
+          onChange={(event) => onVariantChange(event.target.value as CmsButtonVariant)}
+          className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm"
+        >
+          {buttonVariantOptions.map((item) => (
+            <option key={item.value} value={item.value}>{item.label}</option>
+          ))}
+        </select>
+      </div>
+      <label className="mt-3 flex items-center gap-2 text-xs font-semibold text-slate-600">
+        <input
+          type="checkbox"
+          checked={openInNewTab}
+          onChange={(event) => onOpenInNewTabChange(event.target.checked)}
+          className="accent-[#005A78]"
+        />
+        Open link in a new browser tab
+      </label>
+    </div>
+  );
+}
+
 type BlockEditorProps = {
   block: ContentBlock;
   path: number[];
@@ -477,14 +634,15 @@ function BlockEditor({
               {block.type === "table" && (
                 <button
                   type="button"
-                  onClick={() => {
-                    const requestedRows = Number(window.prompt("How many rows should the table have?", "4"));
-                    if (!Number.isFinite(requestedRows) || requestedRows < 1) return;
+                  onClick={async () => {
+                    const dimensions = await promptTableDimensions();
+                    if (!dimensions) return;
 
-                    const requestedColumns = Number(window.prompt("How many columns should the table have?", "3"));
-                    if (!Number.isFinite(requestedColumns) || requestedColumns < 1) return;
-
-                    onUpdate(path, "content", createTableHtml(requestedRows, requestedColumns));
+                    onUpdate(
+                      path,
+                      "content",
+                      createTableHtml(dimensions.rows, dimensions.columns)
+                    );
                   }}
                   className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#005A78]/20 bg-[#005A78]/5 px-4 text-sm font-bold text-[#005A78] hover:bg-[#005A78]/10"
                 >
@@ -566,51 +724,89 @@ function BlockEditor({
           )}
 
           {block.type === "pdf" && (
-            <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-              <input
-                value={block.fileUrl || ""}
-                onChange={(event) => onUpdate(path, "fileUrl", event.target.value)}
-                placeholder="Document URL"
-                className="h-11 rounded-xl border border-slate-200 px-4 text-sm"
-              />
-              <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#005A78]/20 bg-[#005A78]/5 px-4 text-sm font-bold text-[#005A78]">
-                {uploadingTarget === `blockFile-${uploadKey}` ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Upload size={16} />
-                )}
-                Upload
+            <div className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
                 <input
-                  type="file"
-                  accept={documentAccept}
-                  className="hidden"
-                  onChange={(event) => onUpload(event.target.files?.[0], "blockFile", path)}
+                  value={block.fileUrl || ""}
+                  onChange={(event) => onUpdate(path, "fileUrl", event.target.value)}
+                  placeholder="Document URL"
+                  className="h-11 rounded-xl border border-slate-200 px-4 text-sm"
                 />
-              </label>
-              <input
-                value={block.buttonLabel || ""}
-                onChange={(event) => onUpdate(path, "buttonLabel", event.target.value)}
-                placeholder="Download button label"
-                className="h-11 rounded-xl border border-slate-200 px-4 text-sm sm:col-span-2"
+                <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#005A78]/20 bg-[#005A78]/5 px-4 text-sm font-bold text-[#005A78]">
+                  {uploadingTarget === `blockFile-${uploadKey}` ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Upload size={16} />
+                  )}
+                  Upload
+                  <input
+                    type="file"
+                    accept={documentAccept}
+                    className="hidden"
+                    onChange={(event) => onUpload(event.target.files?.[0], "blockFile", path)}
+                  />
+                </label>
+              </div>
+              <ButtonConfiguration
+                title="Document button"
+                label={block.buttonLabel || ""}
+                url={block.fileUrl || ""}
+                show={block.showButton !== false}
+                icon={block.buttonIcon || "pdf"}
+                variant={block.buttonVariant || "primary"}
+                openInNewTab={block.buttonOpenInNewTab ?? true}
+                onLabelChange={(value) => onUpdate(path, "buttonLabel", value)}
+                onUrlChange={(value) => onUpdate(path, "fileUrl", value)}
+                onShowChange={(value) => onUpdate(path, "showButton", value)}
+                onIconChange={(value) => onUpdate(path, "buttonIcon", value)}
+                onVariantChange={(value) => onUpdate(path, "buttonVariant", value)}
+                onOpenInNewTabChange={(value) => onUpdate(path, "buttonOpenInNewTab", value)}
               />
             </div>
           )}
 
           {block.type === "button" && (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <input
-                value={block.buttonLabel || ""}
-                onChange={(event) => onUpdate(path, "buttonLabel", event.target.value)}
-                placeholder="Button label"
-                className="h-11 rounded-xl border border-slate-200 px-4 text-sm"
-              />
-              <input
-                value={block.buttonUrl || ""}
-                onChange={(event) => onUpdate(path, "buttonUrl", event.target.value)}
-                placeholder="Button URL"
-                className="h-11 rounded-xl border border-slate-200 px-4 text-sm"
-              />
-            </div>
+            <ButtonConfiguration
+              title="Button"
+              label={block.buttonLabel || ""}
+              url={block.buttonUrl || ""}
+              show={block.showButton !== false}
+              icon={block.buttonIcon || "none"}
+              variant={block.buttonVariant || "primary"}
+              openInNewTab={block.buttonOpenInNewTab ?? false}
+              onLabelChange={(value) => onUpdate(path, "buttonLabel", value)}
+              onUrlChange={(value) => onUpdate(path, "buttonUrl", value)}
+              onShowChange={(value) => onUpdate(path, "showButton", value)}
+              onIconChange={(value) => onUpdate(path, "buttonIcon", value)}
+              onVariantChange={(value) => onUpdate(path, "buttonVariant", value)}
+              onOpenInNewTabChange={(value) => onUpdate(path, "buttonOpenInNewTab", value)}
+            />
+          )}
+
+          {[
+            "paragraph",
+            "list",
+            "card",
+            "section",
+            "columns",
+            "notice",
+            "table",
+          ].includes(block.type) && (
+            <ButtonConfiguration
+              title="Optional top-right card button"
+              label={block.buttonLabel || ""}
+              url={block.buttonUrl || ""}
+              show={block.showButton !== false}
+              icon={block.buttonIcon || "none"}
+              variant={block.buttonVariant || "primary"}
+              openInNewTab={block.buttonOpenInNewTab ?? false}
+              onLabelChange={(value) => onUpdate(path, "buttonLabel", value)}
+              onUrlChange={(value) => onUpdate(path, "buttonUrl", value)}
+              onShowChange={(value) => onUpdate(path, "showButton", value)}
+              onIconChange={(value) => onUpdate(path, "buttonIcon", value)}
+              onVariantChange={(value) => onUpdate(path, "buttonVariant", value)}
+              onOpenInNewTabChange={(value) => onUpdate(path, "buttonOpenInNewTab", value)}
+            />
           )}
 
           {block.type === "video" && (
@@ -677,7 +873,7 @@ function BlockEditor({
             <summary className="cursor-pointer text-sm font-bold text-slate-700">
               Layout and appearance
             </summary>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <select
                 value={block.style?.alignment || "left"}
                 onChange={(event) =>
@@ -720,6 +916,22 @@ function BlockEditor({
                 title="Text color"
                 className="h-10 w-full rounded-xl border border-slate-200 bg-white p-1"
               />
+              {!['button', 'pdf', 'divider', 'spacer'].includes(block.type) ? (
+                <select
+                  value={block.style?.buttonLayout || "vertical"}
+                  onChange={(event) =>
+                    onUpdate(path, "style", {
+                      ...block.style,
+                      buttonLayout: event.target.value,
+                    })
+                  }
+                  title="Layout for buttons placed inside or directly after this block"
+                  className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                >
+                  <option value="vertical">Buttons: one per line</option>
+                  <option value="horizontal">Buttons: side by side</option>
+                </select>
+              ) : null}
             </div>
           </details>
 
@@ -963,6 +1175,14 @@ function PagePreviewModal({
                       <CmsContentRenderer
                         blocks={activeBlocks as PublicContentBlock[]}
                         variant="authors"
+                        pageAction={{
+                          show: form.showButton !== false,
+                          label: form.buttonLabel,
+                          url: form.buttonUrl,
+                          icon: form.buttonIcon,
+                          variant: form.buttonVariant,
+                          openInNewTab: form.buttonOpenInNewTab,
+                        }}
                       />
                     ) : (
                       <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
@@ -973,30 +1193,44 @@ function PagePreviewModal({
                       </div>
                     )}
 
-                    {form.buttonLabel?.trim() && form.buttonUrl?.trim() ? (
-                      <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-7">
-                        <a
-                          href={form.buttonUrl}
-                          target={form.buttonUrl.startsWith("http") ? "_blank" : undefined}
-                          rel={form.buttonUrl.startsWith("http") ? "noreferrer" : undefined}
-                          className="inline-flex items-center justify-center rounded-full bg-[#111433] px-6 py-3 text-sm font-semibold text-white hover:bg-[#1b204a]"
+                    {form.showHelpCard !== false ? (
+                      <div className="rounded-3xl border border-slate-200 bg-[#111433] p-5 text-white shadow-sm md:p-7">
+                        <h2
+                          className="text-[22px] font-semibold leading-tight md:text-[28px]"
+                          style={{ fontFamily: "var(--font-source-serif)" }}
                         >
-                          {form.buttonLabel}
-                        </a>
-                      </article>
+                          {form.helpCardTitle || "Need help preparing your manuscript?"}
+                        </h2>
+                        {form.helpCardContent ? (
+                          <div
+                            className="cms-rich-text mt-4 text-[15px] leading-7 text-white/80"
+                            dangerouslySetInnerHTML={{ __html: form.helpCardContent }}
+                          />
+                        ) : null}
+                        <div
+                          className={
+                            form.helpCardButtonLayout === "vertical"
+                              ? "mt-6 flex flex-col items-start gap-3"
+                              : "mt-6 flex flex-wrap items-center gap-3"
+                          }
+                        >
+                          {(form.helpCardButtons || [])
+                            .filter((button) => button.isActive !== false)
+                            .map((button, index) => (
+                              <CmsActionButton
+                                key={button._id || `preview-help-button-${index}`}
+                                label={button.label}
+                                url={button.url}
+                                icon={button.icon}
+                                variant={button.variant}
+                                openInNewTab={button.openInNewTab}
+                                darkBackground
+                              />
+                            ))}
+                        </div>
+                      </div>
                     ) : null}
 
-                    <div className="rounded-3xl border border-slate-200 bg-[#111433] p-5 text-white shadow-sm md:p-7">
-                      <h2
-                        className="text-[22px] font-semibold leading-tight md:text-[28px]"
-                        style={{ fontFamily: "var(--font-source-serif)" }}
-                      >
-                        Need help preparing your manuscript?
-                      </h2>
-                      <p className="mt-4 text-[15px] leading-7 text-white/80">
-                        The public page keeps the original Author Menu and separate content-card design.
-                      </p>
-                    </div>
                   </section>
                 </div>
               </div>
@@ -1045,6 +1279,14 @@ function PagePreviewModal({
                     <CmsContentRenderer
                       blocks={activeBlocks as PublicContentBlock[]}
                       variant={rendererVariant}
+                      pageAction={{
+                        show: form.showButton !== false,
+                        label: form.buttonLabel,
+                        url: form.buttonUrl,
+                        icon: form.buttonIcon,
+                        variant: form.buttonVariant,
+                        openInNewTab: form.buttonOpenInNewTab,
+                      }}
                     />
                   ) : (
                     <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
@@ -1055,16 +1297,6 @@ function PagePreviewModal({
                     </div>
                   )}
 
-                  {form.buttonLabel?.trim() && form.buttonUrl?.trim() ? (
-                    <a
-                      href={form.buttonUrl}
-                      target={form.buttonUrl.startsWith("http") ? "_blank" : undefined}
-                      rel={form.buttonUrl.startsWith("http") ? "noreferrer" : undefined}
-                      className="mt-8 inline-flex items-center justify-center rounded-full bg-[#111433] px-6 py-3 text-sm font-semibold text-white hover:bg-[#1b204a]"
-                    >
-                      {form.buttonLabel}
-                    </a>
-                  ) : null}
                 </section>
               </div>
             </main>
@@ -1135,6 +1367,28 @@ export default function AdminPagesPage() {
       contentBlocks: normalizeOrders(page.contentBlocks || []),
       buttonLabel: page.buttonLabel || "",
       buttonUrl: page.buttonUrl || "",
+      showButton: page.showButton !== false,
+      buttonIcon: page.buttonIcon || "none",
+      buttonVariant: page.buttonVariant || "primary",
+      buttonOpenInNewTab: page.buttonOpenInNewTab ?? false,
+      showHelpCard: page.showHelpCard ?? page.group === "for-authors",
+      helpCardTitle:
+        page.helpCardTitle || "Need help preparing your manuscript?",
+      helpCardContent:
+        page.helpCardContent ||
+        "Please review the author guidelines, submission checklist, and call for papers notice before final submission.",
+      helpCardButtonLayout: page.helpCardButtonLayout || "horizontal",
+      helpCardButtons:
+        page.helpCardButtons && page.helpCardButtons.length > 0
+          ? page.helpCardButtons.map((button, index) => ({
+              ...button,
+              order: index,
+              icon: button.icon || "none",
+              variant: button.variant || "primary",
+              openInNewTab: button.openInNewTab ?? false,
+              isActive: button.isActive ?? true,
+            }))
+          : emptyForm.helpCardButtons,
       metaTitle: page.metaTitle || "",
       metaDescription: page.metaDescription || "",
       isPublished: page.isPublished,
@@ -1153,6 +1407,38 @@ export default function AdminPagesPage() {
 
   const updateField = <K extends keyof PagePayload>(field: K, value: PagePayload[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const updateHelpCardButton = <K extends keyof CmsPageActionButton>(
+    index: number,
+    field: K,
+    value: CmsPageActionButton[K]
+  ) => {
+    setForm((prev) => ({
+      ...prev,
+      helpCardButtons: (prev.helpCardButtons || []).map((button, buttonIndex) =>
+        buttonIndex === index ? { ...button, [field]: value } : button
+      ),
+    }));
+  };
+
+  const addHelpCardButton = () => {
+    setForm((prev) => ({
+      ...prev,
+      helpCardButtons: [
+        ...(prev.helpCardButtons || []),
+        createPageActionButton((prev.helpCardButtons || []).length),
+      ],
+    }));
+  };
+
+  const removeHelpCardButton = (index: number) => {
+    setForm((prev) => ({
+      ...prev,
+      helpCardButtons: (prev.helpCardButtons || [])
+        .filter((_, buttonIndex) => buttonIndex !== index)
+        .map((button, buttonIndex) => ({ ...button, order: buttonIndex })),
+    }));
   };
 
   const addBlock = (type: ContentBlockType) => {
@@ -1286,7 +1572,13 @@ export default function AdminPagesPage() {
   };
 
   const handleDelete = async (page: CmsPage) => {
-    if (!window.confirm(`Delete "${page.title}"? This cannot be undone.`)) return;
+    const confirmed = await confirmAdminAction({
+      title: `Delete ${page.title}?`,
+      text: "This page will be removed from the CMS and public sidebar.",
+      confirmButtonText: "Delete page",
+      destructive: true,
+    });
+    if (!confirmed) return;
     try {
       await deleteAdminPage(page._id);
       setMessage("Page deleted successfully.");
@@ -1308,6 +1600,15 @@ export default function AdminPagesPage() {
         contentBlocks: page.contentBlocks,
         buttonLabel: page.buttonLabel,
         buttonUrl: page.buttonUrl,
+        showButton: page.showButton !== false,
+        buttonIcon: page.buttonIcon || "none",
+        buttonVariant: page.buttonVariant || "primary",
+        buttonOpenInNewTab: page.buttonOpenInNewTab ?? false,
+        showHelpCard: page.showHelpCard ?? page.group === "for-authors",
+        helpCardTitle: page.helpCardTitle,
+        helpCardContent: page.helpCardContent,
+        helpCardButtonLayout: page.helpCardButtonLayout || "horizontal",
+        helpCardButtons: page.helpCardButtons || [],
         metaTitle: page.metaTitle,
         metaDescription: page.metaDescription,
         isPublished: !page.isPublished,
@@ -1588,15 +1889,152 @@ export default function AdminPagesPage() {
               )}
             </div>
 
+            <ButtonConfiguration
+              title="Top-right button on the first content card"
+              label={form.buttonLabel || ""}
+              url={form.buttonUrl || ""}
+              show={form.showButton !== false}
+              icon={form.buttonIcon || "none"}
+              variant={form.buttonVariant || "primary"}
+              openInNewTab={form.buttonOpenInNewTab ?? false}
+              onLabelChange={(value) => updateField("buttonLabel", value)}
+              onUrlChange={(value) => updateField("buttonUrl", value)}
+              onShowChange={(value) => updateField("showButton", value)}
+              onIconChange={(value) => updateField("buttonIcon", value)}
+              onVariantChange={(value) => updateField("buttonVariant", value)}
+              onOpenInNewTabChange={(value) => updateField("buttonOpenInNewTab", value)}
+            />
+
+            {form.group === "for-authors" && (
+              <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-950">Manuscript Help Card</h3>
+                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                      Controls the dark “Need help preparing your manuscript?” card shown after the page content.
+                    </p>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={form.showHelpCard !== false}
+                      onChange={(event) => updateField("showHelpCard", event.target.checked)}
+                      className="accent-[#005A78]"
+                    />
+                    Show help card
+                  </label>
+                </div>
+
+                <div className="mt-5 space-y-4">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">Card Title</label>
+                    <input
+                      value={form.helpCardTitle || ""}
+                      onChange={(event) => updateField("helpCardTitle", event.target.value)}
+                      className="h-12 w-full rounded-xl border border-slate-200 px-4 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">Card Text</label>
+                    <RichTextEditor
+                      value={form.helpCardContent || ""}
+                      onChange={(value) => updateField("helpCardContent", value)}
+                      placeholder="Write the complete help-card message..."
+                      minHeight={130}
+                    />
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-[1fr_240px] sm:items-center">
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">Button arrangement</p>
+                      <p className="text-xs text-slate-500">Choose whether the help-card buttons appear in one row or on separate lines.</p>
+                    </div>
+                    <select
+                      value={form.helpCardButtonLayout || "horizontal"}
+                      onChange={(event) => updateField("helpCardButtonLayout", event.target.value as "horizontal" | "vertical")}
+                      className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm"
+                    >
+                      <option value="horizontal">Side by side</option>
+                      <option value="vertical">One button per line</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-3">
+                    {(form.helpCardButtons || []).map((button, index) => (
+                      <div key={button._id || `help-button-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <div className="mb-3 flex items-center justify-between gap-3">
+                          <p className="text-sm font-bold text-slate-800">Button {index + 1}</p>
+                          <div className="flex items-center gap-3">
+                            <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                              <input
+                                type="checkbox"
+                                checked={button.isActive !== false}
+                                onChange={(event) => updateHelpCardButton(index, "isActive", event.target.checked)}
+                                className="accent-[#005A78]"
+                              />
+                              Visible
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => removeHelpCardButton(index)}
+                              className="rounded-lg border border-rose-200 p-2 text-rose-600 hover:bg-rose-50"
+                              aria-label={`Remove help-card button ${index + 1}`}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <input
+                            value={button.label}
+                            onChange={(event) => updateHelpCardButton(index, "label", event.target.value)}
+                            placeholder="Button text"
+                            className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm"
+                          />
+                          <input
+                            value={button.url}
+                            onChange={(event) => updateHelpCardButton(index, "url", event.target.value)}
+                            placeholder="Button link"
+                            className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm"
+                          />
+                          <select
+                            value={button.icon || "none"}
+                            onChange={(event) => updateHelpCardButton(index, "icon", event.target.value as CmsButtonIcon)}
+                            className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm"
+                          >
+                            {buttonIconOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+                          </select>
+                          <select
+                            value={button.variant || "primary"}
+                            onChange={(event) => updateHelpCardButton(index, "variant", event.target.value as CmsButtonVariant)}
+                            className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm"
+                          >
+                            {buttonVariantOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+                          </select>
+                        </div>
+                        <label className="mt-3 flex items-center gap-2 text-xs font-semibold text-slate-600">
+                          <input
+                            type="checkbox"
+                            checked={button.openInNewTab ?? false}
+                            onChange={(event) => updateHelpCardButton(index, "openInNewTab", event.target.checked)}
+                            className="accent-[#005A78]"
+                          />
+                          Open in a new browser tab
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addHelpCardButton}
+                    className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#005A78]/20 bg-[#005A78]/5 px-4 text-sm font-bold text-[#005A78] hover:bg-[#005A78]/10"
+                  >
+                    <Plus size={16} /> Add Help-card Button
+                  </button>
+                </div>
+              </section>
+            )}
+
             <div className="grid gap-5 lg:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">Main Button Label</label>
-                <input value={form.buttonLabel || ""} onChange={(event) => updateField("buttonLabel", event.target.value)} className="h-12 w-full rounded-xl border border-slate-200 px-4 text-sm" />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">Main Button URL</label>
-                <input value={form.buttonUrl || ""} onChange={(event) => updateField("buttonUrl", event.target.value)} className="h-12 w-full rounded-xl border border-slate-200 px-4 text-sm" />
-              </div>
               <div>
                 <label className="mb-2 block text-sm font-semibold text-slate-700">Meta Title</label>
                 <input value={form.metaTitle || ""} onChange={(event) => updateField("metaTitle", event.target.value)} className="h-12 w-full rounded-xl border border-slate-200 px-4 text-sm" />

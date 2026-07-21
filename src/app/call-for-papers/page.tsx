@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import Container from "@/components/common/Container";
 import PublicLayout from "@/components/layout/PublicLayout";
 import { resolveEmailActionUrl } from "@/lib/emailLinks";
@@ -5,6 +6,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import CallForPapersPdfViewer from "@/components/call-for-papers/CallForPapersPdfViewer";
 import { getServerApiBaseUrl } from "@/lib/apiBase";
+import { FileText } from "lucide-react";
 
 const apiBaseUrl = getServerApiBaseUrl();
 
@@ -16,22 +18,38 @@ type ImportantDate = {
   isActive?: boolean;
 };
 
+type SubmissionType = {
+  _id?: string;
+  title: string;
+  description: string;
+  order?: number;
+  isActive?: boolean;
+};
+
 type CallForPaperContent = {
   showInvitationLabel: boolean;
   invitationLabel: string;
   title: string;
   subtitle: string;
   description: string;
+  descriptionWidth: "normal" | "full";
+  descriptionAlignment: "left" | "center" | "right" | "justify";
 
   posterImage: string;
   pdfUrl: string;
   pdfTitle: string;
   pdfSubtitle: string;
+  showPdfActionButton: boolean;
+  pdfActionButtonLabel: string;
+  pdfActionButtonLink: string;
+  showPdfActionButtonIcon: boolean;
+  showEmbeddedPdfViewer: boolean;
 
   submissionFormatLabel: string;
   submissionFormatTitle: string;
   submissionFormatDescription: string;
   submissionTypes: string[];
+  submissionTypeDetails: SubmissionType[];
 
   scopeLabel: string;
   scopeTitle: string;
@@ -80,6 +98,8 @@ const fallbackContent: CallForPaperContent = {
   invitationLabel: "Publication Invitation",
   title: "Call for Papers",
   subtitle: "",
+  descriptionWidth: "normal",
+  descriptionAlignment: "justify",
   description:
     "The Faculty of Science and Technology, Bangladesh University of Professionals, invites authors to submit original and high-quality manuscripts for the upcoming issue of the Journal of FST. The journal welcomes research contributions in engineering, computer science, communication technology, environmental science, management, and related interdisciplinary fields.",
 
@@ -87,6 +107,11 @@ const fallbackContent: CallForPaperContent = {
   pdfUrl: "/pdfs/call-for-papers.pdf",
   pdfTitle: "Call for Papers Document",
   pdfSubtitle: "Volume 4, Issue 1",
+  showPdfActionButton: true,
+  pdfActionButtonLabel: "View PDF",
+  pdfActionButtonLink: "/pdfs/call-for-papers.pdf",
+  showPdfActionButtonIcon: true,
+  showEmbeddedPdfViewer: true,
 
   submissionFormatLabel: "Submission Format",
   submissionFormatTitle: "Types of Manuscripts Accepted",
@@ -98,6 +123,43 @@ const fallbackContent: CallForPaperContent = {
     "Book reviews",
     "Policy analysis",
     "Review articles",
+  ],
+  submissionTypeDetails: [
+    {
+      title: "Full research articles",
+      description:
+        "Complete original studies presenting a clear research problem, methodology, results, analysis, and contribution.",
+      order: 1,
+      isActive: true,
+    },
+    {
+      title: "Short communications",
+      description:
+        "Concise reports of significant new findings, methods, or early results that deserve rapid scholarly communication.",
+      order: 2,
+      isActive: true,
+    },
+    {
+      title: "Book reviews",
+      description:
+        "Critical and balanced evaluations of recently published academic books relevant to the journal's scope.",
+      order: 3,
+      isActive: true,
+    },
+    {
+      title: "Policy analysis",
+      description:
+        "Evidence-based examination of scientific, technological, environmental, or institutional policies and their implications.",
+      order: 4,
+      isActive: true,
+    },
+    {
+      title: "Review articles",
+      description:
+        "Structured synthesis and critical assessment of existing literature, trends, gaps, and future research directions.",
+      order: 5,
+      isActive: true,
+    },
   ],
 
   scopeLabel: "Scope of Submission",
@@ -218,22 +280,40 @@ const fallbackContent: CallForPaperContent = {
 
 const mergeCallForPaperContent = (
   data: Partial<CallForPaperContent>
-): CallForPaperContent => ({
-  ...fallbackContent,
-  ...data,
-  importantDates: Array.isArray(data.importantDates)
-    ? data.importantDates
-    : fallbackContent.importantDates,
-  submissionTypes: Array.isArray(data.submissionTypes)
+): CallForPaperContent => {
+  const legacyTypes = Array.isArray(data.submissionTypes)
     ? data.submissionTypes
-    : fallbackContent.submissionTypes,
-  engineeringTopics: Array.isArray(data.engineeringTopics)
-    ? data.engineeringTopics
-    : fallbackContent.engineeringTopics,
-  environmentalTopics: Array.isArray(data.environmentalTopics)
-    ? data.environmentalTopics
-    : fallbackContent.environmentalTopics,
-});
+    : fallbackContent.submissionTypes;
+
+  const hasStructuredTypes =
+    Array.isArray(data.submissionTypeDetails) &&
+    (data.submissionTypeDetails.length > 0 || legacyTypes.length === 0);
+
+  const submissionTypeDetails = hasStructuredTypes
+    ? data.submissionTypeDetails!
+    : legacyTypes.map((title, index) => ({
+        title,
+        description: "",
+        order: index + 1,
+        isActive: true,
+      }));
+
+  return {
+    ...fallbackContent,
+    ...data,
+    importantDates: Array.isArray(data.importantDates)
+      ? data.importantDates
+      : fallbackContent.importantDates,
+    submissionTypes: legacyTypes,
+    submissionTypeDetails,
+    engineeringTopics: Array.isArray(data.engineeringTopics)
+      ? data.engineeringTopics
+      : fallbackContent.engineeringTopics,
+    environmentalTopics: Array.isArray(data.environmentalTopics)
+      ? data.environmentalTopics
+      : fallbackContent.environmentalTopics,
+  };
+};
 
 const getPublicCallForPaper = async () => {
   try {
@@ -260,6 +340,36 @@ const normalizeHref = (url: string) => {
   return resolveEmailActionUrl(url, "Journal of FST manuscript submission");
 };
 
+const hasHtml = (value: string) => /<\/?[a-z][\s\S]*>/i.test(value || "");
+
+function RichHtml({
+  value,
+  className = "",
+  style,
+}: {
+  value: string;
+  className?: string;
+  style?: CSSProperties;
+}) {
+  if (!value) return null;
+
+  if (hasHtml(value)) {
+    return (
+      <div
+        className={`cms-rich-text ${className}`}
+        style={style}
+        dangerouslySetInnerHTML={{ __html: value }}
+      />
+    );
+  }
+
+  return (
+    <p className={className} style={style}>
+      {value}
+    </p>
+  );
+}
+
 export default async function CallForPapersPage() {
   const content = await getPublicCallForPaper();
 
@@ -270,6 +380,11 @@ export default async function CallForPapersPage() {
     .sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
 
   const pdfUrl = content.pdfUrl || fallbackContent.pdfUrl;
+  const pdfActionButtonLink =
+    content.pdfActionButtonLink || pdfUrl;
+  const activeSubmissionTypes = [...content.submissionTypeDetails]
+    .filter((item) => item.isActive !== false)
+    .sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
 
   return (
     <PublicLayout>
@@ -278,9 +393,15 @@ export default async function CallForPapersPage() {
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
             <section className="space-y-8">
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-                <div className="border-b border-slate-200 pb-6">
+                <div
+                  className={
+                    content.showEmbeddedPdfViewer !== false
+                      ? "border-b border-slate-200 pb-6"
+                      : ""
+                  }
+                >
                   <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-                    <div>
+                    <div className="min-w-0 flex-1">
                       {content.showInvitationLabel !== false && content.invitationLabel ? (
                         <p className="journal-subheading">{content.invitationLabel}</p>
                       ) : null}
@@ -298,20 +419,43 @@ export default async function CallForPapersPage() {
                         </p>
                       ) : null}
 
-                      {content.description ? (
-                        <p className="mt-4 max-w-3xl text-[15px] text-justify leading-8 text-slate-600">
-                          {content.description}
-                        </p>
-                      ) : null}
                     </div>
+
+                    {content.showPdfActionButton !== false &&
+                    content.pdfActionButtonLabel &&
+                    pdfActionButtonLink ? (
+                      <a
+                        href={pdfActionButtonLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-full bg-[#111433] px-5 py-3 text-[13px] font-semibold text-white shadow-sm transition hover:bg-[#1a1f4d]"
+                      >
+                        {content.showPdfActionButtonIcon !== false ? (
+                          <FileText className="h-4 w-4" aria-hidden="true" />
+                        ) : null}
+                        {content.pdfActionButtonLabel}
+                      </a>
+                    ) : null}
                   </div>
+
+                  {content.description ? (
+                    <RichHtml
+                      value={content.description}
+                      className={`mt-4 text-[15px] leading-8 text-slate-600 ${
+                        content.descriptionWidth === "full" ? "w-full" : "max-w-3xl"
+                      }`}
+                      style={{ textAlign: content.descriptionAlignment || "justify" }}
+                    />
+                  ) : null}
                 </div>
 
-                <CallForPapersPdfViewer
-                  pdfUrl={pdfUrl}
-                  pdfTitle={content.pdfTitle}
-                  pdfSubtitle={content.pdfSubtitle}
-                />
+                {content.showEmbeddedPdfViewer !== false ? (
+                  <CallForPapersPdfViewer
+                    pdfUrl={pdfUrl}
+                    pdfTitle={content.pdfTitle}
+                    pdfSubtitle={content.pdfSubtitle}
+                  />
+                ) : null}
               </div>
 
               <aside className="space-y-6 lg:hidden">
@@ -459,19 +603,28 @@ export default async function CallForPapersPage() {
                 </h2>
 
                 {content.submissionFormatDescription ? (
-                  <p className="mt-4 text-[15px] leading-8 text-slate-600">
-                    {content.submissionFormatDescription}
-                  </p>
+                  <RichHtml
+                    value={content.submissionFormatDescription}
+                    className="mt-4 text-[15px] leading-8 text-slate-600"
+                  />
                 ) : null}
 
-                <div className="mt-6 grid gap-3 md:grid-cols-2">
-                  {content.submissionTypes.map((type) => (
-                    <div
-                      key={type}
-                      className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-[14px] font-medium leading-6 text-slate-700"
+                <div className="mt-6 grid gap-4 md:grid-cols-2">
+                  {activeSubmissionTypes.map((type, index) => (
+                    <article
+                      key={type._id || `${type.title}-${index}`}
+                      className="rounded-2xl border border-slate-200 bg-slate-50 p-5"
                     >
-                      {type}
-                    </div>
+                      <h3 className="text-[15px] font-semibold leading-6 text-slate-950">
+                        {type.title}
+                      </h3>
+                      {type.description ? (
+                        <RichHtml
+                          value={type.description}
+                          className="mt-2 text-[14px] leading-6 text-slate-600"
+                        />
+                      ) : null}
+                    </article>
                   ))}
                 </div>
               </div>

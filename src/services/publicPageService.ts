@@ -2,6 +2,29 @@ import { getServerApiBaseUrl } from "@/lib/apiBase";
 
 export type PublicPageGroup = "about" | "for-authors" | "reviewers" | "issues" | "custom";
 
+export type CmsButtonIcon =
+  | "none"
+  | "download"
+  | "pdf"
+  | "latex"
+  | "document"
+  | "submit"
+  | "external"
+  | "arrow-right"
+  | "arrow-up-right";
+export type CmsButtonVariant = "primary" | "secondary" | "outline" | "light";
+export type CmsButtonLayout = "vertical" | "horizontal";
+export type CmsPageActionButton = {
+  _id?: string;
+  label: string;
+  url: string;
+  icon: CmsButtonIcon;
+  variant: CmsButtonVariant;
+  openInNewTab: boolean;
+  order: number;
+  isActive: boolean;
+};
+
 export type PublicContentBlockType =
   | "paragraph"
   | "heading"
@@ -30,6 +53,10 @@ export type PublicContentBlock = {
   fileUrl?: string;
   buttonLabel?: string;
   buttonUrl?: string;
+  showButton?: boolean;
+  buttonIcon?: CmsButtonIcon;
+  buttonVariant?: CmsButtonVariant;
+  buttonOpenInNewTab?: boolean;
   caption?: string;
   altText?: string;
   codeLanguage?: string;
@@ -42,6 +69,7 @@ export type PublicContentBlock = {
     columns?: number;
     headingLevel?: number;
     variant?: string;
+    buttonLayout?: CmsButtonLayout;
   };
   children?: PublicContentBlock[];
   order: number;
@@ -60,6 +88,15 @@ export type PublicCmsPage = {
   contentBlocks?: PublicContentBlock[];
   buttonLabel?: string;
   buttonUrl?: string;
+  showButton?: boolean;
+  buttonIcon?: CmsButtonIcon;
+  buttonVariant?: CmsButtonVariant;
+  buttonOpenInNewTab?: boolean;
+  showHelpCard?: boolean;
+  helpCardTitle?: string;
+  helpCardContent?: string;
+  helpCardButtonLayout?: CmsButtonLayout;
+  helpCardButtons?: CmsPageActionButton[];
   metaTitle?: string;
   metaDescription?: string;
   order: number;

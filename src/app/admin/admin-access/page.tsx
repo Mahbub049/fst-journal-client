@@ -22,6 +22,7 @@ import {
   UserRound,
   UsersRound,
 } from "lucide-react";
+import { confirmAdminAction, promptAdminText } from "@/lib/adminDialogs";
 
 type AdminForm = {
   name: string;
@@ -143,18 +144,17 @@ export default function AdminAccessPage() {
   };
 
   const resetTemporaryPassword = async (admin: AdminAccount) => {
-    const temporaryPassword = window.prompt(
-      `Enter a new temporary password for ${admin.email}. Minimum 6 characters.`
-    );
+    const temporaryPassword = await promptAdminText({
+      title: "Set temporary password",
+      text: `Create a temporary password for ${admin.email}.`,
+      placeholder: "Minimum 6 characters",
+      confirmButtonText: "Set password",
+      inputType: "password",
+      minLength: 6,
+      minLengthMessage: "Temporary password must be at least 6 characters long.",
+    });
 
-    if (!temporaryPassword) {
-      return;
-    }
-
-    if (temporaryPassword.length < 6) {
-      setError("Temporary password must be at least 6 characters long.");
-      return;
-    }
+    if (!temporaryPassword) return;
 
     setError("");
     setSuccess("");
@@ -175,13 +175,14 @@ export default function AdminAccessPage() {
   };
 
   const removeAdmin = async (admin: AdminAccount) => {
-    const confirmed = window.confirm(
-      `Remove admin access for ${admin.email}? This cannot be undone.`
-    );
+    const confirmed = await confirmAdminAction({
+      title: "Remove admin access?",
+      text: `${admin.email} will no longer be able to access the dashboard.`,
+      confirmButtonText: "Remove access",
+      destructive: true,
+    });
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     setError("");
     setSuccess("");

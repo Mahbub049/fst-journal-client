@@ -118,6 +118,12 @@ export default async function AboutInnerPage({
     showTopLabel: cmsPage?.showTopLabel !== false,
     subtitle: cmsPage?.subtitle || fallback.subtitle,
     bannerImage: cmsPage?.bannerImage || "",
+    buttonLabel: cmsPage?.buttonLabel || "",
+    buttonUrl: cmsPage?.buttonUrl || "",
+    showButton: cmsPage?.showButton !== false,
+    buttonIcon: cmsPage?.buttonIcon || "none",
+    buttonVariant: cmsPage?.buttonVariant || "primary",
+    buttonOpenInNewTab: cmsPage?.buttonOpenInNewTab,
     contentBlocks:
       cmsPage?.contentBlocks && cmsPage.contentBlocks.length > 0
         ? [...cmsPage.contentBlocks].sort((a, b) => a.order - b.order)
@@ -194,7 +200,18 @@ export default async function AboutInnerPage({
               </aside>
 
               <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-9">
-                <CmsContentRenderer blocks={data.contentBlocks} variant="about" />
+                <CmsContentRenderer
+                  blocks={data.contentBlocks}
+                  variant="about"
+                  pageAction={{
+                    label: data.buttonLabel,
+                    url: data.buttonUrl,
+                    show: data.showButton,
+                    icon: data.buttonIcon,
+                    variant: data.buttonVariant,
+                    openInNewTab: data.buttonOpenInNewTab,
+                  }}
+                />
               </section>
             </div>
           </Container>

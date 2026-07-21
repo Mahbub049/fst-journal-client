@@ -28,6 +28,7 @@ import {
 } from "@/services/issues.service";
 import { Issue } from "@/types/issue";
 import { uploadMedia } from "@/services/mediaService";
+import { confirmAdminAction } from "@/lib/adminDialogs";
 
 type IssueStatusFilter = "all" | "published" | "draft" | "recent";
 
@@ -311,9 +312,12 @@ export default function AdminIssuesPage() {
   };
 
   const handleDelete = async (issue: Issue) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${issue.title}"?`
-    );
+    const confirmed = await confirmAdminAction({
+      title: "Delete issue?",
+      text: `"${issue.title}" will be removed permanently.`,
+      confirmButtonText: "Delete issue",
+      destructive: true,
+    });
 
     if (!confirmed) return;
 

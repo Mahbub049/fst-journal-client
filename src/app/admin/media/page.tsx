@@ -19,6 +19,7 @@ import {
   uploadMedia,
 } from "@/services/mediaService";
 import { formatFileSize } from "@/lib/formatFileSize";
+import { confirmAdminAction } from "@/lib/adminDialogs";
 
 const folders = [
   "general",
@@ -148,9 +149,12 @@ export default function AdminMediaPage() {
   };
 
   const handleDelete = async (item: MediaItem) => {
-    const confirmDelete = window.confirm(
-      `Delete "${item.title}" from media library?`
-    );
+    const confirmDelete = await confirmAdminAction({
+      title: "Delete media file?",
+      text: `"${item.title}" will be removed from the media library.`,
+      confirmButtonText: "Delete media",
+      destructive: true,
+    });
 
     if (!confirmDelete) return;
 

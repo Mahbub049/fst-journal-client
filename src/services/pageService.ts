@@ -2,6 +2,29 @@ import api from "@/lib/api";
 
 export type PageGroup = "about" | "for-authors" | "reviewers" | "issues" | "custom";
 
+export type CmsButtonIcon =
+  | "none"
+  | "download"
+  | "pdf"
+  | "latex"
+  | "document"
+  | "submit"
+  | "external"
+  | "arrow-right"
+  | "arrow-up-right";
+export type CmsButtonVariant = "primary" | "secondary" | "outline" | "light";
+export type CmsButtonLayout = "vertical" | "horizontal";
+export type CmsPageActionButton = {
+  _id?: string;
+  label: string;
+  url: string;
+  icon: CmsButtonIcon;
+  variant: CmsButtonVariant;
+  openInNewTab: boolean;
+  order: number;
+  isActive: boolean;
+};
+
 export type ContentBlockType =
   | "paragraph"
   | "heading"
@@ -29,6 +52,7 @@ export type ContentBlockStyle = {
   columns?: number;
   headingLevel?: number;
   variant?: string;
+  buttonLayout?: CmsButtonLayout;
 };
 
 export type ContentBlock = {
@@ -41,6 +65,10 @@ export type ContentBlock = {
   fileUrl?: string;
   buttonLabel?: string;
   buttonUrl?: string;
+  showButton?: boolean;
+  buttonIcon?: CmsButtonIcon;
+  buttonVariant?: CmsButtonVariant;
+  buttonOpenInNewTab?: boolean;
   caption?: string;
   altText?: string;
   codeLanguage?: string;
@@ -62,6 +90,15 @@ export type CmsPage = {
   contentBlocks: ContentBlock[];
   buttonLabel?: string;
   buttonUrl?: string;
+  showButton?: boolean;
+  buttonIcon?: CmsButtonIcon;
+  buttonVariant?: CmsButtonVariant;
+  buttonOpenInNewTab?: boolean;
+  showHelpCard?: boolean;
+  helpCardTitle?: string;
+  helpCardContent?: string;
+  helpCardButtonLayout?: CmsButtonLayout;
+  helpCardButtons?: CmsPageActionButton[];
   metaTitle?: string;
   metaDescription?: string;
   order: number;
@@ -81,6 +118,15 @@ export type PagePayload = {
   contentBlocks: ContentBlock[];
   buttonLabel?: string;
   buttonUrl?: string;
+  showButton?: boolean;
+  buttonIcon?: CmsButtonIcon;
+  buttonVariant?: CmsButtonVariant;
+  buttonOpenInNewTab?: boolean;
+  showHelpCard?: boolean;
+  helpCardTitle?: string;
+  helpCardContent?: string;
+  helpCardButtonLayout?: CmsButtonLayout;
+  helpCardButtons?: CmsPageActionButton[];
   metaTitle?: string;
   metaDescription?: string;
   isPublished?: boolean;

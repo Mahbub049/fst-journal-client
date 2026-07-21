@@ -25,6 +25,7 @@ import {
   Undo2,
   Unlink,
 } from "lucide-react";
+import { promptAdminLink } from "@/lib/adminDialogs";
 
 type RichTextEditorProps = {
   value: string;
@@ -139,6 +140,56 @@ const isListElement = (
 ): element is HTMLOListElement | HTMLUListElement =>
   Boolean(element && (element.tagName === "UL" || element.tagName === "OL"));
 
+type SelectionPointBookmark = {
+  path: number[];
+  offset: number;
+};
+
+type SelectionBookmark = {
+  start: SelectionPointBookmark;
+  end: SelectionPointBookmark;
+};
+
+const getNodePath = (root: Node, node: Node): number[] | null => {
+  if (node === root) return [];
+
+  const path: number[] = [];
+  let current: Node | null = node;
+
+  while (current && current !== root) {
+    const parent: Node | null = current.parentNode;
+    if (!parent) return null;
+
+    const index = Array.prototype.indexOf.call(parent.childNodes, current);
+    if (index < 0) return null;
+
+    path.unshift(index);
+    current = parent;
+  }
+
+  return current === root ? path : null;
+};
+
+const resolveNodePath = (root: Node, path: number[]) => {
+  let current: Node = root;
+
+  for (const index of path) {
+    const next = current.childNodes[index];
+    if (!next) return null;
+    current = next;
+  }
+
+  return current;
+};
+
+const clampRangeOffset = (node: Node, offset: number) => {
+  const maximum =
+    node.nodeType === Node.TEXT_NODE
+      ? node.textContent?.length || 0
+      : node.childNodes.length;
+  return Math.max(0, Math.min(maximum, offset));
+};
+
 export default function RichTextEditor({
   value,
   onChange,
@@ -147,6 +198,7 @@ export default function RichTextEditor({
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const savedRangeRef = useRef<Range | null>(null);
+  const selectionBookmarkRef = useRef<SelectionBookmark | null>(null);
   const lastEmittedValueRef = useRef(value || "");
   const [isEmpty, setIsEmpty] = useState(!hasVisibleContent(value || ""));
 
@@ -179,19 +231,52 @@ export default function RichTextEditor({
     if (!editor || !selection || selection.rangeCount === 0) return;
 
     const range = selection.getRangeAt(0);
-    if (editor.contains(range.commonAncestorContainer)) {
-      savedRangeRef.current = range.cloneRange();
+    if (!editor.contains(range.commonAncestorContainer)) return;
+
+    savedRangeRef.current = range.cloneRange();
+
+    const startPath = getNodePath(editor, range.startContainer);
+    const endPath = getNodePath(editor, range.endContainer);
+    if (startPath && endPath) {
+      selectionBookmarkRef.current = {
+        start: { path: startPath, offset: range.startOffset },
+        end: { path: endPath, offset: range.endOffset },
+      };
     }
   };
 
-  const restoreSelection = () => {
+  const restoreSelection = (): Range | null => {
     const editor = editorRef.current;
-    const range = savedRangeRef.current;
-    if (!editor || !range || !editor.contains(range.commonAncestorContainer)) return;
+    if (!editor) return null;
+
+    let range = savedRangeRef.current;
+
+    if (!range || !editor.contains(range.commonAncestorContainer)) {
+      const bookmark = selectionBookmarkRef.current;
+      if (!bookmark) return null;
+
+      const startNode = resolveNodePath(editor, bookmark.start.path);
+      const endNode = resolveNodePath(editor, bookmark.end.path);
+      if (!startNode || !endNode) return null;
+
+      range = document.createRange();
+      try {
+        range.setStart(
+          startNode,
+          clampRangeOffset(startNode, bookmark.start.offset)
+        );
+        range.setEnd(endNode, clampRangeOffset(endNode, bookmark.end.offset));
+      } catch {
+        return null;
+      }
+
+      savedRangeRef.current = range.cloneRange();
+    }
 
     const selection = window.getSelection();
     selection?.removeAllRanges();
     selection?.addRange(range);
+    return range;
   };
 
   const emitChange = () => {
@@ -453,11 +538,72 @@ export default function RichTextEditor({
     );
   };
 
-  const insertLink = () => {
+  const insertLink = async () => {
     rememberSelection();
-    const url = window.prompt("Enter the link URL:")?.trim();
-    if (!url) return;
-    runCommand("createLink", url);
+
+    const editor = editorRef.current;
+    const savedRange = savedRangeRef.current;
+    if (!editor || !savedRange) return;
+
+    const selectedAnchor = getClosestElement(savedRange.startContainer, "a");
+    const sameAnchor =
+      selectedAnchor &&
+      selectedAnchor === getClosestElement(savedRange.endContainer, "a")
+        ? (selectedAnchor as HTMLAnchorElement)
+        : null;
+
+    const selectedText = savedRange.collapsed
+      ? sameAnchor?.textContent?.trim() || ""
+      : savedRange.toString().trim();
+
+    const link = await promptAdminLink({
+      initialText: selectedText,
+      initialUrl: sameAnchor?.getAttribute("href") || "",
+    });
+    if (!link) return;
+
+    editor.focus({ preventScroll: true });
+    const range = restoreSelection();
+
+    if (sameAnchor && editor.contains(sameAnchor)) {
+      sameAnchor.textContent = link.text;
+      sameAnchor.setAttribute("href", link.url);
+
+      const caretRange = document.createRange();
+      caretRange.setStartAfter(sameAnchor);
+      caretRange.collapse(true);
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(caretRange);
+      savedRangeRef.current = caretRange.cloneRange();
+      rememberSelection();
+      emitChange();
+      return;
+    }
+
+    const anchor = document.createElement("a");
+    anchor.setAttribute("href", link.url);
+    anchor.textContent = link.text;
+
+    if (range) {
+      range.deleteContents();
+      range.insertNode(anchor);
+    } else {
+      if (editor.textContent?.trim()) {
+        editor.append(document.createTextNode(" "));
+      }
+      editor.append(anchor);
+    }
+
+    const caretRange = document.createRange();
+    caretRange.setStartAfter(anchor);
+    caretRange.collapse(true);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(caretRange);
+    savedRangeRef.current = caretRange.cloneRange();
+    rememberSelection();
+    emitChange();
   };
 
   const applyBlock = (tag: string) => runCommand("formatBlock", tag);

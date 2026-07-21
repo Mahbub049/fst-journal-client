@@ -49,6 +49,7 @@ const emptyHomepage: HomepageContent = {
 
   executiveEditorsTitle: "",
   executiveEditorsSubtitle: "",
+  executiveEditorsShowBiographyPreview: false,
 
   articlesSectionTitle: "",
   articlesSectionSubtitle: "",
@@ -1075,6 +1076,33 @@ export default function AdminHomepagePage() {
                     }
                     className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"
                   />
+                </div>
+
+                <div className="lg:col-span-2">
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                    Expanded Editorial Card Biography
+                  </label>
+                  <label className="flex min-h-[46px] items-start gap-3 rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={form.executiveEditorsShowBiographyPreview}
+                      onChange={(event) =>
+                        updateField(
+                          "executiveEditorsShowBiographyPreview",
+                          event.target.checked,
+                        )
+                      }
+                      className="mt-0.5 h-4 w-4 shrink-0"
+                    />
+                    <span>
+                      <span className="block font-semibold text-slate-800">
+                        Show a short biography when an editorial card is expanded
+                      </span>
+                      <span className="mt-1 block text-xs leading-5 text-slate-500">
+                        Disabled by default. When disabled, the expanded card uses the more compact design with expertise and the full biography button only.
+                      </span>
+                    </span>
+                  </label>
                 </div>
 
                 <div>
