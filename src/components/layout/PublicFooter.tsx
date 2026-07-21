@@ -83,29 +83,29 @@ const fallbackSettings: SiteSettingsContent = {
     },
     {
       label: "Author Guidelines",
-      url: "/for-authors/author-guidelines",
-      group: "For Authors",
+      url: "/authors/author-guidelines",
+      group: "Authors",
       order: 1,
       isActive: true,
     },
     {
       label: "Submission Guidelines",
-      url: "/for-authors/submission-guidelines",
-      group: "For Authors",
+      url: "/authors/submission-guidelines",
+      group: "Authors",
       order: 2,
       isActive: true,
     },
     {
       label: "Peer Review Process",
-      url: "/for-authors/peer-review-process",
-      group: "For Authors",
+      url: "/authors/peer-review-process",
+      group: "Authors",
       order: 3,
       isActive: true,
     },
     {
       label: "Templates",
-      url: "/for-authors/templates",
-      group: "For Authors",
+      url: "/authors/templates",
+      group: "Authors",
       order: 4,
       isActive: true,
     },
@@ -142,7 +142,7 @@ const fallbackSettings: SiteSettingsContent = {
   isPublished: true,
 };
 
-const groupOrder = ["Journal", "For Authors", "Browse"];
+const groupOrder = ["Journal", "Authors", "Browse"];
 
 export default function PublicFooter() {
   const [settings, setSettings] = useState<SiteSettingsContent>(fallbackSettings);

@@ -89,6 +89,41 @@ const getFallbackBlocks = (content: string[]): PublicContentBlock[] => {
   }));
 };
 
+const getBlockTextLength = (block: PublicContentBlock): number => {
+  const stripHtml = (value?: string) =>
+    String(value || "")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  return (
+    stripHtml(block.title).length +
+    stripHtml(block.content).length +
+    (block.items || []).reduce((total, item) => total + stripHtml(item).length, 0) +
+    (block.children || []).reduce(
+      (total, child) => total + getBlockTextLength(child),
+      0
+    )
+  );
+};
+
+const hasLargeMedia = (block: PublicContentBlock): boolean =>
+  ["image", "video", "table", "columns"].includes(block.type) ||
+  (block.children || []).some((child) => hasLargeMedia(child));
+
+const shouldCenterCompactContent = (blocks: PublicContentBlock[]) => {
+  const activeBlocks = blocks.filter((block) => block.isActive);
+  if (activeBlocks.some((block) => hasLargeMedia(block))) return false;
+
+  const textLength = activeBlocks.reduce(
+    (total, block) => total + getBlockTextLength(block),
+    0
+  );
+
+  return textLength > 0 && textLength <= 900;
+};
+
 export default async function AboutInnerPage({
   params,
 }: {
@@ -129,6 +164,8 @@ export default async function AboutInnerPage({
         ? [...cmsPage.contentBlocks].sort((a, b) => a.order - b.order)
         : getFallbackBlocks(fallback.content),
   };
+
+  const centerCompactContent = shouldCenterCompactContent(data.contentBlocks);
 
   const sideLinks =
     cmsPages.length > 0
@@ -199,7 +236,11 @@ export default async function AboutInnerPage({
                 </div>
               </aside>
 
-              <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-9">
+              <section
+                className={`flex rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-9 ${
+                  centerCompactContent ? "flex-col justify-center" : "block"
+                }`}
+              >
                 <CmsContentRenderer
                   blocks={data.contentBlocks}
                   variant="about"

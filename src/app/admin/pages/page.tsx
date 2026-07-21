@@ -86,7 +86,7 @@ const createPageActionButton = (order = 0): CmsPageActionButton => ({
 const pageGroups: { label: string; value: PageGroup | "" }[] = [
   { label: "All Groups", value: "" },
   { label: "About", value: "about" },
-  { label: "For Authors", value: "for-authors" },
+  { label: "Authors", value: "authors" },
   { label: "Reviewers", value: "reviewers" },
   { label: "Issues", value: "issues" },
   { label: "Custom", value: "custom" },
@@ -275,7 +275,7 @@ const replaceChildrenAtPath = (
 };
 
 const groupLabel = (group: string) => {
-  if (group === "for-authors") return "For Authors";
+  if (group === "authors") return "Authors";
   if (group === "about") return "About";
   if (group === "reviewers") return "Reviewers";
   if (group === "issues") return "Issues";
@@ -285,7 +285,7 @@ const groupLabel = (group: string) => {
 const getPublicPageHref = (page: CmsPage) => {
   if (page.group === "about" && page.slug === "contact-us") return "/contact";
   if (page.group === "about") return `/about/${page.slug}`;
-  if (page.group === "for-authors") return `/for-authors/${page.slug}`;
+  if (page.group === "authors") return `/authors/${page.slug}`;
   if (page.group === "reviewers") return `/reviewers/${page.slug}`;
   if (page.group === "issues") return `/issues/${page.slug}`;
   return `/${page.slug}`;
@@ -322,7 +322,7 @@ const pagePresets: Record<PageGroup, { label: string; blocks: ContentBlock[] }[]
       ],
     },
   ],
-  "for-authors": [
+  "authors": [
     {
       label: "Information card",
       blocks: [
@@ -1027,7 +1027,7 @@ function PagePreviewModal({
         ? "max-w-[820px]"
         : "max-w-[1280px]";
   const rendererVariant =
-    form.group === "for-authors" ? "authors" : form.group === "about" ? "about" : "about";
+    form.group === "authors" ? "authors" : form.group === "about" ? "about" : "about";
   const activeBlocks = normalizeOrders(form.contentBlocks || []).filter(
     (block) => block.isActive
   );
@@ -1038,7 +1038,7 @@ function PagePreviewModal({
     ...pages
       .filter(
         (page) =>
-          page.group === "for-authors" &&
+          page.group === "authors" &&
           page._id !== editingPageId &&
           page.isPublished
       )
@@ -1111,13 +1111,13 @@ function PagePreviewModal({
         <div
           className={`mx-auto min-h-full w-full overflow-hidden rounded-2xl bg-white shadow-2xl transition-[max-width] duration-300 ${viewportClass}`}
         >
-          {form.group === "for-authors" ? (
+          {form.group === "authors" ? (
             <main className="min-h-full bg-[#f7f8fb]">
               <section className="border-b border-slate-200 bg-white">
                 <div className="mx-auto w-full max-w-6xl px-5 py-10 md:px-8 md:py-14">
                   {form.showTopLabel !== false ? (
                     <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#111433]">
-                      For Authors
+                      Authors
                     </p>
                   ) : null}
                   <h1
@@ -1371,7 +1371,7 @@ export default function AdminPagesPage() {
       buttonIcon: page.buttonIcon || "none",
       buttonVariant: page.buttonVariant || "primary",
       buttonOpenInNewTab: page.buttonOpenInNewTab ?? false,
-      showHelpCard: page.showHelpCard ?? page.group === "for-authors",
+      showHelpCard: page.showHelpCard ?? page.group === "authors",
       helpCardTitle:
         page.helpCardTitle || "Need help preparing your manuscript?",
       helpCardContent:
@@ -1604,7 +1604,7 @@ export default function AdminPagesPage() {
         buttonIcon: page.buttonIcon || "none",
         buttonVariant: page.buttonVariant || "primary",
         buttonOpenInNewTab: page.buttonOpenInNewTab ?? false,
-        showHelpCard: page.showHelpCard ?? page.group === "for-authors",
+        showHelpCard: page.showHelpCard ?? page.group === "authors",
         helpCardTitle: page.helpCardTitle,
         helpCardContent: page.helpCardContent,
         helpCardButtonLayout: page.helpCardButtonLayout || "horizontal",
@@ -1661,7 +1661,7 @@ export default function AdminPagesPage() {
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#005A78]">Content Pages</p>
             <h1 className="mt-2 text-3xl font-bold text-slate-950">Pages Management</h1>
             <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
-              Create flexible About, For Authors, Issues, and custom pages with rich text, nested blocks, media, tables, embeds, and drag-and-drop ordering.
+              Create flexible About, Authors, Issues, and custom pages with rich text, nested blocks, media, tables, embeds, and drag-and-drop ordering.
             </p>
           </div>
           <button
@@ -1745,7 +1745,7 @@ export default function AdminPagesPage() {
                   className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-[#005A78]"
                 >
                   <option value="about">About</option>
-                  <option value="for-authors">For Authors</option>
+                  <option value="authors">Authors</option>
                   <option value="reviewers">Reviewers</option>
                   <option value="issues">Issues</option>
                   <option value="custom">Custom</option>
@@ -1783,15 +1783,15 @@ export default function AdminPagesPage() {
                   </span>
                 </label>
               </div>
-              {["for-authors", "reviewers"].includes(form.group) && (
+              {["authors", "reviewers"].includes(form.group) && (
                 <div className="lg:col-span-2 rounded-2xl border border-[#005A78]/20 bg-[#005A78]/5 p-4">
                   <p className="text-sm font-bold text-[#005A78]">
-                    {form.group === "reviewers" ? "Reviewers page design" : "For Authors page design"}
+                    {form.group === "reviewers" ? "Reviewers page design" : "Authors page design"}
                   </p>
                   <p className="mt-1 text-sm leading-6 text-slate-600">
                     {form.group === "reviewers"
                       ? "The optional Reviewers label, page title, subtitle, optional short description and banner appear at the top. The Reviewers Menu remains on the left and each top-level content block appears as a separate white card."
-                      : "The optional For Authors label, page title, subtitle, optional short description and banner appear at the top. Below that, the Author Menu remains on the left and each top-level content block is displayed as a separate white card."}
+                      : "The optional Authors label, page title, subtitle, optional short description and banner appear at the top. Below that, the Author Menu remains on the left and each top-level content block is displayed as a separate white card."}
                   </p>
                 </div>
               )}
@@ -1840,7 +1840,7 @@ export default function AdminPagesPage() {
                 <div>
                   <h3 className="text-xl font-bold text-slate-950">Content Blocks</h3>
                   <p className="mt-1 text-sm text-slate-500">
-                    {form.group === "for-authors"
+                    {form.group === "authors"
                       ? "Drag to reorder. Each top-level block becomes one public content card; use Section, Card, Columns, or Notice when several inner blocks must stay inside the same card."
                       : "Drag to reorder. Section, Card, Columns, and Notice blocks can contain other blocks."}
                   </p>
@@ -1905,7 +1905,7 @@ export default function AdminPagesPage() {
               onOpenInNewTabChange={(value) => updateField("buttonOpenInNewTab", value)}
             />
 
-            {form.group === "for-authors" && (
+            {form.group === "authors" && (
               <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>

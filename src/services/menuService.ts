@@ -4,7 +4,7 @@ export type MenuLocation =
   | "main"
   | "about"
   | "issues"
-  | "for-authors"
+  | "authors"
   | "reviewers"
   | "editorial-board"
   | "footer";

@@ -25,6 +25,7 @@ export type ContactPageContent = {
   supportEyebrow: string;
   supportTitle: string;
   supportDescription: string;
+  supportEmail: string;
   emailButtonLabel: string;
   emailSubject: string;
   isPublished: boolean;

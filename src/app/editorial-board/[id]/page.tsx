@@ -39,6 +39,7 @@ const fallbackConfig: EditorialBoardPageSettings = {
   showSummaryCards: true,
   showTotalCard: true,
   showEditorialOffice: true,
+  showEditorialOfficeEyebrow: true,
   editorialOfficeEyebrow: "Editorial Office",
   editorialOfficeTitle: "Editorial Office",
   editorialOfficeDescription: "",

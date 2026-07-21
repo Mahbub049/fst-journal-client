@@ -74,7 +74,7 @@ const moduleCards = [
     href: "/admin/pages",
     publicHref: "/about/about-the-journal",
     icon: FileText,
-    description: "Manage About, For Authors, and other public content pages with reusable content blocks.",
+    description: "Manage About, Authors, and other public content pages with reusable content blocks.",
     accent: "from-indigo-500 to-blue-600",
   },
   {

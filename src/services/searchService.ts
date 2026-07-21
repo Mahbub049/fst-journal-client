@@ -5,7 +5,7 @@ export type SearchPageItem = {
   _id: string;
   title: string;
   slug: string;
-  group: "about" | "for-authors" | "issues" | "custom";
+  group: "about" | "authors" | "issues" | "custom";
   subtitle?: string;
   shortDescription?: string;
 };

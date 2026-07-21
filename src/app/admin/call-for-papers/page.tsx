@@ -185,7 +185,7 @@ const defaultForm: CallForPaperContent = {
   submissionButtonLabel: "Email Manuscript",
   submissionButtonLink: "mailto:journal.fst@bup.edu.bd",
   guidelinesButtonLabel: "View Submission Guidelines",
-  guidelinesButtonLink: "/for-authors/submission-guidelines",
+  guidelinesButtonLink: "/authors/submission-guidelines",
 
   contactSectionLabel: "Contact",
   contactTitle: "Editorial Office",

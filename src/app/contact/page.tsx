@@ -34,6 +34,7 @@ const fallbackContact: ContactPageContent = {
   supportTitle: "Author Support",
   supportDescription:
     "For any queries regarding manuscript submission, processing, or publication requirements, please contact the Editorial Office.",
+  supportEmail: "editor.fstjournal@bup.edu.bd",
   emailButtonLabel: "Email Editorial Office",
   emailSubject: "Journal of FST editorial office inquiry",
   isPublished: true,
@@ -65,6 +66,8 @@ export default async function ContactPage() {
   ].filter((item) => item.label.trim() && item.value.trim());
 
   const gmailUrl = buildGmailComposeUrl(content.email, content.emailSubject);
+  const supportEmail = content.supportEmail?.trim() || content.email.trim();
+  const supportGmailUrl = buildGmailComposeUrl(supportEmail, content.emailSubject);
 
   return (
     <PublicLayout>
@@ -187,9 +190,9 @@ export default async function ContactPage() {
                 </p>
               ) : null}
 
-              {content.email && content.emailButtonLabel ? (
+              {supportEmail && content.emailButtonLabel ? (
                 <a
-                  href={gmailUrl}
+                  href={supportGmailUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#111433] hover:bg-slate-100"

@@ -87,6 +87,7 @@ export type EditorialBoardPageSettings = {
   showSummaryCards: boolean;
   showTotalCard: boolean;
   showEditorialOffice: boolean;
+  showEditorialOfficeEyebrow: boolean;
   editorialOfficeEyebrow: string;
   editorialOfficeTitle: string;
   editorialOfficeDescription: string;

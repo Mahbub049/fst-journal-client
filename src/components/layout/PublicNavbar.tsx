@@ -51,18 +51,18 @@ const fallbackIssueItems: DropdownMenuItem[] = [
 ];
 
 const fallbackAuthorItems: DropdownMenuItem[] = [
-  { label: "Author Guidelines", href: "/for-authors/author-guidelines" },
+  { label: "Author Guidelines", href: "/authors/author-guidelines" },
   {
     label: "Submission Guidelines",
-    href: "/for-authors/submission-guidelines",
+    href: "/authors/submission-guidelines",
   },
-  { label: "Peer Review Process", href: "/for-authors/peer-review-process" },
+  { label: "Peer Review Process", href: "/authors/peer-review-process" },
   {
     label: "Article Processing Charge",
-    href: "/for-authors/article-processing-charge",
+    href: "/authors/article-processing-charge",
   },
-  { label: "Copyright & Licensing", href: "/for-authors/copyright-licensing" },
-  { label: "Templates", href: "/for-authors/templates" },
+  { label: "Copyright & Licensing", href: "/authors/copyright-licensing" },
+  { label: "Templates", href: "/authors/templates" },
 ];
 
 const fallbackReviewerItems: DropdownMenuItem[] = [
@@ -580,9 +580,9 @@ export default function PublicNavbar() {
   const authorItems = useMemo(() => {
     return getSafeDropdownItems(
       activeMenus,
-      "for-authors",
+      "authors",
       fallbackAuthorItems,
-      (href) => href.startsWith("/for-authors/"),
+      (href) => href.startsWith("/authors/"),
     );
   }, [activeMenus]);
 
@@ -626,7 +626,7 @@ export default function PublicNavbar() {
   const aboutHref = "/about/about-the-journal";
   const issuesHref = "/issues/archive";
   const editorialHref = "/editorial-board";
-  const authorsHref = "/for-authors/author-guidelines";
+  const authorsHref = "/authors/author-guidelines";
   const reviewersHref = "/reviewers/reviewers-guideline";
 
   return (
@@ -685,7 +685,7 @@ export default function PublicNavbar() {
             />
 
             <JournalDropdownMenu
-              label={authorsMenu?.label || "For Authors"}
+              label={authorsMenu?.label || "Authors"}
               href={authorsHref}
               isExternal={authorsMenu?.isExternal}
               openInNewTab={authorsMenu?.openInNewTab}
@@ -872,7 +872,7 @@ export default function PublicNavbar() {
             />
 
             <MobileGroup
-              title={authorsMenu?.label || "For Authors"}
+              title={authorsMenu?.label || "Authors"}
               href={authorsHref}
               isExternal={authorsMenu?.isExternal}
               openInNewTab={authorsMenu?.openInNewTab}

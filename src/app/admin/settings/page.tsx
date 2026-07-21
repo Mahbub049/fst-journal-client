@@ -721,7 +721,7 @@ export default function AdminSettingsPage() {
                     Footer Links
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    Group links by Journal, For Authors, Browse, or any custom
+                    Group links by Journal, Authors, Browse, or any custom
                     footer column name.
                   </p>
                 </div>

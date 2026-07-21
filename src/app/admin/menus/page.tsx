@@ -102,7 +102,7 @@ const locationOptions: { label: string; value: MenuLocation | "all" }[] = [
   { label: "Main Navbar", value: "main" },
   { label: "About Dropdown", value: "about" },
   { label: "Issues Dropdown", value: "issues" },
-  { label: "For Authors Dropdown", value: "for-authors" },
+  { label: "Authors Dropdown", value: "authors" },
   { label: "Reviewers Dropdown", value: "reviewers" },
   { label: "Editorial Board Dropdown", value: "editorial-board" },
   { label: "Footer", value: "footer" },
@@ -123,7 +123,7 @@ const getLocationLabel = (location: MenuLocation) =>
 const getPageUrl = (page: CmsPage) => {
   if (page.group === "about" && page.slug === "contact-us") return "/contact";
   if (page.group === "about") return `/about/${page.slug}`;
-  if (page.group === "for-authors") return `/for-authors/${page.slug}`;
+  if (page.group === "authors") return `/authors/${page.slug}`;
   if (page.group === "reviewers") return `/reviewers/${page.slug}`;
   if (page.group === "issues") return `/issues/${page.slug}`;
   return `/${page.slug}`;
@@ -147,7 +147,7 @@ const getChildLocationForParent = (parent?: MenuItem): MenuLocation => {
   const identity = `${parent.label} ${parent.url || ""}`.toLowerCase();
   if (identity.includes("about")) return "about";
   if (identity.includes("issue")) return "issues";
-  if (identity.includes("author")) return "for-authors";
+  if (identity.includes("author")) return "authors";
   if (identity.includes("reviewer")) return "reviewers";
   if (identity.includes("editorial")) return "editorial-board";
   if (parent.location === "footer") return "footer";
@@ -157,7 +157,7 @@ const getChildLocationForParent = (parent?: MenuItem): MenuLocation => {
 
 const getPageMenuLocation = (page: CmsPage): MenuLocation => {
   if (page.group === "about") return "about";
-  if (page.group === "for-authors") return "for-authors";
+  if (page.group === "authors") return "authors";
   if (page.group === "reviewers") return "reviewers";
   if (page.group === "issues") return "issues";
   return "main";

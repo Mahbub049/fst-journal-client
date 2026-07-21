@@ -36,6 +36,7 @@ const defaultForm: ContactPageContent = {
   supportTitle: "Author Support",
   supportDescription:
     "For any queries regarding manuscript submission, processing, or publication requirements, please contact the Editorial Office.",
+  supportEmail: "editor.fstjournal@bup.edu.bd",
   emailButtonLabel: "Email Editorial Office",
   emailSubject: "Journal of FST editorial office inquiry",
   isPublished: true,
@@ -229,8 +230,11 @@ export default function AdminContactPage() {
                 <div className="lg:col-span-2">
                   <TextArea label="Box Description" value={form.supportDescription} onChange={(value) => updateField("supportDescription", value)} />
                 </div>
+                <TextInput label="Recipient Email Address" value={form.supportEmail} onChange={(value) => updateField("supportEmail", value)} placeholder="editorial.office@example.com" />
                 <TextInput label="Email Button Label" value={form.emailButtonLabel} onChange={(value) => updateField("emailButtonLabel", value)} />
-                <TextInput label="Pre-filled Email Subject" value={form.emailSubject} onChange={(value) => updateField("emailSubject", value)} />
+                <div className="lg:col-span-2">
+                  <TextInput label="Pre-filled Email Subject" value={form.emailSubject} onChange={(value) => updateField("emailSubject", value)} />
+                </div>
               </div>
             </section>
 

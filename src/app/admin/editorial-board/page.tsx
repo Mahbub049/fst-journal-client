@@ -77,6 +77,7 @@ const defaultConfig: EditorialBoardPageSettings = {
   showSummaryCards: true,
   showTotalCard: true,
   showEditorialOffice: true,
+  showEditorialOfficeEyebrow: true,
   editorialOfficeEyebrow: "Editorial Office",
   editorialOfficeTitle: "Editorial Office",
   editorialOfficeDescription:
@@ -594,8 +595,28 @@ export default function AdminEditorialBoardPage() {
 
               <div className="mt-5 grid gap-5 lg:grid-cols-2">
                 <div>
-                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Small Heading / Eyebrow</label>
-                  <input value={config.editorialOfficeEyebrow} onChange={(e) => setConfig((p) => ({ ...p, editorialOfficeEyebrow: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                  <label className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={config.showEditorialOfficeEyebrow !== false}
+                      onChange={(e) =>
+                        setConfig((p) => ({
+                          ...p,
+                          showEditorialOfficeEyebrow: e.target.checked,
+                        }))
+                      }
+                      className="h-4 w-4 accent-[#005A78]"
+                    />
+                    Show small heading / eyebrow
+                  </label>
+                  <input
+                    value={config.editorialOfficeEyebrow}
+                    onChange={(e) =>
+                      setConfig((p) => ({ ...p, editorialOfficeEyebrow: e.target.value }))
+                    }
+                    disabled={config.showEditorialOfficeEyebrow === false}
+                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                  />
                 </div>
                 <div>
                   <label className="mb-1.5 block text-sm font-semibold text-slate-700">Office Title</label>

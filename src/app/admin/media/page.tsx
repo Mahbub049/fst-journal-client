@@ -28,7 +28,7 @@ const folders = [
   "articles",
   "editorial-board",
   "call-for-papers",
-  "for-authors",
+  "authors",
   "about",
 ];
 

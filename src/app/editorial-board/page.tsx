@@ -28,6 +28,7 @@ const fallbackConfig: EditorialBoardPageSettings = {
   showSummaryCards: true,
   showTotalCard: true,
   showEditorialOffice: true,
+  showEditorialOfficeEyebrow: true,
   editorialOfficeEyebrow: "Editorial Office",
   editorialOfficeTitle: "Editorial Office",
   editorialOfficeDescription:
@@ -325,13 +326,13 @@ export default async function EditorialBoardPage() {
 
               {config.showEditorialOffice !== false ? (
                 <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                  {config.editorialOfficeEyebrow ? (
+                  {config.showEditorialOfficeEyebrow !== false && config.editorialOfficeEyebrow ? (
                     <p className="journal-subheading">
                       {config.editorialOfficeEyebrow}
                     </p>
                   ) : null}
                   <h2
-                    className={`${config.editorialOfficeEyebrow ? "mt-3" : ""} text-[24px] font-semibold leading-tight text-slate-950`}
+                    className={`${config.showEditorialOfficeEyebrow !== false && config.editorialOfficeEyebrow ? "mt-3" : ""} text-[24px] font-semibold leading-tight text-slate-950`}
                     style={{ fontFamily: "var(--font-source-serif)" }}
                   >
                     {config.editorialOfficeTitle}

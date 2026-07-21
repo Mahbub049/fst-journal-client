@@ -10,7 +10,7 @@ type SearchPageItem = {
   _id: string;
   title: string;
   slug: string;
-  group: "about" | "for-authors" | "issues" | "custom";
+  group: "about" | "authors" | "issues" | "custom";
   subtitle?: string;
   shortDescription?: string;
 };
@@ -86,7 +86,7 @@ async function getSearchResults(query: string): Promise<SearchData> {
 
 function getPageHref(page: SearchPageItem) {
   if (page.group === "about") return `/about/${page.slug}`;
-  if (page.group === "for-authors") return `/for-authors/${page.slug}`;
+  if (page.group === "authors") return `/authors/${page.slug}`;
   if (page.group === "issues") return `/issues/${page.slug}`;
   return `/${page.slug}`;
 }
