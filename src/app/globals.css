@@ -781,3 +781,14 @@ button:disabled,
 .cms-rich-text ul[data-list-style="black-diamond"] > li::before {
   color: #111111 !important;
 }
+
+
+@media (max-width: 767px) {
+  .mobile-cms-justify p,
+  .mobile-cms-justify li,
+  .mobile-cms-justify blockquote {
+    text-align: justify !important;
+    text-align-last: left;
+    hyphens: auto;
+  }
+}

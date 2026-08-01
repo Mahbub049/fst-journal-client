@@ -325,13 +325,13 @@ export default async function ForAuthorsInnerPage({
               </h1>
 
               {data.subtitle && (
-                <p className="mt-5 max-w-3xl text-[15px] leading-7 text-slate-600 md:text-justify md:text-[16px] md:leading-8">
+                <p className="mt-5 max-w-3xl pr-2 hyphens-auto md:pr-0 text-justify text-[15px] leading-7 text-slate-600 [text-align-last:left] md:text-justify md:text-[16px] md:leading-8 md:[text-align-last:auto]">
                   {data.subtitle}
                 </p>
               )}
 
               {data.shortDescription && (
-                <p className="mt-3 max-w-3xl text-[14px] leading-7 text-[#111111] md:text-[15px]">
+                <p className="mt-3 max-w-3xl pr-2 hyphens-auto md:pr-0 text-justify text-[14px] leading-7 text-[#111111] [text-align-last:left] md:text-left md:text-[15px] md:[text-align-last:auto]">
                   {data.shortDescription}
                 </p>
               )}
@@ -398,7 +398,7 @@ export default async function ForAuthorsInnerPage({
 
                       {data.helpCardContent ? (
                         <div
-                          className="cms-rich-text mt-4 text-[15px] leading-7 text-white/80 md:text-justify"
+                          className="cms-rich-text mobile-cms-justify mt-4 pr-2 hyphens-auto md:pr-0 text-justify text-[15px] leading-7 text-white/80 [text-align-last:left] md:text-justify md:[text-align-last:auto]"
                           dangerouslySetInnerHTML={{ __html: data.helpCardContent }}
                         />
                       ) : null}
@@ -406,8 +406,8 @@ export default async function ForAuthorsInnerPage({
                       <div
                         className={
                           data.helpCardButtonLayout === "vertical"
-                            ? "mt-6 flex flex-col items-start gap-3"
-                            : "mt-6 flex flex-wrap items-center gap-3"
+                            ? "mt-6 grid grid-cols-2 gap-3 md:flex md:flex-col md:items-start"
+                            : "mt-6 grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-center"
                         }
                       >
                         {[...data.helpCardButtons]
@@ -422,6 +422,7 @@ export default async function ForAuthorsInnerPage({
                               variant={button.variant}
                               openInNewTab={button.openInNewTab}
                               darkBackground
+                              className="h-full w-full min-w-0 px-3 md:h-auto md:w-auto md:px-5"
                             />
                           ))}
                       </div>

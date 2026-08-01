@@ -131,7 +131,7 @@ export default function HomepageCountdown({
           </h3>
         </div>
 
-        <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-100/60">
+        <span className="hidden items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-100/60 sm:inline-flex">
           <span className="h-2 w-2 rounded-full bg-[#f5c84b] shadow-[0_0_12px_rgba(245,200,75,0.8)]" />
           {statusText}
         </span>

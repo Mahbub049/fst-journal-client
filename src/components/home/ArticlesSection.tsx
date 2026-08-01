@@ -99,9 +99,11 @@ export default function ArticlesSection({ homepage, initialArticles }: Props) {
             </h2>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {tabs.map((tab) => {
+          <div className="grid grid-cols-6 gap-2 md:flex md:flex-wrap">
+            {tabs.map((tab, tabIndex) => {
               const isActive = activeTab === tab.value;
+              const mobileGridClass =
+                tabIndex < 3 ? "col-span-2" : "col-span-3";
 
               return (
                 <motion.button
@@ -115,7 +117,7 @@ export default function ArticlesSection({ homepage, initialArticles }: Props) {
                   whileHover={{ y: -1 }}
                   whileTap={{ scale: 0.97 }}
                   transition={{ duration: 0.18, ease: "easeOut" }}
-                  className={`cursor-pointer rounded-full px-5 py-2 text-[13px] font-extrabold outline-none transition-all duration-300 focus-visible:ring-2 focus-visible:ring-[#0ea5b7]/45 focus-visible:ring-offset-2 ${
+                  className={`${mobileGridClass} min-h-10 min-w-0 cursor-pointer rounded-full px-2.5 py-2 text-[10.5px] font-extrabold leading-4 outline-none transition-all duration-300 focus-visible:ring-2 focus-visible:ring-[#0ea5b7]/45 focus-visible:ring-offset-2 md:col-auto md:min-h-0 md:w-auto md:px-5 md:text-[13px] ${
                     isActive
                       ? "bg-[#0b1f3a] text-white shadow-[0_10px_24px_rgba(11,31,58,0.16)]"
                       : "border border-[#d9e4ea] bg-white/85 text-slate-600 hover:border-[#0ea5b7]/50 hover:bg-[#e6f7f9] hover:text-[#0a7180]"
@@ -201,7 +203,7 @@ export default function ArticlesSection({ homepage, initialArticles }: Props) {
                       />
                     </div>
 
-                    <h3 className="mt-5 text-[18px] font-bold leading-7 text-slate-950 transition-colors duration-300 group-hover:text-[#0a7180] md:text-[19px] md:leading-8">
+                    <h3 className="mt-5 hyphens-auto text-justify text-[18px] font-bold leading-7 text-slate-950 [text-align-last:left] transition-colors duration-300 group-hover:text-[#0a7180] md:text-left md:text-[19px] md:leading-8 md:[text-align-last:auto]">
                       {article.title}
                     </h3>
 
@@ -222,21 +224,21 @@ export default function ArticlesSection({ homepage, initialArticles }: Props) {
                       </p>
                     ) : null}
 
-                    <div className="mt-4 flex flex-wrap gap-2 text-[12px] font-bold text-slate-600">
+                    <div className="mt-4 flex flex-nowrap gap-1 text-[8.5px] font-bold leading-4 tracking-[-0.025em] text-slate-600 sm:gap-1.5 sm:text-[10px] md:flex-wrap md:gap-2 md:text-[12px] md:tracking-normal">
                       {typeof article.views === "number" ? (
-                        <span className="rounded-full bg-[#e6f7f9] px-3 py-1 text-[#0a7180]">
+                        <span className="min-w-0 flex-1 whitespace-nowrap rounded-full bg-[#e6f7f9] px-1 py-1 text-center text-[#0a7180] md:flex-none md:px-3">
                           Views: {article.views}
                         </span>
                       ) : null}
 
                       {typeof article.downloads === "number" ? (
-                        <span className="rounded-full bg-[#f8f0dd] px-3 py-1 text-[#8a6b28]">
+                        <span className="min-w-0 flex-1 whitespace-nowrap rounded-full bg-[#f8f0dd] px-1 py-1 text-center text-[#8a6b28] md:flex-none md:px-3">
                           Downloads: {article.downloads}
                         </span>
                       ) : null}
 
                       {typeof article.citations === "number" ? (
-                        <span className="rounded-full bg-[#eef3f6] px-3 py-1 text-slate-600">
+                        <span className="min-w-0 flex-1 whitespace-nowrap rounded-full bg-[#eef3f6] px-1 py-1 text-center text-slate-600 md:flex-none md:px-3">
                           Citations: {article.citations}
                         </span>
                       ) : null}

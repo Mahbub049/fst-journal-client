@@ -52,11 +52,15 @@ function RichContent({
   if (!html) return null;
 
   const bodyTextClass = getBodyTextClass(variant);
+  const mobileJustifyClass =
+    variant === "contact"
+      ? ""
+      : "mobile-cms-justify pr-2 hyphens-auto text-justify [text-align-last:left] md:pr-0 md:[text-align:inherit] md:[text-align-last:auto]";
 
   if (isHtml(html)) {
     return (
       <div
-        className={`cms-rich-text text-[15px] leading-7 ${bodyTextClass} md:text-[16px] md:leading-8`}
+        className={`cms-rich-text text-[15px] leading-7 ${bodyTextClass} ${mobileJustifyClass} md:text-[16px] md:leading-8`}
         dangerouslySetInnerHTML={{ __html: html }}
       />
     );
@@ -71,7 +75,7 @@ function RichContent({
         .map((paragraph, index) => (
           <p
             key={index}
-            className={`text-[15px] leading-7 ${bodyTextClass} md:text-[16px] md:leading-8`}
+            className={`text-[15px] leading-7 ${bodyTextClass} ${mobileJustifyClass} md:text-[16px] md:leading-8`}
           >
             {paragraph}
           </p>
@@ -247,7 +251,14 @@ function Block({
           {(block.items || []).map((item, index) => (
             <li key={`${item}-${index}`} className="flex gap-3 md:text-justify">
               <span className="mt-3 h-2 w-2 shrink-0 rounded-full bg-[#22b8e8]" />
-              <span dangerouslySetInnerHTML={{ __html: item }} />
+              <span
+                className={
+                  variant === "contact"
+                    ? ""
+                    : "mobile-cms-justify pr-2 hyphens-auto text-justify [text-align-last:left] md:pr-0 md:[text-align:inherit] md:[text-align-last:auto]"
+                }
+                dangerouslySetInnerHTML={{ __html: item }}
+              />
             </li>
           ))}
         </ul>

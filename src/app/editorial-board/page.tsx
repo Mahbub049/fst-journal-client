@@ -159,16 +159,34 @@ function EditorCard({ member }: { member: EditorialBoardMember }) {
             </div>
 
             {member.expertise?.length ? (
-              <div className="mt-4 flex flex-wrap justify-center gap-2 md:justify-start">
-                {member.expertise.map((item) => (
-                  <span
-                    key={item}
-                    className="rounded-full bg-slate-100 px-3 py-1 text-[12px] font-semibold text-slate-600"
-                  >
-                    {item}
-                  </span>
-                ))}
-              </div>
+              <>
+                <div className="mt-4 flex flex-wrap justify-center gap-2 md:hidden">
+                  {member.expertise.slice(0, 3).map((item) => (
+                    <span
+                      key={item}
+                      className="rounded-full bg-slate-100 px-3 py-1 text-[12px] font-semibold text-slate-600"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                  {member.expertise.length > 3 ? (
+                    <span className="rounded-full border border-[#005A78]/15 bg-[#eef8fc] px-3 py-1 text-[12px] font-semibold text-[#005A78]">
+                      +{member.expertise.length - 3} more
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="mt-4 hidden flex-wrap justify-start gap-2 md:flex">
+                  {member.expertise.map((item) => (
+                    <span
+                      key={item}
+                      className="rounded-full bg-slate-100 px-3 py-1 text-[12px] font-semibold text-slate-600"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </>
             ) : null}
           </div>
 
@@ -259,7 +277,7 @@ export default async function EditorialBoardPage() {
               </h1>
 
               {config.intro ? (
-                <p className="mt-5 text-[15px] leading-8 text-slate-600 md:text-justify md:text-[16px]">
+                <p className="mt-5 hyphens-auto text-justify text-[15px] leading-8 text-slate-600 [text-align-last:left] md:text-justify md:text-[16px] md:[text-align-last:auto]">
                   {config.intro}
                 </p>
               ) : null}
@@ -281,7 +299,7 @@ export default async function EditorialBoardPage() {
                 </h2>
 
                 {config.summaryDescription ? (
-                  <p className="mt-4 text-[14px] leading-7 text-slate-600">
+                  <p className="mt-4 hyphens-auto text-justify text-[14px] leading-7 text-slate-600 [text-align-last:left] md:text-left md:[text-align-last:auto]">
                     {config.summaryDescription}
                   </p>
                 ) : null}
@@ -339,7 +357,7 @@ export default async function EditorialBoardPage() {
                   </h2>
 
                   {config.editorialOfficeDescription ? (
-                    <p className="mt-4 text-[14px] leading-7 text-slate-600">
+                    <p className="mt-4 hyphens-auto text-justify text-[14px] leading-7 text-slate-600 [text-align-last:left] md:text-left md:[text-align-last:auto]">
                       {config.editorialOfficeDescription}
                     </p>
                   ) : null}
@@ -397,7 +415,7 @@ export default async function EditorialBoardPage() {
                         {category.name}
                       </h2>
                       {category.description ? (
-                        <p className="mt-3 text-center text-sm leading-7 text-slate-600 md:text-left">
+                        <p className="mt-3 hyphens-auto text-justify text-sm leading-7 text-slate-600 [text-align-last:left] md:text-left md:[text-align-last:auto]">
                           {category.description}
                         </p>
                       ) : null}

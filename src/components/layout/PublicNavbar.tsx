@@ -791,7 +791,7 @@ export default function PublicNavbar() {
           <div className="min-h-0">
             <form
               onSubmit={handleSearch}
-              className="mx-auto mb-4 flex h-10 w-[calc(100%-18px)] max-w-[292px] overflow-hidden rounded-full border border-slate-200 bg-slate-50 transition-all duration-300 focus-within:border-[#22b8e8]"
+              className="mb-4 flex h-10 w-full overflow-hidden rounded-full border border-slate-200 bg-slate-50 transition-all duration-300 focus-within:border-[#22b8e8]"
             >
               <div className="flex w-11 shrink-0 items-center justify-center text-slate-400">
                 <svg

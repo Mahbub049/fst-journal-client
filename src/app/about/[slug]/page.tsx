@@ -195,7 +195,7 @@ export default async function AboutInnerPage({
                 {data.title}
               </h1>
 
-              <p className="mt-5 max-w-3xl text-[15px] leading-7 text-slate-600 md:text-[16px] md:leading-8">
+              <p className="mt-5 max-w-3xl pr-2 hyphens-auto md:pr-0 text-justify text-[15px] leading-7 text-slate-600 [text-align-last:left] md:text-left md:text-[16px] md:leading-8 md:[text-align-last:auto]">
                 {data.subtitle}
               </p>
 

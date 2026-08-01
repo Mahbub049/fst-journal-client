@@ -184,7 +184,156 @@ export default async function EditorialMemberDetailsPage({
             Back to Editorial Board
           </Link>
 
-          <div className="mt-8 grid items-start gap-10 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)] xl:gap-14">
+          <div className="mt-8 md:hidden">
+            <section>
+              <div className="mx-auto aspect-[4/5] w-full max-w-[238px] overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-sm">
+                {imageUrl ? (
+                  <img
+                    src={imageUrl}
+                    alt={member.name}
+                    className="h-full w-full object-cover object-top"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-[48px] font-bold text-[#122b49]">
+                    {getInitials(member.name)}
+                  </div>
+                )}
+              </div>
+
+              <h1
+                className="mt-7 text-[32px] font-semibold leading-[1.16] tracking-tight text-[#064779]"
+                style={{ fontFamily: "var(--font-source-serif)" }}
+              >
+                {member.name}
+              </h1>
+
+              <div className="mt-4 space-y-2 border-b border-slate-200 pb-6 text-[14px] leading-6 text-slate-700">
+                {member.category ? (
+                  <p className="font-bold text-[#005A78]">{member.category}</p>
+                ) : null}
+                {member.designation ? (
+                  <p className="font-semibold text-slate-950">{member.designation}</p>
+                ) : null}
+                {member.department ? <p>{member.department}</p> : null}
+                {member.institution ? <p>{member.institution}</p> : null}
+              </div>
+            </section>
+
+            {member.expertise?.length ? (
+              <section className="mt-6">
+                <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                  Areas of Expertise
+                </h2>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {member.expertise.map((item, index) => {
+                    const useFullRow =
+                      member.expertise!.length % 2 === 1 &&
+                      index === member.expertise!.length - 1;
+
+                    return (
+                      <span
+                        key={item}
+                        className={`flex min-h-11 items-center justify-center rounded-xl bg-slate-100 px-3 py-2 text-center text-[11px] font-semibold leading-4 text-slate-700 ${
+                          useFullRow ? "col-span-2" : ""
+                        }`}
+                      >
+                        {item}
+                      </span>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : null}
+
+            {socialProfiles.length || member.email || externalBiographyUrl ? (
+              <section className="mt-6 border-t border-slate-200 pt-6">
+                <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                  Research Profiles & Contact
+                </h2>
+
+                {socialProfiles.length || member.email ? (
+                  <div className="mt-4 grid grid-cols-2 gap-2.5">
+                    {socialProfiles.map((profile) => {
+                      const Icon = profile.icon;
+                      return (
+                        <a
+                          key={profile.label}
+                          href={profile.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-center text-[11px] font-semibold leading-4 text-[#005A78] shadow-sm"
+                        >
+                          <Icon size={17} />
+                          <span className="min-w-0">{profile.label}</span>
+                        </a>
+                      );
+                    })}
+
+                    {member.email ? (
+                      <a
+                        href={buildGmailComposeUrl(
+                          member.email,
+                          "Journal of FST editorial board inquiry"
+                        )}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-center text-[11px] font-semibold leading-4 text-[#005A78] shadow-sm"
+                      >
+                        <Mail size={17} aria-hidden="true" />
+                        <span>Email</span>
+                      </a>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {externalBiographyUrl ? (
+                  <a
+                    href={externalBiographyUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#005A78] px-4 py-2 text-sm font-bold text-[#005A78]"
+                  >
+                    <BookOpen size={17} aria-hidden="true" />
+                    External Biography
+                    <ExternalLink size={14} aria-hidden="true" />
+                  </a>
+                ) : null}
+              </section>
+            ) : null}
+
+            {biographyParagraphs.length ? (
+              <article className="mt-7 border-t border-slate-200 pt-6">
+                <h2
+                  className="text-[26px] font-semibold text-slate-950"
+                  style={{ fontFamily: "var(--font-source-serif)" }}
+                >
+                  Biography
+                </h2>
+                <div className="mt-4 space-y-4 pr-2 hyphens-auto text-justify text-[15px] leading-7 text-slate-700 [text-align-last:left]">
+                  {biographyParagraphs.map((paragraph, index) => (
+                    <p key={`${index}-${paragraph.slice(0, 24)}`}>{paragraph}</p>
+                  ))}
+                </div>
+              </article>
+            ) : null}
+
+            {chiefEditor && config.chiefEditorResponsibilityDescription ? (
+              <section className="mt-7 border-t border-slate-200 pt-6">
+                <h2
+                  className="text-[26px] font-semibold text-slate-950"
+                  style={{ fontFamily: "var(--font-source-serif)" }}
+                >
+                  {config.chiefEditorResponsibilityTitle ||
+                    "Chief Editor Responsibilities"}
+                </h2>
+                <p className="mt-4 pr-2 hyphens-auto text-justify text-[15px] leading-7 text-slate-700 [text-align-last:left]">
+                  {config.chiefEditorResponsibilityDescription}
+                </p>
+              </section>
+            ) : null}
+          </div>
+
+          <div className="mt-8 hidden items-start gap-10 md:grid lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)] xl:gap-14">
             <aside className="lg:sticky lg:top-28">
               <div className="aspect-[4/5] w-full overflow-hidden border border-slate-200 bg-slate-100 shadow-sm">
                 {imageUrl ? (

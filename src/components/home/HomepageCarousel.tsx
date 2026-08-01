@@ -72,7 +72,7 @@ export default function HomepageCarousel({ homepage }: Props) {
 
   return (
     <section
-      className="group relative h-[190px] overflow-hidden bg-[#071d35] sm:h-[205px] lg:h-[195px]"
+      className="group relative mx-4 mb-5 mt-6 h-[188px] overflow-hidden rounded-[22px] bg-[#071d35] shadow-[0_14px_34px_rgba(7,29,53,0.16)] sm:h-[205px] md:mx-0 md:mb-0 md:mt-0 md:rounded-none md:shadow-none lg:h-[195px]"
       aria-label="Journal image carousel"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}

@@ -77,10 +77,10 @@ export default async function HomePage() {
           <div className="grid items-stretch overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.07)] lg:grid-cols-[minmax(0,1.4fr)_minmax(360px,0.82fr)]">
             <OverviewSection homepage={homepage} />
 
-            <div className="flex min-h-full flex-col border-t border-slate-200 lg:border-l lg:border-t-0">
+            <div className="flex min-h-full flex-col border-t-0 lg:border-l lg:border-t-0">
               <HomepageCarousel homepage={homepage} />
 
-              <div className="min-h-0 flex-1 border-t border-slate-200 first:border-t-0">
+              <div className="min-h-0 flex-1 border-t-0 md:border-t md:border-slate-200 md:first:border-t-0">
                 <JournalInfoSidebar homepage={homepage} compact />
               </div>
             </div>

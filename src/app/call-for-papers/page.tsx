@@ -414,7 +414,7 @@ export default async function CallForPapersPage() {
                       </h1>
 
                       {content.subtitle ? (
-                        <p className="mt-3 max-w-3xl text-[16px] font-medium leading-7 text-slate-700">
+                        <p className="mt-3 max-w-3xl hyphens-auto text-justify text-[16px] font-medium leading-7 text-slate-700 [text-align-last:left] md:text-left md:[text-align-last:auto]">
                           {content.subtitle}
                         </p>
                       ) : null}
@@ -456,9 +456,52 @@ export default async function CallForPapersPage() {
                     pdfSubtitle={content.pdfSubtitle}
                   />
                 ) : null}
+
+                {content.posterImage ? (
+                  <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-2 md:hidden">
+                    <img
+                      src={content.posterImage}
+                      alt={`${content.title} poster`}
+                      className="h-auto w-full rounded-xl object-contain"
+                    />
+                  </div>
+                ) : null}
               </div>
 
-              <aside className="space-y-6 lg:hidden">
+              <aside className="space-y-6 md:hidden">
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  {content.importantInfoLabel ? (
+                    <p className="journal-subheading">{content.importantInfoLabel}</p>
+                  ) : null}
+
+                  <h2
+                    className="mt-3 text-[26px] font-semibold leading-tight text-slate-950"
+                    style={{ fontFamily: "var(--font-source-serif)" }}
+                  >
+                    {content.timelineTitle}
+                  </h2>
+
+                  <div className="mt-6 space-y-3">
+                    {activeImportantDates.map((date, index) => (
+                      <div
+                        key={`${date.label}-${date.date}-${index}`}
+                        className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                      >
+                        <p className="text-[13px] text-slate-500">
+                          {date.label}
+                        </p>
+
+                        <p className="mt-1 break-words text-[15px] font-semibold text-slate-900">
+                          {date.date}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </aside>
+
+              <aside className="hidden space-y-6 md:block lg:hidden">
                 <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                   {content.importantInfoLabel ? (
                     <p className="journal-subheading">{content.importantInfoLabel}</p>
@@ -605,7 +648,7 @@ export default async function CallForPapersPage() {
                 {content.submissionFormatDescription ? (
                   <RichHtml
                     value={content.submissionFormatDescription}
-                    className="mt-4 text-[15px] leading-8 text-slate-600"
+                    className="mt-4 hyphens-auto text-justify text-[15px] leading-8 text-slate-600 [text-align-last:left] md:text-left md:[text-align-last:auto]"
                   />
                 ) : null}
 
@@ -621,7 +664,7 @@ export default async function CallForPapersPage() {
                       {type.description ? (
                         <RichHtml
                           value={type.description}
-                          className="mt-2 text-[14px] leading-6 text-slate-600"
+                          className="mt-2 hyphens-auto text-justify text-[14px] leading-6 text-slate-600 [text-align-last:left] md:text-left md:[text-align-last:auto]"
                         />
                       ) : null}
                     </article>
@@ -642,7 +685,7 @@ export default async function CallForPapersPage() {
                 </h2>
 
                 {content.scopeDescription ? (
-                  <p className="mt-4 text-[15px] leading-8 text-slate-600">
+                  <p className="mt-4 hyphens-auto text-justify text-[15px] leading-8 text-slate-600 [text-align-last:left] md:text-left md:[text-align-last:auto]">
                     {content.scopeDescription}
                   </p>
                 ) : null}
@@ -728,7 +771,92 @@ export default async function CallForPapersPage() {
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+              <div className="space-y-6 md:hidden">
+                <div className="rounded-3xl border border-slate-200 bg-[#111433] p-6 text-white shadow-sm">
+                  {content.submitSectionLabel ? (
+                    <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-white/70">
+                      {content.submitSectionLabel}
+                    </p>
+                  ) : null}
+
+                  <h2
+                    className="mt-3 text-[26px] font-semibold leading-tight text-white"
+                    style={{ fontFamily: "var(--font-source-serif)" }}
+                  >
+                    {content.submitTitle}
+                  </h2>
+
+                  {content.submitDescription ? (
+                    <p className="mt-4 hyphens-auto text-justify text-[14px] leading-7 text-white/80 [text-align-last:left]">
+                      {content.submitDescription}
+                    </p>
+                  ) : null}
+
+                  <div className="mt-6 grid grid-cols-2 gap-3">
+                    <a
+                      href={normalizeHref(content.submissionButtonLink)}
+                      target={normalizeHref(content.submissionButtonLink).startsWith("http") ? "_blank" : undefined}
+                      rel={normalizeHref(content.submissionButtonLink).startsWith("http") ? "noreferrer" : undefined}
+                      className="flex h-12 w-full items-center justify-center rounded-full bg-white px-2 text-center text-[12px] font-medium leading-tight text-[#111433] hover:bg-slate-100"
+                    >
+                      {content.submissionButtonLabel}
+                    </a>
+
+                    <Link
+                      href={normalizeHref(content.guidelinesButtonLink)}
+                      className="flex h-12 w-full items-center justify-center rounded-full border border-white/30 px-2 text-center text-[12px] font-medium leading-tight text-white hover:bg-white/10"
+                    >
+                      {content.guidelinesButtonLabel}
+                    </Link>
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  {content.contactSectionLabel ? (
+                    <p className="journal-subheading">{content.contactSectionLabel}</p>
+                  ) : null}
+
+                  <h2
+                    className="mt-3 text-[26px] font-semibold leading-tight text-slate-950"
+                    style={{ fontFamily: "var(--font-source-serif)" }}
+                  >
+                    {content.contactTitle}
+                  </h2>
+
+                  <div className="mt-5 space-y-3 text-[14px] leading-7 text-slate-600">
+                    <p>
+                      <span className="font-semibold text-slate-900">
+                        {content.contactEditorLabel}
+                      </span>
+                      <br />
+                      {content.contactEditorName}
+                    </p>
+
+                    <p>
+                      <span className="font-semibold text-slate-900">
+                        {content.publishedByLabel}
+                      </span>
+                      <br />
+                      {content.publishedBy}
+                    </p>
+
+                    <p>{content.publisherName}</p>
+                    <p>{content.publisherAddress}</p>
+                    <p>
+                      <span className="font-semibold text-slate-900">Email:</span>{" "}
+                      {content.contactEmail}
+                    </p>
+                    {content.contactPhone ? (
+                      <p>
+                        <span className="font-semibold text-slate-900">Phone:</span>{" "}
+                        {content.contactPhone}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+
+              <div className="hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:block md:p-8">
                 {content.finalSectionLabel ? (
                   <p className="journal-subheading">{content.finalSectionLabel}</p>
                 ) : null}
@@ -741,7 +869,7 @@ export default async function CallForPapersPage() {
                 </h2>
 
                 {content.finalSectionDescription ? (
-                  <p className="mt-4 text-[15px] leading-8 text-slate-600">
+                  <p className="mt-4 hyphens-auto text-justify text-[15px] leading-8 text-slate-600 [text-align-last:left] md:text-left md:[text-align-last:auto]">
                     {content.finalSectionDescription}
                   </p>
                 ) : null}

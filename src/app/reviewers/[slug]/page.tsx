@@ -185,13 +185,13 @@ export default async function ReviewersPage({
               </h1>
 
               {data.subtitle && (
-                <p className="mt-5 max-w-4xl text-[15px] leading-7 text-slate-600 md:text-justify md:text-[16px] md:leading-8">
+                <p className="mt-5 max-w-4xl pr-2 hyphens-auto md:pr-0 text-justify text-[15px] leading-7 text-slate-600 [text-align-last:left] md:text-justify md:text-[16px] md:leading-8 md:[text-align-last:auto]">
                   {data.subtitle}
                 </p>
               )}
 
               {data.shortDescription && (
-                <p className="mt-3 max-w-4xl text-[14px] leading-7 text-[#111111] md:text-[15px]">
+                <p className="mt-3 max-w-4xl pr-2 hyphens-auto md:pr-0 text-justify text-[14px] leading-7 text-[#111111] [text-align-last:left] md:text-left md:text-[15px] md:[text-align-last:auto]">
                   {data.shortDescription}
                 </p>
               )}

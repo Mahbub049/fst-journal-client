@@ -55,11 +55,11 @@ export default function JournalHero({ homepage }: Props) {
   const heroTitle = heroData?.heroTitle || "Journal of FST";
   const heroSubtitle =
     heroData?.heroSubtitle ||
-    "Faculty of Science and Technology, Bangladesh University of Professionals";
+    "Bangladesh University of Professionals";
   const journalCoverImage = heroData?.journalCoverImage || "/images/cover.jpg";
   const publishingModel = heroData?.publishingModel || "Hybrid";
-  const issnOnline = heroData?.issnOnline || "2959-4812";
-  const issnPrint = heroData?.issnPrint || "3134-7339";
+  const issnOnline = heroData?.issnOnline || "3134-7339";
+  const issnPrint = heroData?.issnPrint || "2959-4812";
 
   const metrics =
     heroData?.metrics?.filter((metric) => metric.isActive).length

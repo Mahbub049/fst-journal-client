@@ -26,15 +26,31 @@ function UnderlinedHeading({
         : "text-[36px] md:text-[42px] xl:text-[46px]";
 
   return (
-    <h2
-      className={`${sizeClass} font-semibold leading-[1.12] tracking-[-0.025em] text-[#0b1f3a]`}
-      style={{ fontFamily: "var(--font-source-serif)" }}
-    >
-      <span className="relative inline-block pb-3.5 after:absolute after:bottom-0 after:left-0 after:h-[3px] after:w-full after:rounded-full after:bg-[#f5c84b]">
-        {firstWord}
-      </span>
-      {restOfTitle ? ` ${restOfTitle}` : ""}
-    </h2>
+    <>
+      <div className="md:hidden">
+        <h2
+          className="max-w-[16ch] text-[36px] text-center font-semibold leading-[1.39] tracking-[-0.025em] text-[#0b1f3a]"
+          style={{ fontFamily: "var(--font-source-serif)" }}
+        >
+          {title}
+        </h2>
+
+        <span
+          className="mt-4 block h-[3px] w-full rounded-full bg-[#f5c84b]"
+          aria-hidden="true"
+        />
+      </div>
+
+      <h2
+        className={`${sizeClass} hidden font-semibold leading-[1.12] tracking-[-0.025em] text-[#0b1f3a] md:block`}
+        style={{ fontFamily: "var(--font-source-serif)" }}
+      >
+        <span className="relative inline-block pb-3.5 after:absolute after:bottom-0 after:left-0 after:h-[3px] after:w-full after:rounded-full after:bg-[#f5c84b]">
+          {firstWord}
+        </span>
+        {restOfTitle ? ` ${restOfTitle}` : ""}
+      </h2>
+    </>
   );
 }
 
@@ -61,10 +77,10 @@ export default function OverviewSection({ homepage }: Props) {
 
   const sectionPadding =
     density === "dense"
-      ? "p-7 md:p-8 lg:p-9"
+      ? "p-6 md:p-8 lg:p-9"
       : density === "medium"
-        ? "p-7 md:p-9 lg:p-10"
-        : "p-7 md:p-9 lg:p-10 xl:p-11";
+        ? "p-6 md:p-9 lg:p-10"
+        : "p-6 md:p-9 lg:p-10 xl:p-11";
 
   const bodyClass =
     density === "dense"
@@ -99,13 +115,16 @@ export default function OverviewSection({ homepage }: Props) {
             className={`${bodyTopSpacing} space-y-3.5 text-slate-700 ${bodyClass}`}
           >
             {paragraphs.map((paragraph, index) => (
-              <p key={index} className="text-left text-slate-700 md:text-justify">
+              <p
+                key={index}
+                className="hyphens-auto text-justify text-slate-700 [text-align-last:left]"
+              >
                 {paragraph}
               </p>
             ))}
 
             {paragraphs.length === 0 ? (
-              <p className="text-slate-700">
+              <p className="hyphens-auto text-justify text-slate-700 [text-align-last:left]">
                 BUP Faculty of Science & Technology Journal publishes scholarly
                 research in science, technology, engineering, and
                 interdisciplinary areas.

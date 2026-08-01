@@ -229,6 +229,7 @@ export default function ExecutiveEditorsSection({ homepage }: Props) {
   );
   const showBiographyPreview =
     homepage?.executiveEditorsShowBiographyPreview === true;
+  const allowExpandedProfiles = visibleCount > 1;
 
   const goToSlide = (index: number) => {
     setActiveIndex(Math.max(0, Math.min(maxIndex, index)));
@@ -309,7 +310,9 @@ export default function ExecutiveEditorsSection({ homepage }: Props) {
   }
 
   const showExpandedCard = (editorId: string) => {
-    if (isDraggingRef.current || dragMovedRef.current) return;
+    if (isDraggingRef.current || dragMovedRef.current) {
+      return;
+    }
 
     isCardHoveredRef.current = true;
     setHoveredEditorId(editorId);
@@ -375,7 +378,7 @@ export default function ExecutiveEditorsSection({ homepage }: Props) {
                 {homepage?.executiveEditorsTitle || "Executive Editors"}
               </h2>
 
-              <p className="mt-3 max-w-2xl text-[15px] leading-7 text-white/72">
+              <p className="mt-3 max-w-2xl hyphens-auto text-justify text-[15px] leading-7 text-white/72 [text-align-last:left] md:text-left md:[text-align-last:auto]">
                 {homepage?.executiveEditorsSubtitle ||
                   "The journal is guided by an academic editorial team responsible for maintaining publication quality and scholarly standards."}
               </p>
@@ -418,6 +421,8 @@ export default function ExecutiveEditorsSection({ homepage }: Props) {
               const biographyHref = getBiographyHref(editor);
               const biographyIsExternal = isExternalHref(biographyHref);
               const isExpanded = hoveredEditorId === editor._id;
+              const isMobileExpanded = !allowExpandedProfiles && isExpanded;
+              const isDesktopExpanded = allowExpandedProfiles && isExpanded;
               const visibleSlot = editorIndex - currentIndex;
               const isInCurrentWindow =
                 visibleSlot >= 0 && visibleSlot < visibleCount;
@@ -449,16 +454,25 @@ export default function ExecutiveEditorsSection({ homepage }: Props) {
                     },
                   }}
                   style={{
-                    zIndex: isExpanded ? 40 : 1,
+                    zIndex: isDesktopExpanded ? 40 : 1,
                     pointerEvents:
                       hoveredEditorId && !isInCurrentWindow ? "none" : "auto",
                   }}
                   className="relative flex w-full shrink-0 px-2 md:w-1/2 lg:w-1/3"
-                  onMouseEnter={() => showExpandedCard(editor._id)}
-                  onMouseLeave={() => hideExpandedCard(editor._id)}
-                  onFocusCapture={() => showExpandedCard(editor._id)}
+                  onMouseEnter={() => {
+                    if (allowExpandedProfiles) showExpandedCard(editor._id);
+                  }}
+                  onMouseLeave={() => {
+                    if (allowExpandedProfiles) hideExpandedCard(editor._id);
+                  }}
+                  onFocusCapture={() => {
+                    if (allowExpandedProfiles) showExpandedCard(editor._id);
+                  }}
                   onBlurCapture={(event) => {
-                    if (!event.currentTarget.contains(event.relatedTarget)) {
+                    if (
+                      allowExpandedProfiles &&
+                      !event.currentTarget.contains(event.relatedTarget)
+                    ) {
                       hideExpandedCard(editor._id);
                     }
                   }}
@@ -467,19 +481,35 @@ export default function ExecutiveEditorsSection({ homepage }: Props) {
                     <>
                       <motion.article
                         tabIndex={0}
+                        aria-expanded={isMobileExpanded}
                         aria-label={`${display.name} editorial profile`}
-                        className="group relative h-full w-full overflow-hidden rounded-3xl border border-white/12 bg-white/10 p-4 shadow-[0_22px_70px_rgba(0,0,0,0.22)] outline-none backdrop-blur-xl transition-[border-color,background-color] duration-300 hover:border-[#c7a159]/45 hover:bg-white/15"
+                        animate={{ scale: 1 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        onClick={(event) => {
+                          if (allowExpandedProfiles) return;
+
+                          const target = event.target as HTMLElement;
+                          if (target.closest("a, button")) return;
+                          if (isDraggingRef.current || dragMovedRef.current) return;
+
+                          if (isMobileExpanded) {
+                            hideExpandedCard(editor._id);
+                          } else {
+                            showExpandedCard(editor._id);
+                          }
+                        }}
+                        className="group relative w-full overflow-hidden rounded-3xl border border-white/12 bg-white/10 p-4 shadow-[0_22px_70px_rgba(0,0,0,0.22)] outline-none backdrop-blur-xl transition-[border-color,background-color] duration-300 hover:border-[#c7a159]/45 hover:bg-white/15 md:h-full"
                       >
                     <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#0ea5b7] via-[#c7a159] to-transparent opacity-80" />
 
-                    <div className="flex h-full min-w-0 items-stretch gap-4">
+                    <div className="flex min-h-[190px] min-w-0 items-stretch gap-4 md:h-full md:min-h-0">
                       <div className="w-[120px] shrink-0 self-stretch overflow-hidden rounded-2xl border border-white/15 bg-white/12 shadow-sm">
                         {editor.profileImage ? (
                           <img
                             src={editor.profileImage}
                             alt={display.name}
                             draggable={false}
-                            className="h-full w-full object-cover object-top transition duration-300 group-hover:scale-[1.03]"
+                            className="h-full w-full object-cover object-top transition duration-300 md:group-hover:scale-[1.03]"
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center bg-[#e6f7f9] text-[24px] font-black text-[#0b1f3a]">
@@ -522,10 +552,46 @@ export default function ExecutiveEditorsSection({ homepage }: Props) {
                         </div>
                       </div>
                     </div>
+
+                    <AnimatePresence>
+                      {isMobileExpanded ? (
+                        <motion.div
+                          key={`mobile-details-${editor._id}`}
+                          initial={{ opacity: 0, height: 0, y: -4 }}
+                          animate={{ opacity: 1, height: "auto", y: 0 }}
+                          exit={{ opacity: 0, height: 0, y: -4 }}
+                          transition={{ duration: 0.22, ease: "easeOut" }}
+                          className="overflow-hidden md:hidden"
+                        >
+                          <div className="mt-4 border-t border-white/12 pt-4">
+                            {showBiographyPreview && biographyExcerpt ? (
+                              <p className="mb-3 line-clamp-3 hyphens-auto text-justify text-[12px] leading-[18px] text-white/70 [text-align-last:left]">
+                                {biographyExcerpt}
+                              </p>
+                            ) : null}
+
+                            <Link
+                              href={biographyHref}
+                              target={biographyIsExternal ? "_blank" : undefined}
+                              rel={
+                                biographyIsExternal
+                                  ? "noopener noreferrer"
+                                  : undefined
+                              }
+                              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border border-[#efd783]/80 bg-[linear-gradient(135deg,#f1d983_0%,#d0a94e_100%)] px-4 text-[11px] font-extrabold text-[#07162b] shadow-[0_7px_18px_rgba(199,161,89,0.22)]"
+                            >
+                              {editor.biographyLabel?.trim() ||
+                                "View Full Biography"}
+                              <ArrowUpRight size={14} strokeWidth={2.2} />
+                            </Link>
+                          </div>
+                        </motion.div>
+                      ) : null}
+                    </AnimatePresence>
                   </motion.article>
 
                       <AnimatePresence>
-                        {isExpanded ? (
+                        {isDesktopExpanded ? (
                           <motion.div
                             key={`expanded-${editor._id}`}
                             initial={{ opacity: 0, scale: 0.985 }}
