@@ -55,7 +55,7 @@ export default function JournalHero({ homepage }: Props) {
   const heroTitle = heroData?.heroTitle || "Journal of FST";
   const heroSubtitle =
     heroData?.heroSubtitle ||
-    "Bangladesh University of Professionals";
+    "Bangladesh University of Professionals (BUP)";
   const journalCoverImage = heroData?.journalCoverImage || "/images/cover.jpg";
   const publishingModel = heroData?.publishingModel || "Hybrid";
   const issnOnline = heroData?.issnOnline || "3134-7339";
