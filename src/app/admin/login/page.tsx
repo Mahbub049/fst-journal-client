@@ -5,7 +5,10 @@ import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
-import { setAdminToken, setAdminUser } from "@/lib/auth";
+import {
+  clearLegacyAdminStorage,
+  setAdminUser,
+} from "@/lib/auth";
 
 type LoginStep = "credentials" | "loginOtp" | "forgotEmail" | "resetPassword";
 
@@ -79,7 +82,7 @@ export default function AdminLoginPage() {
         otp,
       });
 
-      setAdminToken(data.token);
+      clearLegacyAdminStorage();
       setAdminUser(data.admin);
 
       router.push(data.admin?.mustChangePassword ? "/admin/account" : "/admin/dashboard");
@@ -133,8 +136,8 @@ export default function AdminLoginPage() {
     event.preventDefault();
     cleanMessages();
 
-    if (newPassword.length < 6) {
-      setError("New password must be at least 6 characters long.");
+    if (newPassword.length < 12) {
+      setError("New password must be at least 12 characters long.");
       return;
     }
 
@@ -561,7 +564,7 @@ export default function AdminLoginPage() {
                         className="h-[52px] w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 pr-12 text-sm outline-none transition placeholder:text-slate-400 focus:border-[#005A78] focus:bg-white focus:ring-4 focus:ring-[#005A78]/10"
                         placeholder="Enter new password"
                         autoComplete="new-password"
-                        minLength={6}
+                        minLength={12}
                         required
                       />
 
@@ -588,7 +591,7 @@ export default function AdminLoginPage() {
                         className="h-[52px] w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 pr-12 text-sm outline-none transition placeholder:text-slate-400 focus:border-[#005A78] focus:bg-white focus:ring-4 focus:ring-[#005A78]/10"
                         placeholder="Confirm new password"
                         autoComplete="new-password"
-                        minLength={6}
+                        minLength={12}
                         required
                       />
 
@@ -608,8 +611,8 @@ export default function AdminLoginPage() {
                     disabled={
                       loading ||
                       otp.length !== 6 ||
-                      newPassword.length < 6 ||
-                      confirmPassword.length < 6
+                      newPassword.length < 12 ||
+                      confirmPassword.length < 12
                     }
                     className="h-[52px] w-full cursor-pointer rounded-2xl bg-[#005A78] text-sm font-bold text-white shadow-lg shadow-[#005A78]/20 transition hover:bg-[#00465d] disabled:cursor-not-allowed disabled:opacity-60"
                   >

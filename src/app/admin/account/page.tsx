@@ -2,7 +2,12 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { getAdminUser, setAdminUser, AdminUser } from "@/lib/auth";
+import {
+  type AdminUser,
+  getAdminUser,
+  setAdminUser,
+  subscribeToAdminUser,
+} from "@/lib/auth";
 import {
   changeMyAdminPassword,
   updateMyAdminProfile,
@@ -16,9 +21,11 @@ import {
 } from "lucide-react";
 
 export default function AdminAccountPage() {
-  const [admin, setAdmin] = useState<AdminUser | null>(null);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const initialAdmin = getAdminUser();
+
+  const [admin, setAdmin] = useState<AdminUser | null>(initialAdmin);
+  const [name, setName] = useState(initialAdmin?.name || "");
+  const [email, setEmail] = useState(initialAdmin?.email || "");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -30,13 +37,14 @@ export default function AdminAccountPage() {
   const [passwordError, setPasswordError] = useState("");
 
   useEffect(() => {
-    const storedAdmin = getAdminUser();
+    return subscribeToAdminUser((nextAdmin) => {
+      setAdmin(nextAdmin);
 
-    if (storedAdmin) {
-      setAdmin(storedAdmin);
-      setName(storedAdmin.name || "");
-      setEmail(storedAdmin.email || "");
-    }
+      if (nextAdmin) {
+        setName(nextAdmin.name || "");
+        setEmail(nextAdmin.email || "");
+      }
+    });
   }, []);
 
   const handleProfileSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -65,8 +73,8 @@ export default function AdminAccountPage() {
     setPasswordError("");
     setPasswordMessage("");
 
-    if (newPassword.length < 6) {
-      setPasswordError("New password must be at least 6 characters long.");
+    if (newPassword.length < 12) {
+      setPasswordError("New password must be at least 12 characters long.");
       setPasswordLoading(false);
       return;
     }
@@ -217,7 +225,7 @@ export default function AdminAccountPage() {
                   Change Password
                 </h2>
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Use a new password with at least 6 characters.
+                  Use a new password with at least 12 characters.
                 </p>
               </div>
             </div>
@@ -260,6 +268,8 @@ export default function AdminAccountPage() {
                   onChange={(event) => setNewPassword(event.target.value)}
                   className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-[#005A78] focus:bg-white focus:ring-4 focus:ring-[#005A78]/10"
                   placeholder="Enter new password"
+                  minLength={12}
+                  maxLength={128}
                   required
                 />
               </div>
@@ -274,6 +284,8 @@ export default function AdminAccountPage() {
                   onChange={(event) => setConfirmPassword(event.target.value)}
                   className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-[#005A78] focus:bg-white focus:ring-4 focus:ring-[#005A78]/10"
                   placeholder="Re-enter new password"
+                  minLength={12}
+                  maxLength={128}
                   required
                 />
               </div>

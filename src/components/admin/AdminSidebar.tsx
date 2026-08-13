@@ -21,7 +21,11 @@ import {
   Users,
 } from "lucide-react";
 import api from "@/lib/api";
-import { getAdminUser, logoutAdmin } from "@/lib/auth";
+import {
+  type AdminUser,
+  clearAdminUser,
+  clearLegacyAdminStorage,
+} from "@/lib/auth";
 
 type SidebarItem = {
   label: string;
@@ -36,6 +40,7 @@ type SidebarSection = {
 };
 
 type AdminSidebarProps = {
+  admin: AdminUser | null;
   collapsed: boolean;
   onToggleCollapse: () => void;
 };
@@ -126,11 +131,11 @@ const sidebarSections: SidebarSection[] = [
 ];
 
 export default function AdminSidebar({
+  admin,
   collapsed,
   onToggleCollapse,
 }: AdminSidebarProps) {
   const pathname = usePathname();
-  const admin = getAdminUser();
 
   const handleLogout = async () => {
     try {
@@ -138,8 +143,9 @@ export default function AdminSidebar({
     } catch {
       // Session may already be expired. Clear local admin data either way.
     } finally {
-      logoutAdmin();
-      window.location.href = "/admin/login";
+      clearAdminUser();
+      clearLegacyAdminStorage();
+      window.location.replace("/admin/login");
     }
   };
 

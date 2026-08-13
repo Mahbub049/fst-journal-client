@@ -2,7 +2,11 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { getAdminUser } from "@/lib/auth";
+import {
+  type AdminUser,
+  getAdminUser,
+  subscribeToAdminUser,
+} from "@/lib/auth";
 import {
   AdminAccount,
   AdminRole,
@@ -47,9 +51,15 @@ export default function AdminAccessPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const currentAdmin = getAdminUser();
+  const [currentAdmin, setCurrentAdmin] = useState<AdminUser | null>(
+    () => getAdminUser()
+  );
 
   const isSuperAdmin = currentAdmin?.role === "super_admin";
+
+  useEffect(() => {
+    return subscribeToAdminUser(setCurrentAdmin);
+  }, []);
 
   const loadAdmins = useCallback(async () => {
     setLoading(true);
@@ -147,11 +157,11 @@ export default function AdminAccessPage() {
     const temporaryPassword = await promptAdminText({
       title: "Set temporary password",
       text: `Create a temporary password for ${admin.email}.`,
-      placeholder: "Minimum 6 characters",
+      placeholder: "Minimum 12 characters",
       confirmButtonText: "Set password",
       inputType: "password",
-      minLength: 6,
-      minLengthMessage: "Temporary password must be at least 6 characters long.",
+      minLength: 12,
+      minLengthMessage: "Temporary password must be at least 12 characters long.",
     });
 
     if (!temporaryPassword) return;
@@ -340,7 +350,9 @@ export default function AdminAccessPage() {
                       updateForm("temporaryPassword", event.target.value)
                     }
                     className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-[#005A78] focus:bg-white focus:ring-4 focus:ring-[#005A78]/10"
-                    placeholder="Minimum 6 characters"
+                    placeholder="Minimum 12 characters"
+                    minLength={12}
+                    maxLength={128}
                     required
                   />
                 </div>

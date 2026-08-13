@@ -1,5 +1,8 @@
 import axios from "axios";
-import { getAdminToken, removeAdminToken } from "./auth";
+import {
+  clearAdminUser,
+  clearLegacyAdminStorage,
+} from "./auth";
 import { getBrowserApiBaseUrl } from "./apiBase";
 
 const api = axios.create({
@@ -7,27 +10,29 @@ const api = axios.create({
   withCredentials: true,
 });
 
-api.interceptors.request.use((config) => {
-  const token = getAdminToken();
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
-  return config;
-});
+clearLegacyAdminStorage();
 
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error?.response?.status === 401) {
-      removeAdminToken();
+      clearAdminUser();
+      clearLegacyAdminStorage();
 
       if (typeof window !== "undefined") {
-        const isAdminRoute = window.location.pathname.startsWith("/admin");
+        const isAdminRoute =
+          window.location.pathname.startsWith(
+            "/admin"
+          );
 
-        if (isAdminRoute && window.location.pathname !== "/admin/login") {
-          window.location.href = "/admin/login";
+        const isLoginPage =
+          window.location.pathname ===
+          "/admin/login";
+
+        if (isAdminRoute && !isLoginPage) {
+          window.location.replace(
+            "/admin/login"
+          );
         }
       }
     }

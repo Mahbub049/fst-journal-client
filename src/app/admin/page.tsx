@@ -2,21 +2,52 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getAdminToken, removeAdminToken } from "@/lib/auth";
+import api from "@/lib/api";
+import {
+  clearAdminUser,
+  clearLegacyAdminStorage,
+  setAdminUser,
+} from "@/lib/auth";
 
 export default function AdminRootPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const token = getAdminToken();
+    let mounted = true;
 
-    if (token) {
-      router.replace("/admin/dashboard");
-      return;
-    }
+    const openAdmin = async (): Promise<void> => {
+      clearLegacyAdminStorage();
 
-    removeAdminToken();
-    router.replace("/admin/login");
+      try {
+        const { data } = await api.get("/auth/me");
+
+        if (!mounted) return;
+
+        if (!data?.admin) {
+          throw new Error("Admin session was not returned.");
+        }
+
+        setAdminUser(data.admin);
+
+        router.replace(
+          data.admin.mustChangePassword
+            ? "/admin/account"
+            : "/admin/dashboard"
+        );
+      } catch {
+        if (!mounted) return;
+
+        clearAdminUser();
+        clearLegacyAdminStorage();
+        router.replace("/admin/login");
+      }
+    };
+
+    void openAdmin();
+
+    return () => {
+      mounted = false;
+    };
   }, [router]);
 
   return (

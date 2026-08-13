@@ -10,12 +10,19 @@ import {
   UserCircle2,
 } from "lucide-react";
 import api from "@/lib/api";
-import { getAdminUser, logoutAdmin } from "@/lib/auth";
+import {
+  type AdminUser,
+  clearAdminUser,
+  clearLegacyAdminStorage,
+} from "@/lib/auth";
 
-export default function AdminTopbar() {
+type AdminTopbarProps = {
+  admin: AdminUser | null;
+};
+
+export default function AdminTopbar({ admin }: AdminTopbarProps) {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-  const admin = getAdminUser();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -36,10 +43,11 @@ export default function AdminTopbar() {
     try {
       await api.post("/auth/logout");
     } catch {
-      // Session may already be expired. Clear local admin data either way.
+      // The server session may already be expired.
     } finally {
-      logoutAdmin();
-      window.location.href = "/admin/login";
+      clearAdminUser();
+      clearLegacyAdminStorage();
+      window.location.replace("/admin/login");
     }
   };
 
@@ -113,6 +121,7 @@ export default function AdminTopbar() {
                 )}
 
                 <button
+                  type="button"
                   onClick={handleLogout}
                   className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
                 >

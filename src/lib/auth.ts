@@ -8,135 +8,106 @@ export type AdminUser = {
   mustChangePassword?: boolean;
 };
 
-const TOKEN_KEY = "bup_fst_journal_admin_token";
-const ADMIN_KEY = "bup_fst_journal_admin_user";
-const LAST_ACTIVITY_KEY = "bup_fst_journal_admin_last_activity";
-export const ADMIN_SESSION_TIMEOUT_MS = 60 * 60 * 1000;
+const LEGACY_TOKEN_KEY =
+  "bup_fst_journal_admin_token";
 
-const getSessionStorage = () => {
-  if (typeof window === "undefined") return null;
+const LEGACY_ADMIN_KEY =
+  "bup_fst_journal_admin_user";
+
+const LEGACY_LAST_ACTIVITY_KEY =
+  "bup_fst_journal_admin_last_activity";
+
+export const ADMIN_SESSION_TIMEOUT_MS =
+  60 * 60 * 1000;
+
+type AdminUserListener = (
+  admin: AdminUser | null
+) => void;
+
+let currentAdmin: AdminUser | null = null;
+let lastActivityAt = Date.now();
+
+const adminUserListeners =
+  new Set<AdminUserListener>();
+
+const getBrowserStorage = (
+  storageType: "localStorage" | "sessionStorage"
+): Storage | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
 
   try {
-    return window.sessionStorage;
+    return window[storageType];
   } catch {
     return null;
   }
 };
 
-const getLocalStorage = () => {
-  if (typeof window === "undefined") return null;
+export const clearLegacyAdminStorage = (): void => {
+  const localStorage =
+    getBrowserStorage("localStorage");
 
-  try {
-    return window.localStorage;
-  } catch {
-    return null;
-  }
+  const sessionStorage =
+    getBrowserStorage("sessionStorage");
+
+  const legacyKeys = [
+    LEGACY_TOKEN_KEY,
+    LEGACY_ADMIN_KEY,
+    LEGACY_LAST_ACTIVITY_KEY,
+  ];
+
+  legacyKeys.forEach((key) => {
+    localStorage?.removeItem(key);
+    sessionStorage?.removeItem(key);
+  });
 };
 
-const removeOldPersistentAdminStorage = () => {
-  const localStorage = getLocalStorage();
-
-  if (!localStorage) return;
-
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(ADMIN_KEY);
-  localStorage.removeItem(LAST_ACTIVITY_KEY);
+const notifyAdminUserListeners = (): void => {
+  adminUserListeners.forEach((listener) => {
+    listener(currentAdmin);
+  });
 };
 
-export const touchAdminSession = () => {
-  const storage = getSessionStorage();
+export const getAdminUser = (): AdminUser | null =>
+  currentAdmin;
 
-  if (!storage) return;
-
-  storage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+export const setAdminUser = (
+  admin: AdminUser
+): void => {
+  currentAdmin = admin;
+  lastActivityAt = Date.now();
+  notifyAdminUserListeners();
 };
 
-export const isAdminSessionExpired = () => {
-  const storage = getSessionStorage();
-
-  if (!storage) return true;
-
-  const token = storage.getItem(TOKEN_KEY);
-  const lastActivity = Number(storage.getItem(LAST_ACTIVITY_KEY) || 0);
-
-  if (!token || !lastActivity) return true;
-
-  return Date.now() - lastActivity > ADMIN_SESSION_TIMEOUT_MS;
+export const clearAdminUser = (): void => {
+  currentAdmin = null;
+  lastActivityAt = Date.now();
+  notifyAdminUserListeners();
 };
 
-export const getAdminToken = () => {
-  const storage = getSessionStorage();
+export const subscribeToAdminUser = (
+  listener: AdminUserListener
+): (() => void) => {
+  adminUserListeners.add(listener);
 
-  if (!storage) return null;
-
-  removeOldPersistentAdminStorage();
-
-  if (isAdminSessionExpired()) {
-    removeAdminToken();
-    return null;
-  }
-
-  return storage.getItem(TOKEN_KEY);
+  return () => {
+    adminUserListeners.delete(listener);
+  };
 };
 
-export const setAdminToken = (token: string) => {
-  const storage = getSessionStorage();
-
-  if (!storage) return;
-
-  removeOldPersistentAdminStorage();
-  storage.setItem(TOKEN_KEY, token);
-  touchAdminSession();
+export const touchAdminSession = (): void => {
+  lastActivityAt = Date.now();
 };
 
-export const removeAdminToken = () => {
-  const sessionStorage = getSessionStorage();
-  const localStorage = getLocalStorage();
-
-  sessionStorage?.removeItem(TOKEN_KEY);
-  sessionStorage?.removeItem(ADMIN_KEY);
-  sessionStorage?.removeItem(LAST_ACTIVITY_KEY);
-
-  localStorage?.removeItem(TOKEN_KEY);
-  localStorage?.removeItem(ADMIN_KEY);
-  localStorage?.removeItem(LAST_ACTIVITY_KEY);
-};
-
-export const setAdminUser = (admin: AdminUser) => {
-  const storage = getSessionStorage();
-
-  if (!storage) return;
-
-  storage.setItem(ADMIN_KEY, JSON.stringify(admin));
-};
-
-export const getAdminUser = (): AdminUser | null => {
-  const storage = getSessionStorage();
-
-  if (!storage || isAdminSessionExpired()) {
-    removeAdminToken();
-    return null;
-  }
-
-  const admin = storage.getItem(ADMIN_KEY);
-
-  if (!admin) return null;
-
-  try {
-    return JSON.parse(admin);
-  } catch {
-    return null;
-  }
-};
-
-export const logoutAdmin = () => {
-  removeAdminToken();
-};
-
-export const startAdminInactivityWatcher = (onExpire: () => void) => {
+export const startAdminInactivityWatcher = (
+  onExpire: () => void
+): (() => void) => {
   if (typeof window === "undefined") {
     return () => undefined;
   }
+
+  let hasExpired = false;
 
   const activityEvents = [
     "click",
@@ -144,30 +115,49 @@ export const startAdminInactivityWatcher = (onExpire: () => void) => {
     "mousemove",
     "scroll",
     "touchstart",
-  ];
+  ] as const;
 
-  const markActive = () => {
-    if (!isAdminSessionExpired()) {
+  const markActive = (): void => {
+    if (!hasExpired) {
       touchAdminSession();
     }
   };
 
-  const checkSession = () => {
-    if (isAdminSessionExpired()) {
-      removeAdminToken();
+  const checkSession = (): void => {
+    const inactiveFor =
+      Date.now() - lastActivityAt;
+
+    if (
+      !hasExpired &&
+      inactiveFor > ADMIN_SESSION_TIMEOUT_MS
+    ) {
+      hasExpired = true;
+      clearAdminUser();
       onExpire();
     }
   };
 
+  touchAdminSession();
+
   activityEvents.forEach((eventName) => {
-    window.addEventListener(eventName, markActive, { passive: true });
+    window.addEventListener(
+      eventName,
+      markActive,
+      { passive: true }
+    );
   });
 
-  const intervalId = window.setInterval(checkSession, 30 * 1000);
+  const intervalId = window.setInterval(
+    checkSession,
+    30 * 1000
+  );
 
   return () => {
     activityEvents.forEach((eventName) => {
-      window.removeEventListener(eventName, markActive);
+      window.removeEventListener(
+        eventName,
+        markActive
+      );
     });
 
     window.clearInterval(intervalId);
