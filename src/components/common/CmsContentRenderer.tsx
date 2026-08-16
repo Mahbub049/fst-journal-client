@@ -409,6 +409,10 @@ function Block({
           src={source}
           title={block.title || "Embedded video"}
           className="aspect-video w-full"
+          loading="lazy"
+          referrerPolicy="strict-origin-when-cross-origin"
+          sandbox="allow-scripts allow-same-origin allow-presentation"
+          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           allowFullScreen
         />
       </div>

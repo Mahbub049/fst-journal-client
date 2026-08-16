@@ -88,6 +88,7 @@ export default function CallForPapersPdfViewer({
         src={viewerSrc}
         title="Call for Papers PDF"
         loading="lazy"
+        referrerPolicy="strict-origin-when-cross-origin"
         className="block h-[76vh] min-h-[560px] w-full bg-white md:h-[720px] md:min-h-0"
       />
     </div>
