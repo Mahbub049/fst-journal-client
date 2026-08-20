@@ -1,4 +1,3 @@
-import https from "https";
 import axios from "axios";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -12,10 +11,6 @@ const getOjsBaseUrl = () =>
     process.env.NEXT_PUBLIC_OJS_BASE_URL ||
       "https://testjournal.bup.edu.bd/index.php/jfst",
   );
-
-const httpsAgent = new https.Agent({
-  rejectUnauthorized: false,
-});
 
 type ParsedInput = {
   name: string;
@@ -135,7 +130,6 @@ export async function POST(request: NextRequest) {
     const lostPasswordUrl = `${baseUrl}/login/lostPassword`;
 
     const pageResponse = await axios.get<string>(lostPasswordUrl, {
-      httpsAgent,
       headers: {
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "User-Agent": "JournalFST-SubmissionPortal/1.0",
@@ -157,7 +151,6 @@ export async function POST(request: NextRequest) {
     const cookieHeader = collectCookieHeader(pageResponse.headers["set-cookie"]);
 
     const postResponse = await axios.post<string>(lostPasswordUrl, params.toString(), {
-      httpsAgent,
       headers: {
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Content-Type": "application/x-www-form-urlencoded",

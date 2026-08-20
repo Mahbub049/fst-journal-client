@@ -1,4 +1,3 @@
-import https from "https";
 import axios from "axios";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -12,10 +11,6 @@ const getOjsBaseUrl = () =>
     process.env.NEXT_PUBLIC_OJS_BASE_URL ||
       "https://testjournal.bup.edu.bd/index.php/jfst",
   );
-
-const httpsAgent = new https.Agent({
-  rejectUnauthorized: false,
-});
 
 type RegisterPayload = {
   givenName?: string;
@@ -191,7 +186,6 @@ export async function POST(request: NextRequest) {
     const submissionsUrl = `${baseUrl}/submissions`;
 
     const registerPageResponse = await axios.get<string>(registerUrl, {
-      httpsAgent,
       headers: {
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "User-Agent": "JournalFST-SubmissionPortal/1.0",
@@ -226,7 +220,6 @@ export async function POST(request: NextRequest) {
     const cookieHeader = collectCookieHeader(registerPageResponse.headers["set-cookie"]);
 
     const postResponse = await axios.post<string>(registerUrl, params.toString(), {
-      httpsAgent,
       headers: {
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Content-Type": "application/x-www-form-urlencoded",
