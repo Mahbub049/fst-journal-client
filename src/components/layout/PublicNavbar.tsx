@@ -168,29 +168,6 @@ const toDropdownItems = (
     });
 };
 
-const mergeWithFallback = (
-  apiItems: DropdownMenuItem[],
-  fallbackItems: DropdownMenuItem[],
-) => {
-  const result: DropdownMenuItem[] = [];
-  const hrefs = new Set<string>();
-  const labels = new Set<string>();
-
-  [...apiItems, ...fallbackItems].forEach((item) => {
-    const cleanLabel = item.label.trim();
-    const cleanHref = normalizeUrl(item.href);
-    const labelKey = normalizeText(cleanLabel);
-
-    if (!cleanLabel || cleanHref === "#") return;
-    if (hrefs.has(cleanHref) || labels.has(labelKey)) return;
-
-    result.push({ ...item, label: cleanLabel, href: cleanHref });
-    hrefs.add(cleanHref);
-    labels.add(labelKey);
-  });
-
-  return result;
-};
 
 const getSafeDropdownItems = (
   menus: PublicMenuItem[],
@@ -559,20 +536,25 @@ export default function PublicNavbar() {
       (href) => href.startsWith("/issues/"),
     );
 
-    if (configuredIssueItems.length > 0) return configuredIssueItems;
+    const archiveItem = configuredIssueItems.find(
+      (item) => item.href === "/issues/archive"
+    ) || { label: "All Issues / Archive", href: "/issues/archive" };
 
-    const dynamicIssueItems = sortIssuesLatestToOld(publicIssues).map(
-      (issue) => ({
+    const dynamicIssueItems = sortIssuesLatestToOld(publicIssues)
+      .slice(0, 3)
+      .map((issue) => ({
         label: getIssueDropdownLabel(issue),
         href: `/issues/${issue.slug}`,
-      }),
-    );
+      }));
 
+    // Published issues are always generated from the Issues CMS so creating a
+    // new issue automatically updates the navbar. Only the newest three are
+    // shown; older issues stay available from the archive page.
     if (dynamicIssueItems.length > 0) {
-      return mergeWithFallback(dynamicIssueItems, [
-        { label: "All Issues / Archive", href: "/issues/archive" },
-      ]);
+      return [...dynamicIssueItems, archiveItem];
     }
+
+    if (configuredIssueItems.length > 0) return configuredIssueItems;
 
     return fallbackIssueItems;
   }, [activeMenus, publicIssues]);

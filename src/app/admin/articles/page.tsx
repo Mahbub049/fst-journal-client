@@ -26,6 +26,7 @@ import {
   ArticleStatus,
   createAdminArticle,
   deleteAdminArticle,
+  discardAdminArticleTempPdf,
   getAdminArticles,
   reorderAdminArticles,
   syncAdminAllArticleCitations,
@@ -151,6 +152,40 @@ const getIssueObject = (
 
   return issues.find((issue) => issue._id === issueId) || null;
 };
+const ARTICLE_TYPES = [
+  "Research Article",
+  "Book Review",
+  "Review Article",
+  "Short Communication",
+  "Policy Analysis",
+] as const;
+
+const getIssueFirstPublishDate = (issue?: Issue | PopulatedIssue | null) => {
+  const label = String(issue?.publishDateLabel || "").trim();
+  return label ? `01 ${label}` : "";
+};
+
+const getLatestIssue = (items: Issue[]) => {
+  if (items.length === 0) return null;
+
+  return [...items].sort((a, b) => {
+    const volumeDifference = Number(b.volume || 0) - Number(a.volume || 0);
+    if (volumeDifference !== 0) return volumeDifference;
+
+    const issueDifference =
+      Number(b.issueNumber || 0) - Number(a.issueNumber || 0);
+    if (issueDifference !== 0) return issueDifference;
+
+    const dateA = Date.parse(`01 ${a.publishDateLabel || ""}`) || 0;
+    const dateB = Date.parse(`01 ${b.publishDateLabel || ""}`) || 0;
+    if (dateA !== dateB) return dateB - dateA;
+
+    const createdA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const createdB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return createdB - createdA;
+  })[0];
+};
+
 const formatSyncDate = (value?: string | null) => {
   if (!value) return "Never synced";
 
@@ -191,6 +226,9 @@ export default function AdminArticlesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [pendingPdfUrl, setPendingPdfUrl] = useState("");
+  const [pendingPdfPreviewUrl, setPendingPdfPreviewUrl] = useState("");
+  const [pendingPdfName, setPendingPdfName] = useState("");
   const [reordering, setReordering] = useState(false);
   const [syncingAllCitations, setSyncingAllCitations] = useState(false);
   const [syncingArticleId, setSyncingArticleId] = useState<string | null>(null);
@@ -198,12 +236,43 @@ export default function AdminArticlesPage() {
 
   const [message, setMessage] = useState("");
 
+  const clearPendingPdfState = (discardServerCopy = true) => {
+    const tempUrl = pendingPdfUrl;
+    const previewUrl = pendingPdfPreviewUrl;
+
+    if (discardServerCopy && tempUrl) {
+      void discardAdminArticleTempPdf(tempUrl).catch(() => undefined);
+    }
+
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+
+    setPendingPdfUrl("");
+    setPendingPdfPreviewUrl("");
+    setPendingPdfName("");
+  };
+
   const fetchIssues = async () => {
     const data = await getAdminIssues({
       status: "all",
     });
 
     setIssues(data);
+
+    // When the admin opens Create Article, automatically use the newest issue
+    // so local PDF upload is ready immediately without a manual issue selection.
+    const latestIssue = getLatestIssue(data);
+
+    setForm((prev) => {
+      if (prev.issueId || !latestIssue) return prev;
+
+      return {
+        ...prev,
+        issueId: latestIssue._id,
+        publishDate: getIssueFirstPublishDate(latestIssue),
+      };
+    });
   };
 
   const fetchArticles = async () => {
@@ -256,8 +325,15 @@ export default function AdminArticlesPage() {
     ? `${selectedIssue.title} — Vol. ${selectedIssue.volume}, Issue ${selectedIssue.issueNumber}`
     : "Select one issue to arrange paper order";
 
-  const resetForm = () => {
-    setForm(emptyForm);
+  const resetForm = (discardPendingPdf = true) => {
+    clearPendingPdfState(discardPendingPdf);
+    const latestIssue = getLatestIssue(issues);
+
+    setForm({
+      ...emptyForm,
+      issueId: latestIssue?._id || "",
+      publishDate: getIssueFirstPublishDate(latestIssue),
+    });
     setEditingId(null);
     setMessage("");
   };
@@ -271,6 +347,7 @@ export default function AdminArticlesPage() {
   };
 
   const handleEdit = (article: Article) => {
+    clearPendingPdfState(true);
     setEditingId(article._id);
 
     setForm({
@@ -314,7 +391,7 @@ export default function AdminArticlesPage() {
       abstract: form.abstract.trim(),
       keywords: splitCommaValues(form.keywords),
       pages: form.pages.trim(),
-      pdfUrl: form.pdfUrl.trim(),
+      pdfUrl: (pendingPdfUrl || form.pdfUrl).trim(),
 
       articleId: form.articleId.trim(),
       articleUrl: form.articleUrl.trim(),
@@ -355,7 +432,7 @@ export default function AdminArticlesPage() {
         );
       }
 
-      resetForm();
+      resetForm(false);
       await fetchArticles();
     } catch (error: any) {
       setMessage(error?.response?.data?.message || "Failed to save article.");
@@ -394,10 +471,14 @@ export default function AdminArticlesPage() {
     if (!file) return;
 
     if (!form.issueId) {
-      setMessage("Please select the issue first. The PDF will be stored inside that issue folder.");
+      setMessage(
+        "Please select the issue first. The PDF will be attached to that issue only after the article is saved."
+      );
       event.target.value = "";
       return;
     }
+
+    const browserPreviewUrl = URL.createObjectURL(file);
 
     try {
       setUploadingPdf(true);
@@ -408,24 +489,78 @@ export default function AdminArticlesPage() {
         issueId: form.issueId,
         title: form.title ? `${form.title} PDF` : file.name,
         slug: form.slug || makeSlug(form.title),
+        previousTempUrl: pendingPdfUrl,
       });
 
-      setForm((prev) => ({
-        ...prev,
-        pdfUrl: uploaded.fileUrl,
-      }));
+      const metadata = uploaded.metadata;
+      const selectedIssue = issues.find((issue) => issue._id === form.issueId);
+
+      if (pendingPdfPreviewUrl) {
+        URL.revokeObjectURL(pendingPdfPreviewUrl);
+      }
+
+      setPendingPdfUrl(uploaded.fileUrl);
+      setPendingPdfPreviewUrl(browserPreviewUrl);
+      setPendingPdfName(file.name);
+
+      setForm((prev) => {
+        const detectedTitle = metadata?.title?.trim() || "";
+        const nextTitle = detectedTitle || prev.title;
+
+        return {
+          ...prev,
+          title: nextTitle,
+          slug: makeSlug(nextTitle),
+          authors:
+            metadata?.authors && metadata.authors.length > 0
+              ? metadata.authors.join(", ")
+              : prev.authors,
+          abstract: metadata?.abstract?.trim() || prev.abstract,
+          keywords:
+            metadata?.keywords && metadata.keywords.length > 0
+              ? metadata.keywords.join(", ")
+              : prev.keywords,
+          pages: metadata?.pages?.trim() || prev.pages,
+          publishDate:
+            prev.publishDate || getIssueFirstPublishDate(selectedIssue),
+          // A local PDF is kept in temporary storage until Create/Update
+          // succeeds, so do not write a permanent public URL into the form yet.
+          pdfUrl: "",
+        };
+      });
+
+      const detectedCount = metadata?.detectedFields?.length || 0;
+      const extractionMessage = detectedCount
+        ? ` Auto-filled ${detectedCount} metadata field${
+            detectedCount === 1 ? "" : "s"
+          } from the PDF.`
+        : " Metadata could not be fully detected; please fill any missing fields manually.";
 
       setMessage(
-        uploaded.folder
-          ? `PDF uploaded successfully to ${uploaded.folder}. Save the article to publish this PDF link.`
-          : "PDF uploaded to the local server. Save the article to publish this PDF link."
+        `PDF is ready but has not been added to the public issue folder yet.${extractionMessage} It will be saved to ${
+          uploaded.targetFolder || "the selected issue folder"
+        } only when you ${editingId ? "Update Article" : "Create Article"}. ${
+          metadata?.warning || "Please review the values before saving."
+        }`
       );
     } catch (error: any) {
-      setMessage(error?.response?.data?.message || "Failed to upload PDF.");
+      URL.revokeObjectURL(browserPreviewUrl);
+      setMessage(error?.response?.data?.message || "Failed to process PDF.");
     } finally {
       setUploadingPdf(false);
       event.target.value = "";
     }
+  };
+
+  const handlePdfUrlChange = (value: string) => {
+    if (pendingPdfUrl) {
+      clearPendingPdfState(true);
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      pdfUrl: value,
+    }));
   };
 
   const handleToggleVisibility = async (article: Article) => {
@@ -699,7 +834,7 @@ export default function AdminArticlesPage() {
               {editingId && (
                 <button
                   type="button"
-                  onClick={resetForm}
+                  onClick={() => resetForm()}
                   className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-50"
                 >
                   <X className="h-4 w-4" />
@@ -714,12 +849,16 @@ export default function AdminArticlesPage() {
                 </label>
                 <select
                   value={form.issueId}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const issueId = event.target.value;
+                    const issue = issues.find((item) => item._id === issueId);
+
                     setForm((prev) => ({
                       ...prev,
-                      issueId: event.target.value,
-                    }))
-                  }
+                      issueId,
+                      publishDate: getIssueFirstPublishDate(issue),
+                    }));
+                  }}
                   className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
                   required
                 >
@@ -842,9 +981,12 @@ export default function AdminArticlesPage() {
                         publishDate: event.target.value,
                       }))
                     }
-                    placeholder="July 1, 2025"
+                    placeholder="01 July 2026"
                     className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
                   />
+                  <p className="mt-1.5 text-xs leading-5 text-slate-500">
+                    Selecting an issue fills this with the first day of that issue&apos;s publication month. You can still edit it manually.
+                  </p>
                 </div>
               </div>
 
@@ -854,24 +996,25 @@ export default function AdminArticlesPage() {
                 </label>
                 <input
                   value={form.pdfUrl}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      pdfUrl: event.target.value,
-                    }))
-                  }
+                  onChange={(event) => handlePdfUrlChange(event.target.value)}
                   placeholder="Upload a local PDF or paste an external PDF URL"
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
-                  required
                 />
                 <p className="mt-1.5 text-xs leading-5 text-slate-500">
-                  Select an issue first, then upload. The PDF will be stored in:
+                  Select an issue first, then upload. A local PDF stays temporary until you save the article. Its final location will be:
                   <span className="font-semibold text-slate-700">
                     {" "}
-                    public/pdfs/articles/volume-XX/issue-XX
+                    public/pdfs/articles/volume-XX_issue-XX
                   </span>
                   . External PDF links can still be pasted manually.
                 </p>
+
+                {pendingPdfUrl ? (
+                  <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs leading-5 text-emerald-800">
+                    <span className="font-bold">Local PDF ready:</span>{" "}
+                    {pendingPdfName || "Selected PDF"}. It is not stored in the public issue folder yet and will be committed only when you {editingId ? "Update Article" : "Create Article"}.
+                  </div>
+                ) : null}
 
                 <div className="mt-3 flex flex-wrap gap-2">
                   <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
@@ -890,15 +1033,17 @@ export default function AdminArticlesPage() {
                     />
                   </label>
 
-                  {form.pdfUrl ? (
+                  {pendingPdfPreviewUrl || form.pdfUrl ? (
                     <a
-                      href={getPdfPreviewUrl(form.pdfUrl)}
+                      href={
+                        pendingPdfPreviewUrl || getPdfPreviewUrl(form.pdfUrl)
+                      }
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
                     >
                       <ExternalLink className="h-4 w-4" />
-                      Open PDF
+                      Preview PDF
                     </a>
                   ) : null}
                 </div>
@@ -1044,7 +1189,7 @@ export default function AdminArticlesPage() {
                   <label className="mb-1.5 block text-sm font-semibold text-slate-700">
                     Article Type
                   </label>
-                  <input
+                  <select
                     value={form.articleType}
                     onChange={(event) =>
                       setForm((prev) => ({
@@ -1053,7 +1198,13 @@ export default function AdminArticlesPage() {
                       }))
                     }
                     className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
-                  />
+                  >
+                    {ARTICLE_TYPES.map((articleType) => (
+                      <option key={articleType} value={articleType}>
+                        {articleType}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -1113,7 +1264,7 @@ export default function AdminArticlesPage() {
 
                 <button
                   type="button"
-                  onClick={resetForm}
+                  onClick={() => resetForm()}
                   className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
                 >
                   Reset
@@ -1439,6 +1590,18 @@ export default function AdminArticlesPage() {
                           )}
                           Sync Citation
                         </button>
+
+                        {article.pdfUrl ? (
+                          <a
+                            href={getPdfPreviewUrl(article.pdfUrl)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-100"
+                          >
+                            <FileText className="h-4 w-4" />
+                            Preview PDF
+                          </a>
+                        ) : null}
 
                         {article.isPublished && getArticlePublicHref(article) ? (
                           <Link

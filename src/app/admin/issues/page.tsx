@@ -45,17 +45,80 @@ type IssueFormState = {
   isPublished: boolean;
 };
 
-const emptyForm: IssueFormState = {
-  title: "",
-  category: "Research Article",
-  issn: "",
-  volume: "",
-  issueNumber: "",
-  publishDateLabel: "",
-  coverImage: "",
-  pdfUrl: "",
-  isRecent: true,
-  isPublished: true,
+const DEFAULT_ISSUE_TITLE = "Journal of FST";
+const DEFAULT_ISSUE_CATEGORY = "Science & Technology";
+
+const monthNames = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+const getDefaultPublicationDateLabel = () => {
+  return `July ${new Date().getFullYear()}`;
+};
+
+const getMonthInputValue = (label: string) => {
+  const match = String(label || "").trim().match(/^([A-Za-z]+)\s+(\d{4})$/);
+  if (!match) return "";
+
+  const monthIndex = monthNames.findIndex(
+    (month) => month.toLowerCase() === match[1].toLowerCase()
+  );
+
+  if (monthIndex < 0) return "";
+  return `${match[2]}-${String(monthIndex + 1).padStart(2, "0")}`;
+};
+
+const getPublicationDateLabelFromMonth = (value: string) => {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})$/);
+  if (!match) return "";
+
+  const monthIndex = Number(match[2]) - 1;
+  if (monthIndex < 0 || monthIndex > 11) return "";
+
+  return `${monthNames[monthIndex]} ${match[1]}`;
+};
+
+const getNextVolume = (issues: Issue[]) => {
+  const maxVolume = issues.reduce((max, issue) => {
+    const match = String(issue.volume || "").match(/\d+/);
+    const value = match ? Number(match[0]) : 0;
+    return Number.isFinite(value) ? Math.max(max, value) : max;
+  }, 0);
+
+  return String(maxVolume + 1).padStart(2, "0");
+};
+
+const buildCreateIssueForm = (issues: Issue[] = []): IssueFormState => {
+  const latestIssue = [...issues].sort((a, b) => {
+    const orderA = Number(a.order ?? 9999);
+    const orderB = Number(b.order ?? 9999);
+    if (orderA !== orderB) return orderA - orderB;
+    return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+  })[0];
+
+  return {
+    title: latestIssue?.title || DEFAULT_ISSUE_TITLE,
+    category: DEFAULT_ISSUE_CATEGORY,
+    issn: "",
+    volume: getNextVolume(issues),
+    issueNumber: "01",
+    publishDateLabel: getDefaultPublicationDateLabel(),
+    coverImage: "",
+    pdfUrl: "",
+    isRecent: true,
+    isPublished: true,
+  };
 };
 
 const makeSlug = (text: string) => {
@@ -100,7 +163,8 @@ const reorderList = <T,>(items: T[], fromIndex: number, toIndex: number) => {
 
 export default function AdminIssuesPage() {
   const [issues, setIssues] = useState<Issue[]>([]);
-  const [form, setForm] = useState<IssueFormState>(emptyForm);
+  const [allIssues, setAllIssues] = useState<Issue[]>([]);
+  const [form, setForm] = useState<IssueFormState>(() => buildCreateIssueForm());
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
@@ -137,6 +201,22 @@ export default function AdminIssuesPage() {
     fetchIssues();
   }, [statusFilter]);
 
+  useEffect(() => {
+    const loadCreateDefaults = async () => {
+      try {
+        const data = await getAdminIssues({ status: "all" });
+        setAllIssues(data);
+        setForm((current) =>
+          editingId ? current : buildCreateIssueForm(data)
+        );
+      } catch {
+        // The normal issue list request already shows any loading error.
+      }
+    };
+
+    loadCreateDefaults();
+  }, []);
+
   const sortedIssues = useMemo(() => {
     return [...issues].sort((a, b) => {
       const orderA = Number(a.order || 0);
@@ -151,7 +231,7 @@ export default function AdminIssuesPage() {
   }, [issues]);
 
   const resetForm = () => {
-    setForm(emptyForm);
+    setForm(buildCreateIssueForm(allIssues));
     setEditingId(null);
     setMessage("");
   };
@@ -161,7 +241,7 @@ export default function AdminIssuesPage() {
 
     setForm({
       title: issue.title || "",
-      category: issue.category || "Research Article",
+      category: issue.category || DEFAULT_ISSUE_CATEGORY,
       issn: issue.issn || "",
       volume: issue.volume || "",
       issueNumber: issue.issueNumber || "",
@@ -180,7 +260,7 @@ export default function AdminIssuesPage() {
     return {
       title: form.title.trim(),
       slug: generatedSlug,
-      category: form.category.trim(),
+      category: DEFAULT_ISSUE_CATEGORY,
       issn: form.issn.trim(),
       volume: form.volume.trim(),
       issueNumber: form.issueNumber.trim(),
@@ -204,15 +284,23 @@ export default function AdminIssuesPage() {
       if (editingId) {
         await updateAdminIssue(editingId, payload);
         await fetchIssues();
+        const refreshedIssues = await getAdminIssues({ status: "all" });
+        setAllIssues(refreshedIssues);
         setEditingId(null);
-        setForm(emptyForm);
-        setMessage("Issue updated successfully and the list has been refreshed.");
+        setForm(buildCreateIssueForm(refreshedIssues));
+        setMessage(
+          "Issue updated successfully. Its article PDF folder is ready on the server."
+        );
       } else {
         await createAdminIssue(payload);
         await fetchIssues();
+        const refreshedIssues = await getAdminIssues({ status: "all" });
+        setAllIssues(refreshedIssues);
         setEditingId(null);
-        setForm(emptyForm);
-        setMessage("Issue created successfully. It has been placed at the top of the issue order.");
+        setForm(buildCreateIssueForm(refreshedIssues));
+        setMessage(
+          "Issue created successfully. It is now first in public order and its article PDF folder has been created automatically."
+        );
       }
     } catch (error: any) {
       setMessage(error?.response?.data?.message || "Failed to save issue.");
@@ -330,6 +418,11 @@ export default function AdminIssuesPage() {
       }
 
       await fetchIssues();
+      const refreshedIssues = await getAdminIssues({ status: "all" });
+      setAllIssues(refreshedIssues);
+      if (!editingId || editingId === issue._id) {
+        setForm(buildCreateIssueForm(refreshedIssues));
+      }
     } catch (error: any) {
       setMessage(error?.response?.data?.message || "Failed to delete issue.");
     }
@@ -431,10 +524,17 @@ export default function AdminIssuesPage() {
                   </label>
                   <input
                     value={form.volume}
+                    inputMode="numeric"
                     onChange={(event) =>
                       setForm((prev) => ({ ...prev, volume: event.target.value }))
                     }
-                    placeholder="3"
+                    onBlur={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        volume: prev.volume ? formatTwoDigitValue(prev.volume) : prev.volume,
+                      }))
+                    }
+                    placeholder="04"
                     className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
                     required
                   />
@@ -446,13 +546,22 @@ export default function AdminIssuesPage() {
                   </label>
                   <input
                     value={form.issueNumber}
+                    inputMode="numeric"
                     onChange={(event) =>
                       setForm((prev) => ({
                         ...prev,
                         issueNumber: event.target.value,
                       }))
                     }
-                    placeholder="1"
+                    onBlur={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        issueNumber: prev.issueNumber
+                          ? formatTwoDigitValue(prev.issueNumber)
+                          : prev.issueNumber,
+                      }))
+                    }
+                    placeholder="01"
                     className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
                     required
                   />
@@ -461,37 +570,25 @@ export default function AdminIssuesPage() {
 
               <div>
                 <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                  Publication Date Label
+                  Publication Month & Year
                 </label>
                 <input
-                  value={form.publishDateLabel}
+                  type="month"
+                  value={getMonthInputValue(form.publishDateLabel)}
                   onChange={(event) =>
                     setForm((prev) => ({
                       ...prev,
-                      publishDateLabel: event.target.value,
+                      publishDateLabel: getPublicationDateLabelFromMonth(
+                        event.target.value
+                      ),
                     }))
                   }
-                  placeholder="July 2025"
                   className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
                   required
                 />
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                  Category
-                </label>
-                <input
-                  value={form.category}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      category: event.target.value,
-                    }))
-                  }
-                  placeholder="Research Article"
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
-                />
+                <p className="mt-1.5 text-xs text-slate-500">
+                  Saved publicly as {form.publishDateLabel || "Month Year"}. New issues default to July of the current year.
+                </p>
               </div>
 
               <div>
@@ -642,7 +739,10 @@ export default function AdminIssuesPage() {
 
               <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold leading-5 text-amber-800">
                 New issues are automatically inserted at the top of the public display order.
-                Use the issue list on the right to rearrange them.
+                The newest three published issues appear in the Issues navbar dropdown.
+                <span className="mt-1 block text-amber-900">
+                  Article folder: public/pdfs/articles/volume-{formatTwoDigitValue(form.volume || "00")}_issue-{formatTwoDigitValue(form.issueNumber || "00")}
+                </span>
               </div>
 
               <div className="flex flex-wrap gap-3 pt-2">

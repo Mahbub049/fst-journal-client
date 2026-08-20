@@ -163,10 +163,11 @@ function IssueCard({ issue }: { issue: Issue }) {
       </div>
 
       <div className="p-5">
-        <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[#111433]">
-          {issue.category || "Science & Technology"}
-          {issue.issn ? ` · ISSN ${issue.issn}` : ""}
-        </p>
+        {issue.issn ? (
+          <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[#111433]">
+            ISSN {issue.issn}
+          </p>
+        ) : null}
 
         <h3 className="mt-3 text-[17px] font-semibold leading-7 text-slate-950">
           {issue.title}

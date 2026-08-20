@@ -45,12 +45,26 @@ type AdminArticleResponse = {
   data: Article;
 };
 
+export type ArticlePdfMetadata = {
+  title: string;
+  authors: string[];
+  abstract: string;
+  keywords: string[];
+  pages: string;
+  doi?: string;
+  pageCount?: number;
+  detectedFields?: string[];
+  warning?: string;
+};
+
 type ArticlePdfUploadResponse = {
   success: boolean;
   message: string;
   fileUrl: string;
   filename: string;
-  folder?: string;
+  temporary?: boolean;
+  targetFolder?: string;
+  metadata?: ArticlePdfMetadata;
 };
 
 type CitationSyncSummary = {
@@ -137,6 +151,7 @@ export const uploadAdminArticlePdf = async (payload: {
   issueId: string;
   title?: string;
   slug?: string;
+  previousTempUrl?: string;
 }) => {
   const formData = new FormData();
 
@@ -144,6 +159,7 @@ export const uploadAdminArticlePdf = async (payload: {
   formData.append("issueId", payload.issueId);
   formData.append("title", payload.title || payload.file.name);
   formData.append("slug", payload.slug || "");
+  formData.append("previousTempUrl", payload.previousTempUrl || "");
 
   const { data } = await api.post<ArticlePdfUploadResponse>(
     "/articles/admin/upload-pdf",
@@ -156,6 +172,15 @@ export const uploadAdminArticlePdf = async (payload: {
   );
 
   return data;
+};
+
+
+export const discardAdminArticleTempPdf = async (tempUrl: string) => {
+  if (!tempUrl) return;
+
+  await api.delete("/articles/admin/temp-pdf", {
+    data: { tempUrl },
+  });
 };
 
 export const reorderAdminArticles = async (payload: {

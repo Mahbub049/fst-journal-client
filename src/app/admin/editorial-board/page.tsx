@@ -514,6 +514,99 @@ export default function AdminEditorialBoardPage() {
 
         {message && <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-700 shadow-sm">{message}</div>}
 
+        <div className="grid gap-6 xl:grid-cols-[430px_minmax(0,1fr)]">
+          <form ref={memberFormRef} onSubmit={handleSubmitMember} className="scroll-mt-24 self-start rounded-3xl border border-slate-200 bg-white p-6 shadow-sm xl:sticky xl:top-24">
+            <div className="mb-5 flex items-start justify-between gap-3"><div><h2 className="text-lg font-bold text-slate-950">{editingId ? "Edit Member" : "Create Member"}</h2><p className="mt-1 text-sm text-slate-500">Assign an existing role and editorial area. Manage roles and editorial areas below.</p></div>{editingId && <button type="button" onClick={resetMemberForm} className="rounded-full border border-slate-200 p-2"><X size={16} /></button>}</div>
+            <div className="space-y-4">
+              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Category / Role</label><select value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm">{activeCategories.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select></div>
+              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Editorial Area</label><select value={form.editorialArea} onChange={(e) => setForm((p) => ({ ...p, editorialArea: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm">{activeAreas.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select></div>
+              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Name</label><input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} required className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" /></div>
+              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Designation</label><input value={form.designation} onChange={(e) => setForm((p) => ({ ...p, designation: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" /></div>
+              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Institution</label><input value={form.institution} onChange={(e) => setForm((p) => ({ ...p, institution: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" /></div>
+              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Department</label><input value={form.department} onChange={(e) => setForm((p) => ({ ...p, department: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" /></div>
+              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Expertise</label><input value={form.expertise} onChange={(e) => setForm((p) => ({ ...p, expertise: e.target.value }))} placeholder="AI, Cyber Security, Data Science" className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" /></div>
+              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Profile Image</label><div className="grid gap-3 sm:grid-cols-[1fr_auto]"><input value={form.profileImage} onChange={(e) => setForm((p) => ({ ...p, profileImage: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" /><label className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-bold">{uploadingImage ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />} Upload<input type="file" accept="image/*" onChange={handleProfileImageUpload} className="hidden" /></label></div>{form.profileImage && <img src={form.profileImage} alt="Profile preview" className="mt-3 h-24 w-24 rounded-2xl border border-slate-200 object-cover" />}</div>
+              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Email</label><input type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" /></div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <h3 className="text-sm font-bold text-slate-950">Member details page and external links</h3>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  The public member card shows one button that opens an internal details page. The external URLs below are displayed only inside that details page.
+                </p>
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">Professional Profile URL (optional)</label>
+                    <input type="url" value={form.professionalProfileUrl} onChange={(e) => setForm((p) => ({ ...p, professionalProfileUrl: e.target.value }))} placeholder="https://example.com/professional-profile" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                    <h4 className="text-sm font-bold text-slate-950">Research and social profile links</h4>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      Only links containing a value are shown on the public profile page.
+                    </p>
+                    <div className="mt-4 grid gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">Google Scholar URL</label>
+                        <input type="url" value={form.googleScholarUrl} onChange={(e) => setForm((p) => ({ ...p, googleScholarUrl: e.target.value }))} placeholder="https://scholar.google.com/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">ResearchGate URL</label>
+                        <input type="url" value={form.researchGateUrl} onChange={(e) => setForm((p) => ({ ...p, researchGateUrl: e.target.value }))} placeholder="https://www.researchgate.net/profile/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">LinkedIn URL</label>
+                        <input type="url" value={form.linkedinUrl} onChange={(e) => setForm((p) => ({ ...p, linkedinUrl: e.target.value }))} placeholder="https://www.linkedin.com/in/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">ORCID URL</label>
+                        <input type="url" value={form.orcidUrl} onChange={(e) => setForm((p) => ({ ...p, orcidUrl: e.target.value }))} placeholder="https://orcid.org/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">Scopus URL</label>
+                        <input type="url" value={form.scopusUrl} onChange={(e) => setForm((p) => ({ ...p, scopusUrl: e.target.value }))} placeholder="https://www.scopus.com/authid/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">Web of Science URL</label>
+                        <input type="url" value={form.webOfScienceUrl} onChange={(e) => setForm((p) => ({ ...p, webOfScienceUrl: e.target.value }))} placeholder="https://www.webofscience.com/wos/author/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">Personal / Institutional Website URL</label>
+                        <input type="url" value={form.personalWebsiteUrl} onChange={(e) => setForm((p) => ({ ...p, personalWebsiteUrl: e.target.value }))} placeholder="https://www.example.edu/profile/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {isChiefEditorRole(form.category) ? (
+                    <div>
+                      <label className="mb-1.5 block text-sm font-semibold text-slate-700">Chief Editor Card Button Label</label>
+                      <input value={form.professionalProfileLabel} onChange={(e) => setForm((p) => ({ ...p, professionalProfileLabel: e.target.value }))} placeholder="Meet the Chief Editor" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                    </div>
+                  ) : null}
+                  <div>
+                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">External Biography URL (optional)</label>
+                    <input type="url" value={form.biographyUrl} onChange={(e) => setForm((p) => ({ ...p, biographyUrl: e.target.value }))} placeholder="https://example.com/external-biography" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                  </div>
+                  {!isChiefEditorRole(form.category) ? (
+                    <div>
+                      <label className="mb-1.5 block text-sm font-semibold text-slate-700">Member Card Button Label</label>
+                      <input value={form.biographyLabel} onChange={(e) => setForm((p) => ({ ...p, biographyLabel: e.target.value }))} placeholder="View Full Biography" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Full Biography / Description</label><p className="mb-2 text-xs leading-5 text-slate-500">This text is shown only on the member&apos;s separate details page, not below the main card.</p><textarea value={form.bio} onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))} rows={7} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" /></div>
+              <label className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4 text-sm font-semibold"><input type="checkbox" checked={form.isActive} onChange={(e) => setForm((p) => ({ ...p, isActive: e.target.checked }))} /> Visible on public page</label>
+              <button type="submit" disabled={savingMember} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#005A78] text-sm font-bold text-white disabled:opacity-60">{savingMember ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}{savingMember ? "Saving..." : editingId ? "Update Member" : "Create Member"}</button>
+            </div>
+          </form>
+
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><div><h2 className="text-lg font-bold text-slate-950">Editorial Board Members</h2><p className="mt-1 text-sm text-slate-500">Drag members within the same role to control display order.</p></div><button type="button" onClick={fetchData} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold"><RefreshCw size={16} /> Refresh</button></div>
+            <form onSubmit={(e) => { e.preventDefault(); fetchData(); }} className="mb-5 grid gap-3 lg:grid-cols-[1fr_170px_190px_130px_auto]"><div className="relative"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search members" className="h-11 w-full rounded-xl border border-slate-200 pl-11 pr-4 text-sm" /></div><select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm"><option value="all">All Roles</option>{config.categories.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select><select value={areaFilter} onChange={(e) => setAreaFilter(e.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm"><option value="all">All Areas</option>{config.editorialAreas.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select><select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm"><option value="all">All Status</option><option value="active">Active</option><option value="inactive">Inactive</option></select><button type="submit" className="h-11 rounded-xl bg-slate-950 px-4 text-sm font-bold text-white">Search</button></form>
+
+            {loading ? <div className="flex min-h-64 items-center justify-center"><Loader2 className="animate-spin text-[#005A78]" /></div> : editors.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">No members found.</div> : <div className="space-y-3">{editors.map((member) => <div key={member._id} draggable onDragStart={() => setDraggingMemberId(member._id)} onDragOver={(e) => e.preventDefault()} onDrop={() => dropMember(member)} onDragEnd={() => setDraggingMemberId(null)} className={`rounded-2xl border p-4 transition ${draggingMemberId === member._id ? "border-[#005A78] bg-cyan-50 opacity-60" : "border-slate-200 bg-slate-50"}`}><div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"><div className="flex min-w-0 gap-4"><GripVertical className="mt-7 shrink-0 cursor-grab text-slate-400" size={18} /><div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white">{member.profileImage ? <img src={member.profileImage} alt={member.name} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center"><UserRound className="text-slate-400" size={30} /></div>}</div><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-slate-950">{member.name}</h3><button type="button" onClick={() => toggleMember(member)} className={`rounded-full px-3 py-1 text-xs font-bold ${member.isActive ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>{member.isActive ? "Active" : "Inactive"}</button></div><p className="mt-1 text-sm font-semibold text-[#005A78]">{member.category}</p><p className="mt-1 text-sm text-slate-600">{member.editorialArea}</p><p className="mt-1 text-sm text-slate-500">{member.designation}{member.institution ? ` · ${member.institution}` : ""}</p>{member.expertise?.length > 0 && <div className="mt-2 flex flex-wrap gap-2">{member.expertise.map((item) => <span key={item} className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600">{item}</span>)}</div>}</div></div><div className="flex gap-2"><button type="button" onClick={() => handleEditMember(member)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold"><Edit size={14} /> Edit</button><button type="button" onClick={() => deleteMember(member)} className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700"><Trash2 size={14} /> Delete</button></div></div></div>)}</div>}
+          </section>
+        </div>
+
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -700,98 +793,6 @@ export default function AdminEditorialBoardPage() {
           </div>
         </section>
 
-        <div className="grid gap-6 xl:grid-cols-[430px_minmax(0,1fr)]">
-          <form ref={memberFormRef} onSubmit={handleSubmitMember} className="scroll-mt-24 self-start rounded-3xl border border-slate-200 bg-white p-6 shadow-sm xl:sticky xl:top-24">
-            <div className="mb-5 flex items-start justify-between gap-3"><div><h2 className="text-lg font-bold text-slate-950">{editingId ? "Edit Member" : "Create Member"}</h2><p className="mt-1 text-sm text-slate-500">Assign a role and editorial area created above.</p></div>{editingId && <button type="button" onClick={resetMemberForm} className="rounded-full border border-slate-200 p-2"><X size={16} /></button>}</div>
-            <div className="space-y-4">
-              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Category / Role</label><select value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm">{activeCategories.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select></div>
-              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Editorial Area</label><select value={form.editorialArea} onChange={(e) => setForm((p) => ({ ...p, editorialArea: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm">{activeAreas.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select></div>
-              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Name</label><input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} required className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" /></div>
-              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Designation</label><input value={form.designation} onChange={(e) => setForm((p) => ({ ...p, designation: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" /></div>
-              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Institution</label><input value={form.institution} onChange={(e) => setForm((p) => ({ ...p, institution: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" /></div>
-              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Department</label><input value={form.department} onChange={(e) => setForm((p) => ({ ...p, department: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" /></div>
-              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Expertise</label><input value={form.expertise} onChange={(e) => setForm((p) => ({ ...p, expertise: e.target.value }))} placeholder="AI, Cyber Security, Data Science" className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" /></div>
-              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Profile Image</label><div className="grid gap-3 sm:grid-cols-[1fr_auto]"><input value={form.profileImage} onChange={(e) => setForm((p) => ({ ...p, profileImage: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" /><label className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-bold">{uploadingImage ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />} Upload<input type="file" accept="image/*" onChange={handleProfileImageUpload} className="hidden" /></label></div>{form.profileImage && <img src={form.profileImage} alt="Profile preview" className="mt-3 h-24 w-24 rounded-2xl border border-slate-200 object-cover" />}</div>
-              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Email</label><input type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm" /></div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <h3 className="text-sm font-bold text-slate-950">Member details page and external links</h3>
-                <p className="mt-1 text-xs leading-5 text-slate-500">
-                  The public member card shows one button that opens an internal details page. The external URLs below are displayed only inside that details page.
-                </p>
-                <div className="mt-4 space-y-4">
-                  <div>
-                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">Professional Profile URL (optional)</label>
-                    <input type="url" value={form.professionalProfileUrl} onChange={(e) => setForm((p) => ({ ...p, professionalProfileUrl: e.target.value }))} placeholder="https://example.com/professional-profile" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <h4 className="text-sm font-bold text-slate-950">Research and social profile links</h4>
-                    <p className="mt-1 text-xs leading-5 text-slate-500">
-                      Only links containing a value are shown on the public profile page.
-                    </p>
-                    <div className="mt-4 grid gap-4 md:grid-cols-2">
-                      <div>
-                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">Google Scholar URL</label>
-                        <input type="url" value={form.googleScholarUrl} onChange={(e) => setForm((p) => ({ ...p, googleScholarUrl: e.target.value }))} placeholder="https://scholar.google.com/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
-                      </div>
-                      <div>
-                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">ResearchGate URL</label>
-                        <input type="url" value={form.researchGateUrl} onChange={(e) => setForm((p) => ({ ...p, researchGateUrl: e.target.value }))} placeholder="https://www.researchgate.net/profile/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
-                      </div>
-                      <div>
-                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">LinkedIn URL</label>
-                        <input type="url" value={form.linkedinUrl} onChange={(e) => setForm((p) => ({ ...p, linkedinUrl: e.target.value }))} placeholder="https://www.linkedin.com/in/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
-                      </div>
-                      <div>
-                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">ORCID URL</label>
-                        <input type="url" value={form.orcidUrl} onChange={(e) => setForm((p) => ({ ...p, orcidUrl: e.target.value }))} placeholder="https://orcid.org/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
-                      </div>
-                      <div>
-                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">Scopus URL</label>
-                        <input type="url" value={form.scopusUrl} onChange={(e) => setForm((p) => ({ ...p, scopusUrl: e.target.value }))} placeholder="https://www.scopus.com/authid/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
-                      </div>
-                      <div>
-                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">Web of Science URL</label>
-                        <input type="url" value={form.webOfScienceUrl} onChange={(e) => setForm((p) => ({ ...p, webOfScienceUrl: e.target.value }))} placeholder="https://www.webofscience.com/wos/author/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">Personal / Institutional Website URL</label>
-                        <input type="url" value={form.personalWebsiteUrl} onChange={(e) => setForm((p) => ({ ...p, personalWebsiteUrl: e.target.value }))} placeholder="https://www.example.edu/profile/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {isChiefEditorRole(form.category) ? (
-                    <div>
-                      <label className="mb-1.5 block text-sm font-semibold text-slate-700">Chief Editor Card Button Label</label>
-                      <input value={form.professionalProfileLabel} onChange={(e) => setForm((p) => ({ ...p, professionalProfileLabel: e.target.value }))} placeholder="Meet the Chief Editor" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
-                    </div>
-                  ) : null}
-                  <div>
-                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">External Biography URL (optional)</label>
-                    <input type="url" value={form.biographyUrl} onChange={(e) => setForm((p) => ({ ...p, biographyUrl: e.target.value }))} placeholder="https://example.com/external-biography" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
-                  </div>
-                  {!isChiefEditorRole(form.category) ? (
-                    <div>
-                      <label className="mb-1.5 block text-sm font-semibold text-slate-700">Member Card Button Label</label>
-                      <input value={form.biographyLabel} onChange={(e) => setForm((p) => ({ ...p, biographyLabel: e.target.value }))} placeholder="View Full Biography" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" />
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-              <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Full Biography / Description</label><p className="mb-2 text-xs leading-5 text-slate-500">This text is shown only on the member&apos;s separate details page, not below the main card.</p><textarea value={form.bio} onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))} rows={7} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" /></div>
-              <label className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4 text-sm font-semibold"><input type="checkbox" checked={form.isActive} onChange={(e) => setForm((p) => ({ ...p, isActive: e.target.checked }))} /> Visible on public page</label>
-              <button type="submit" disabled={savingMember} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#005A78] text-sm font-bold text-white disabled:opacity-60">{savingMember ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}{savingMember ? "Saving..." : editingId ? "Update Member" : "Create Member"}</button>
-            </div>
-          </form>
-
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><div><h2 className="text-lg font-bold text-slate-950">Editorial Board Members</h2><p className="mt-1 text-sm text-slate-500">Drag members within the same role to control display order.</p></div><button type="button" onClick={fetchData} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold"><RefreshCw size={16} /> Refresh</button></div>
-            <form onSubmit={(e) => { e.preventDefault(); fetchData(); }} className="mb-5 grid gap-3 lg:grid-cols-[1fr_170px_190px_130px_auto]"><div className="relative"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search members" className="h-11 w-full rounded-xl border border-slate-200 pl-11 pr-4 text-sm" /></div><select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm"><option value="all">All Roles</option>{config.categories.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select><select value={areaFilter} onChange={(e) => setAreaFilter(e.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm"><option value="all">All Areas</option>{config.editorialAreas.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select><select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm"><option value="all">All Status</option><option value="active">Active</option><option value="inactive">Inactive</option></select><button type="submit" className="h-11 rounded-xl bg-slate-950 px-4 text-sm font-bold text-white">Search</button></form>
-
-            {loading ? <div className="flex min-h-64 items-center justify-center"><Loader2 className="animate-spin text-[#005A78]" /></div> : editors.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">No members found.</div> : <div className="space-y-3">{editors.map((member) => <div key={member._id} draggable onDragStart={() => setDraggingMemberId(member._id)} onDragOver={(e) => e.preventDefault()} onDrop={() => dropMember(member)} onDragEnd={() => setDraggingMemberId(null)} className={`rounded-2xl border p-4 transition ${draggingMemberId === member._id ? "border-[#005A78] bg-cyan-50 opacity-60" : "border-slate-200 bg-slate-50"}`}><div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"><div className="flex min-w-0 gap-4"><GripVertical className="mt-7 shrink-0 cursor-grab text-slate-400" size={18} /><div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white">{member.profileImage ? <img src={member.profileImage} alt={member.name} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center"><UserRound className="text-slate-400" size={30} /></div>}</div><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-slate-950">{member.name}</h3><button type="button" onClick={() => toggleMember(member)} className={`rounded-full px-3 py-1 text-xs font-bold ${member.isActive ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>{member.isActive ? "Active" : "Inactive"}</button></div><p className="mt-1 text-sm font-semibold text-[#005A78]">{member.category}</p><p className="mt-1 text-sm text-slate-600">{member.editorialArea}</p><p className="mt-1 text-sm text-slate-500">{member.designation}{member.institution ? ` · ${member.institution}` : ""}</p>{member.expertise?.length > 0 && <div className="mt-2 flex flex-wrap gap-2">{member.expertise.map((item) => <span key={item} className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600">{item}</span>)}</div>}</div></div><div className="flex gap-2"><button type="button" onClick={() => handleEditMember(member)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold"><Edit size={14} /> Edit</button><button type="button" onClick={() => deleteMember(member)} className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700"><Trash2 size={14} /> Delete</button></div></div></div>)}</div>}
-          </section>
-        </div>
       </div>
     </AdminLayout>
   );
