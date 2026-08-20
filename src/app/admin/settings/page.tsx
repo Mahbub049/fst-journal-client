@@ -53,15 +53,9 @@ const emptySettings: SiteSettingsContent = {
       isActive: true,
     },
     {
-      text: "Submit your research manuscript through the online submission system",
-      url: "/submit-manuscript-portal",
-      order: 3,
-      isActive: true,
-    },
-    {
       text: "Explore current and archived issues of the journal",
       url: "/issues/archive",
-      order: 4,
+      order: 3,
       isActive: true,
     },
   ],
