@@ -128,7 +128,7 @@ export default function AdminMediaPage() {
     } catch (error: any) {
       setMessage(
         error?.response?.data?.message ||
-          "Upload failed. Check Cloudinary credentials and file type."
+          "Upload failed. Check the file type and server storage permissions."
       );
     } finally {
       setUploading(false);
@@ -193,9 +193,9 @@ export default function AdminMediaPage() {
             </h1>
 
             <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
-              Use this library for journal cover images, issue covers, editor
-              photos, call-for-papers posters, author guideline PDFs, and article
-              PDFs.
+              Files uploaded here are stored directly on the journal server. Use
+              this library for journal covers, issue covers, editor photos,
+              call-for-papers posters, PDFs, and documents.
             </p>
           </div>
         </div>

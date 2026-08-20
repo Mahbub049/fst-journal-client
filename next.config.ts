@@ -91,6 +91,10 @@ const nextConfig: NextConfig = {
         source: "/pdfs/:path*",
         destination: "http://127.0.0.1:5000/pdfs/:path*",
       },
+      {
+        source: "/media/:path*",
+        destination: "http://127.0.0.1:5000/media/:path*",
+      },
     ];
   },
 };

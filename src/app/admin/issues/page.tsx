@@ -620,7 +620,7 @@ export default function AdminIssuesPage() {
                       coverImage: event.target.value,
                     }))
                   }
-                  placeholder="/images/issue-cover.jpg or Cloudinary URL"
+                  placeholder="/media/issues/issue-cover.jpg or image URL"
                   className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
                   required
                 />
