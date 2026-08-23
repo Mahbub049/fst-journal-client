@@ -172,31 +172,39 @@ export default function HomepageLaunchModal({
     "transition-[transform,background-color,border-color,color,box-shadow] duration-300 ease-out hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.985]";
 
   return (
-    <div
-      className={`fixed inset-0 z-[1000] flex items-center justify-center px-4 py-6 transition-[background-color,backdrop-filter,opacity] duration-[360ms] ease-out ${
-        visible
-          ? "bg-[#041225]/78 opacity-100 backdrop-blur-[6px]"
-          : "bg-[#041225]/0 opacity-0 backdrop-blur-none"
-      }`}
-      onMouseDown={(event) => {
-        if (config.dismissible && event.target === event.currentTarget) {
-          closeModal();
-        }
-      }}
-      role="presentation"
-    >
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="jfst-launch-modal-title"
-        className={`relative max-h-[92vh] w-full overflow-hidden rounded-[30px] border border-white/15 bg-white shadow-[0_30px_100px_rgba(2,8,23,0.42)] transition-[opacity,transform] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
-          imageOnly ? "max-w-4xl" : imageText ? "max-w-5xl" : "max-w-2xl"
-        } ${
+    <>
+      {/*
+        Three independent layers:
+        1000 = dim/blur backdrop
+        1010 = site celebration (from SiteCelebration)
+        1020 = modal card
+        This keeps confetti/fireworks crisp while the page itself stays blurred.
+      */}
+      <div
+        className={`fixed inset-0 z-[1000] transition-[background-color,backdrop-filter,opacity] duration-[360ms] ease-out ${
           visible
-            ? "translate-y-0 scale-100 opacity-100"
-            : "translate-y-6 scale-[0.965] opacity-0"
+            ? "bg-[#041225]/78 opacity-100 backdrop-blur-[6px]"
+            : "bg-[#041225]/0 opacity-0 backdrop-blur-none"
         }`}
-      >
+        onMouseDown={() => {
+          if (config.dismissible) closeModal();
+        }}
+        role="presentation"
+      />
+
+      <div className="pointer-events-none fixed inset-0 z-[1020] flex items-center justify-center px-4 py-6">
+        <section
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="jfst-launch-modal-title"
+          className={`pointer-events-auto relative max-h-[92vh] w-full overflow-hidden rounded-[30px] border border-white/15 bg-white shadow-[0_30px_100px_rgba(2,8,23,0.42)] transition-[opacity,transform] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            imageOnly ? "max-w-4xl" : imageText ? "max-w-5xl" : "max-w-2xl"
+          } ${
+            visible
+              ? "translate-y-0 scale-100 opacity-100"
+              : "translate-y-6 scale-[0.965] opacity-0"
+          }`}
+        >
         {config.autoCloseSeconds > 0 ? (
           <div className="absolute left-0 top-0 z-30 h-1 w-full overflow-hidden bg-slate-200/70">
             <div
@@ -348,7 +356,8 @@ export default function HomepageLaunchModal({
             </div>
           </div>
         )}
-      </section>
+        </section>
+      </div>
 
       <style>{`
         @keyframes jfstModalCountdown {
@@ -361,7 +370,7 @@ export default function HomepageLaunchModal({
           }
         }
       `}</style>
-    </div>
+    </>
   );
 }
 

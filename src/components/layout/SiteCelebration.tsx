@@ -125,7 +125,7 @@ export default function SiteCelebration({ homepage }: Props) {
 
   return (
     <div
-      className="pointer-events-none fixed inset-0 z-[950] overflow-hidden"
+      className="pointer-events-none fixed inset-0 z-[1010] overflow-hidden"
       aria-hidden="true"
     >
       {showConfetti ? <Confetti duration={config.duration} /> : null}
@@ -215,7 +215,7 @@ function Confetti({ duration }: { duration: number }) {
         return (
           <span
             key={index}
-            className="jfst-celebration-particle absolute -top-8 block shadow-[0_0_8px_rgba(255,255,255,0.18)]"
+            className="jfst-celebration-particle absolute -top-8 block shadow-[0_0_12px_rgba(255,255,255,0.34)]"
             style={style}
           />
         );
