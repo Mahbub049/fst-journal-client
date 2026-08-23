@@ -6,6 +6,7 @@ import JournalInfoSidebar from "@/components/home/JournalInfoSidebar";
 import HomepageCarousel from "@/components/home/HomepageCarousel";
 import OverviewSection from "@/components/home/OverviewSection";
 import RecentIssuesSection from "@/components/home/RecentIssuesSection";
+import HomepageLaunchModal from "@/components/home/HomepageLaunchModal";
 import { getServerApiBaseUrl } from "@/lib/apiBase";
 import { PublicHomepageContent } from "@/services/publicHomepageService";
 import { Article, Issue } from "@/types/issue";
@@ -72,6 +73,7 @@ export default async function HomePage() {
 
   return (
     <PublicLayout homepage={homepage}>
+      <HomepageLaunchModal homepage={homepage} />
       <main className="bg-[#f7f8fb]">
         <Container className="py-10 md:py-14">
           <div className="grid items-stretch overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.07)] lg:grid-cols-[minmax(0,1.4fr)_minmax(360px,0.82fr)]">

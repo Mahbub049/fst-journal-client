@@ -1,0 +1,368 @@
+"use client";
+
+import { ImageIcon, Loader2, Sparkles, UploadCloud, X } from "lucide-react";
+import { useState } from "react";
+import type { HomepageContent } from "@/services/homepageService";
+import { uploadMedia } from "@/services/mediaService";
+
+type Props = {
+  form: HomepageContent;
+  updateField: <K extends keyof HomepageContent>(
+    field: K,
+    value: HomepageContent[K],
+  ) => void;
+};
+
+const inputClass =
+  "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10";
+
+export default function HomepageLaunchModalSettings({ form, updateField }: Props) {
+  const [uploading, setUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState("");
+
+  const uploadImage = async (file?: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setUploadMessage("Please select an image file.");
+      return;
+    }
+
+    try {
+      setUploading(true);
+      setUploadMessage("");
+      const uploaded = await uploadMedia({
+        file,
+        title: file.name,
+        folder: "homepage-launch-modal",
+      });
+      updateField("launchModalImageUrl", uploaded.fileUrl);
+      setUploadMessage(
+        "Modal image uploaded. Save Homepage Management to publish it.",
+      );
+    } catch (error: any) {
+      setUploadMessage(
+        error?.response?.data?.message || "Failed to upload modal image.",
+      );
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-slate-200 bg-gradient-to-r from-[#071a33] via-[#0c2b47] to-[#111433] p-6 text-white">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#f5c84b] text-[#071a33] shadow-sm">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#7de4ee]">
+                Visitor Welcome Experience
+              </p>
+              <h2 className="mt-1 text-xl font-bold">Homepage Launch Modal</h2>
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-white/70">
+                Use this for the website inauguration now, and later for major
+                announcements. It can be text-only, image with text, or a full
+                image poster.
+              </p>
+            </div>
+          </div>
+
+          <label className="inline-flex w-fit cursor-pointer items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur">
+            <input
+              type="checkbox"
+              checked={form.launchModalEnabled}
+              onChange={(event) =>
+                updateField("launchModalEnabled", event.target.checked)
+              }
+              className="h-4 w-4 accent-[#f5c84b]"
+            />
+            <span className="text-sm font-bold">
+              {form.launchModalEnabled ? "Modal Enabled" : "Modal Disabled"}
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div className="space-y-6 p-6">
+        <div>
+          <p className="text-sm font-bold text-slate-800">Modal Layout</p>
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
+            {[
+              ["text", "Designed Welcome", "BUP logo + journal-styled text"],
+              ["image-text", "Photo + Text", "Image area with editable message"],
+              ["image", "Full Image", "Use a complete launch poster/photo"],
+            ].map(([value, title, description]) => {
+              const selected = form.launchModalLayout === value;
+              return (
+                <label
+                  key={value}
+                  className={`cursor-pointer rounded-2xl border p-4 transition ${
+                    selected
+                      ? "border-[#005A78] bg-cyan-50 shadow-sm"
+                      : "border-slate-200 bg-slate-50 hover:border-slate-300"
+                  }`}
+                >
+                  <div className="flex gap-3">
+                    <input
+                      type="radio"
+                      name="launch-modal-layout"
+                      checked={selected}
+                      onChange={() =>
+                        updateField(
+                          "launchModalLayout",
+                          value as HomepageContent["launchModalLayout"],
+                        )
+                      }
+                      className="mt-1 h-4 w-4 accent-[#005A78]"
+                    />
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">{title}</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                        {description}
+                      </p>
+                    </div>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+              Small Heading / Eyebrow
+            </label>
+            <input
+              value={form.launchModalEyebrow}
+              onChange={(event) =>
+                updateField("launchModalEyebrow", event.target.value)
+              }
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+              Main Title
+            </label>
+            <input
+              value={form.launchModalTitle}
+              onChange={(event) =>
+                updateField("launchModalTitle", event.target.value)
+              }
+              className={inputClass}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+            Welcome / Announcement Text
+          </label>
+          <textarea
+            rows={5}
+            value={form.launchModalMessage}
+            onChange={(event) =>
+              updateField("launchModalMessage", event.target.value)
+            }
+            className={inputClass}
+          />
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#005A78] shadow-sm">
+              <ImageIcon className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-slate-800">Modal Image</p>
+              <p className="text-xs text-slate-500">
+                Required for Photo + Text and Full Image layouts. Optional for
+                Designed Welcome.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_auto]">
+            <input
+              value={form.launchModalImageUrl}
+              onChange={(event) =>
+                updateField("launchModalImageUrl", event.target.value)
+              }
+              placeholder="Image URL or upload below"
+              className={inputClass}
+            />
+            <div className="flex flex-wrap gap-2">
+              <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#005A78]/20 bg-white px-4 py-3 text-sm font-bold text-[#005A78] transition hover:bg-cyan-50">
+                {uploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <UploadCloud className="h-4 w-4" />
+                )}
+                {uploading ? "Uploading..." : "Upload"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={(event) => {
+                    void uploadImage(event.target.files?.[0]);
+                    event.target.value = "";
+                  }}
+                />
+              </label>
+              {form.launchModalImageUrl ? (
+                <button
+                  type="button"
+                  onClick={() => updateField("launchModalImageUrl", "")}
+                  className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm font-bold text-rose-700 hover:bg-rose-50"
+                >
+                  <X className="h-4 w-4" /> Clear
+                </button>
+              ) : null}
+            </div>
+          </div>
+
+          <input
+            value={form.launchModalImageAlt}
+            onChange={(event) =>
+              updateField("launchModalImageAlt", event.target.value)
+            }
+            placeholder="Image alternative text"
+            className={`${inputClass} mt-3`}
+          />
+          {uploadMessage ? (
+            <p className="mt-2 text-xs font-semibold text-slate-600">
+              {uploadMessage}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+              Primary Button Text
+            </label>
+            <input
+              value={form.launchModalPrimaryLabel}
+              onChange={(event) =>
+                updateField("launchModalPrimaryLabel", event.target.value)
+              }
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+              Primary Button Link
+            </label>
+            <input
+              value={form.launchModalPrimaryUrl}
+              onChange={(event) =>
+                updateField("launchModalPrimaryUrl", event.target.value)
+              }
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+              Close Button Text
+            </label>
+            <input
+              value={form.launchModalSecondaryLabel}
+              onChange={(event) =>
+                updateField("launchModalSecondaryLabel", event.target.value)
+              }
+              className={inputClass}
+            />
+          </div>
+        </div>
+
+        <div className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:grid-cols-3">
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+              Start Showing
+            </label>
+            <input
+              type="datetime-local"
+              value={toDateTimeLocalValue(form.launchModalStartAt)}
+              onChange={(event) =>
+                updateField("launchModalStartAt", toIsoDateValue(event.target.value))
+              }
+              className={inputClass}
+            />
+            <p className="mt-1 text-xs text-slate-500">Leave blank to start now.</p>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+              Stop Showing
+            </label>
+            <input
+              type="datetime-local"
+              value={toDateTimeLocalValue(form.launchModalEndAt)}
+              onChange={(event) =>
+                updateField("launchModalEndAt", toIsoDateValue(event.target.value))
+              }
+              className={inputClass}
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              Perfect for keeping the inauguration modal live only a few days.
+            </p>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+              Show Frequency
+            </label>
+            <select
+              value={form.launchModalFrequency}
+              onChange={(event) =>
+                updateField(
+                  "launchModalFrequency",
+                  event.target.value as HomepageContent["launchModalFrequency"],
+                )
+              }
+              className={inputClass}
+            >
+              <option value="once-per-session">Once per browser session</option>
+              <option value="once-per-day">Once per day</option>
+              <option value="every-visit">Every homepage visit</option>
+            </select>
+          </div>
+        </div>
+
+        <label className="flex w-fit cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
+          <input
+            type="checkbox"
+            checked={form.launchModalDismissible}
+            onChange={(event) =>
+              updateField("launchModalDismissible", event.target.checked)
+            }
+            className="h-4 w-4 accent-[#005A78]"
+          />
+          Allow visitors to close the modal with ×, outside click, or Escape
+        </label>
+
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">
+          Suggested inauguration setup: <strong>Designed Welcome</strong>, show
+          once per session, enable it on launch day, and set an automatic stop
+          date after 3–7 days.
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function toDateTimeLocalValue(value?: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "";
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return localDate.toISOString().slice(0, 16);
+}
+
+function toIsoDateValue(value: string) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+}

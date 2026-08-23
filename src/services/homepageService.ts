@@ -26,6 +26,13 @@ export type HomepageButton = {
   isActive: boolean;
 };
 
+
+export type HomepageLaunchModalLayout = "text" | "image-text" | "image";
+export type HomepageLaunchModalFrequency =
+  | "every-visit"
+  | "once-per-session"
+  | "once-per-day";
+
 export type HomepageCarouselImage = {
   _id?: string;
   imageUrl: string;
@@ -71,6 +78,21 @@ export type HomepageContent = {
   recentIssuesSubtitle: string;
 
   buttons: HomepageButton[];
+
+  launchModalEnabled: boolean;
+  launchModalLayout: HomepageLaunchModalLayout;
+  launchModalEyebrow: string;
+  launchModalTitle: string;
+  launchModalMessage: string;
+  launchModalImageUrl: string;
+  launchModalImageAlt: string;
+  launchModalPrimaryLabel: string;
+  launchModalPrimaryUrl: string;
+  launchModalSecondaryLabel: string;
+  launchModalStartAt: string | null;
+  launchModalEndAt: string | null;
+  launchModalFrequency: HomepageLaunchModalFrequency;
+  launchModalDismissible: boolean;
 
   isPublished: boolean;
 };

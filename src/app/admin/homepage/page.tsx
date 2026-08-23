@@ -11,6 +11,8 @@ import {
   X,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
+import HomepageLegacyWebsiteSettings from "@/components/admin/HomepageLegacyWebsiteSettings";
+import HomepageLaunchModalSettings from "@/components/admin/HomepageLaunchModalSettings";
 import {
   getAdminHomepage,
   HomepageButton,
@@ -58,6 +60,22 @@ const emptyHomepage: HomepageContent = {
   recentIssuesSubtitle: "",
 
   buttons: [],
+
+  launchModalEnabled: false,
+  launchModalLayout: "text",
+  launchModalEyebrow: "A NEW CHAPTER BEGINS",
+  launchModalTitle: "Welcome to the New Journal of FST Website",
+  launchModalMessage:
+    "We are delighted to welcome you to the newly launched digital home of the Journal of FST, Bangladesh University of Professionals. Explore our research, editorial community, current issues, and future calls for papers through a faster and more accessible journal experience.",
+  launchModalImageUrl: "",
+  launchModalImageAlt: "Journal of FST inauguration",
+  launchModalPrimaryLabel: "Explore the Journal",
+  launchModalPrimaryUrl: "/issues/archive",
+  launchModalSecondaryLabel: "Continue to Website",
+  launchModalStartAt: null,
+  launchModalEndAt: null,
+  launchModalFrequency: "once-per-session",
+  launchModalDismissible: true,
 
   isPublished: true,
 };
@@ -417,8 +435,8 @@ export default function AdminHomepagePage() {
                 Homepage Management
               </h1>
               <p className="mt-2 max-w-3xl text-sm text-slate-600">
-                Manage homepage hero, journal cover, ISSN values, welcome
-                content, countdown timer, image carousel, journal information,
+                Manage homepage content, launch/welcome modal, old website
+                transition button, countdown, carousel, journal information,
                 section headings, and homepage buttons.
               </p>
             </div>
@@ -435,6 +453,8 @@ export default function AdminHomepagePage() {
           </div>
         )}
 
+        {!loading ? <HomepageLegacyWebsiteSettings /> : null}
+
         {loading ? (
           <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
             <Loader2 className="mx-auto h-6 w-6 animate-spin text-[#005A78]" />
@@ -444,6 +464,8 @@ export default function AdminHomepagePage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
+            <HomepageLaunchModalSettings form={form} updateField={updateField} />
+
             <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-bold text-slate-950">
                 Hero / Header Section

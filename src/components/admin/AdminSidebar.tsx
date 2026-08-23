@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   FileText,
-  Globe2,
   Home,
   Image,
   LayoutDashboard,
@@ -57,7 +56,7 @@ const sidebarSections: SidebarSection[] = [
       },
     ],
   },
-  {
+    {
     title: "Publication Content",
     items: [
       {
@@ -99,11 +98,6 @@ const sidebarSections: SidebarSection[] = [
         label: "Navbar Builder",
         href: "/admin/menus",
         icon: Menu,
-      },
-      {
-        label: "Old Website Button",
-        href: "/admin/navbar-settings",
-        icon: Globe2,
       },
       {
         label: "Pages",
