@@ -21,6 +21,10 @@ import {
   PublicMenuItem,
   PublicMenuLocation,
 } from "@/services/publicMenuService";
+import {
+  getPublicNavbarLegacyLinkSettings,
+  NavbarLegacyLinkSettings,
+} from "@/services/navbarLegacyLinkService";
 import type { Issue } from "@/types/issue";
 
 const submitManuscriptUrl = "https://jfst.bup.edu.bd/index.php/jfst/login";
@@ -356,19 +360,33 @@ export default function PublicNavbar() {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [menus, setMenus] = useState<PublicMenuItem[]>([]);
   const [publicIssues, setPublicIssues] = useState<Issue[]>([]);
+  const [legacyLinkSettings, setLegacyLinkSettings] =
+    useState<NavbarLegacyLinkSettings | null>(null);
   const [searchText, setSearchText] = useState("");
   const [isNavbarStuck, setIsNavbarStuck] = useState(false);
 
+  const legacyLinkEnabled = Boolean(
+    legacyLinkSettings?.enabled &&
+      legacyLinkSettings.label?.trim() &&
+      legacyLinkSettings.url?.trim(),
+  );
+  const desktopMenuBreakpoint = legacyLinkEnabled ? 1420 : 1280;
+
   useEffect(() => {
     const fetchNavbarData = async () => {
-      const [menusResult, issuesResult] = await Promise.allSettled([
-        getPublicMenus(),
-        getPublicIssues(),
-      ]);
+      const [menusResult, issuesResult, legacyLinkResult] =
+        await Promise.allSettled([
+          getPublicMenus(),
+          getPublicIssues(),
+          getPublicNavbarLegacyLinkSettings(),
+        ]);
 
       setMenus(menusResult.status === "fulfilled" ? menusResult.value : []);
       setPublicIssues(
         issuesResult.status === "fulfilled" ? issuesResult.value : [],
+      );
+      setLegacyLinkSettings(
+        legacyLinkResult.status === "fulfilled" ? legacyLinkResult.value : null,
       );
     };
 
@@ -439,7 +457,7 @@ export default function PublicNavbar() {
 
   useEffect(() => {
     const closeMobileMenuOnDesktop = () => {
-      if (window.innerWidth >= 1280) {
+      if (window.innerWidth >= desktopMenuBreakpoint) {
         setMenuOpen(false);
       }
     };
@@ -449,7 +467,7 @@ export default function PublicNavbar() {
     return () => {
       window.removeEventListener("resize", closeMobileMenuOnDesktop);
     };
-  }, []);
+  }, [desktopMenuBreakpoint]);
 
   useEffect(() => {
     const scrollToCurrentHash = () => {
@@ -480,7 +498,7 @@ export default function PublicNavbar() {
 
     const navbar = navbarRef.current;
 
-    if (navbar && window.innerWidth < 1280) {
+    if (navbar && window.innerWidth < desktopMenuBreakpoint) {
       const navbarTop = navbar.getBoundingClientRect().top;
       const targetScrollTop = Math.max(0, window.scrollY + navbarTop);
 
@@ -611,6 +629,32 @@ export default function PublicNavbar() {
   const authorsHref = "/authors/author-guidelines";
   const reviewersHref = "/reviewers/reviewers-guideline";
 
+  const legacyPosition =
+    legacyLinkSettings?.position || "between-search-submit";
+
+  const renderLegacyButton = (mobile = false) => {
+    if (!legacyLinkEnabled || !legacyLinkSettings) return null;
+
+    const desktopColors = isNavbarStuck
+      ? "border-[#7de4ee]/50 bg-[#0c2b47] text-[#e6fbff] shadow-[0_8px_22px_rgba(2,8,23,0.16)] hover:border-[#f5c84b] hover:bg-[#123a59] hover:text-[#fff2bd]"
+      : "border-[#8edce8] bg-[#edfafd] text-[#075e78] shadow-sm hover:border-[#22b8e8] hover:bg-[#ddf5fa] hover:text-[#03465c]";
+
+    return (
+      <SmartLink
+        href={normalizeUrl(legacyLinkSettings.url)}
+        label={legacyLinkSettings.label}
+        isExternal={isAbsoluteUrl(legacyLinkSettings.url)}
+        openInNewTab={legacyLinkSettings.openInNewTab}
+        onClick={mobile ? () => setMenuOpen(false) : undefined}
+        className={
+          mobile
+            ? "journal-old-site-button inline-flex h-11 items-center justify-center rounded-full border border-[#8edce8] bg-[#edfafd] px-4 text-[14px] font-extrabold text-[#075e78] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#22b8e8] hover:bg-[#ddf5fa] hover:text-[#03465c] active:translate-y-0 active:scale-[0.99]"
+            : `journal-old-site-button inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full border px-4 text-[13px] font-bold transition-all duration-300 ${desktopColors}`
+        }
+      />
+    );
+  };
+
   return (
     <header
       ref={navbarRef}
@@ -619,9 +663,19 @@ export default function PublicNavbar() {
         : "border-slate-200 bg-white/95 shadow-sm"
         }`}
     >
-      <Container>
-        <nav className="flex min-h-[78px] items-center justify-between gap-6">
-          <Link href="/" className="flex min-w-0 items-center gap-4">
+      <Container
+        className={
+          legacyLinkEnabled ? "min-[1420px]:!max-w-[1400px]" : ""
+        }
+      >
+        <nav
+          className={
+            legacyLinkEnabled
+              ? "flex min-h-[78px] items-center gap-3"
+              : "flex min-h-[78px] items-center justify-between gap-6"
+          }
+        >
+          <Link href="/" className="flex min-w-0 shrink-0 items-center gap-4">
             <div className="journal-logo-wrap relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm transition-all duration-300">
               <Image
                 src="/images/bup.png"
@@ -633,7 +687,13 @@ export default function PublicNavbar() {
             </div>
           </Link>
 
-          <div className="hidden items-center gap-1 xl:flex">
+          <div
+            className={
+              legacyLinkEnabled
+                ? "hidden items-center gap-0.5 min-[1420px]:flex"
+                : "hidden items-center gap-1 xl:flex"
+            }
+          >
             <SmartLink
               href={homeHref}
               label={homeMenu?.label || "Home"}
@@ -687,40 +747,70 @@ export default function PublicNavbar() {
               label={cfpMenu?.label || "Call for Papers"}
               isExternal={cfpMenu?.isExternal}
               openInNewTab={cfpMenu?.openInNewTab}
-              className="journal-cfp-button inline-flex items-center whitespace-nowrap rounded-full border border-[#111433] bg-[#111433] px-4 py-2 text-[14px] font-semibold text-white transition-all duration-300 hover:border-[#f5c84b] hover:bg-[#f5c84b] hover:text-[#111433]"
+              className={`journal-cfp-button inline-flex items-center whitespace-nowrap rounded-full border border-[#111433] bg-[#111433] py-2 text-[14px] font-semibold text-white transition-all duration-300 hover:border-[#f5c84b] hover:bg-[#f5c84b] hover:text-[#111433] ${
+                legacyLinkEnabled ? "px-3.5" : "px-4"
+              }`}
             />
           </div>
 
-          <div className="hidden items-center gap-3 lg:flex">
+          <div
+            className={`hidden items-center lg:flex ${
+              legacyLinkEnabled ? "ml-auto gap-2" : "gap-3"
+            }`}
+          >
+            {legacyPosition === "before-search"
+              ? renderLegacyButton()
+              : null}
+
             <form
               onSubmit={handleSearch}
-              className="journal-search-form flex h-11 w-[250px] overflow-hidden rounded-full border border-slate-200 bg-slate-50 transition-all duration-300 focus-within:border-[#22b8e8]"
+              className={`journal-search-form flex h-11 overflow-hidden rounded-full border border-slate-200 bg-slate-50 transition-all duration-300 focus-within:border-[#22b8e8] ${
+                legacyLinkEnabled
+                  ? "w-[205px] min-[1540px]:w-[225px]"
+                  : "w-[250px]"
+              }`}
             >
               <input
                 value={searchText}
                 onChange={(event) => setSearchText(event.target.value)}
                 placeholder="Search journal"
-                className="journal-search-input min-w-0 flex-1 bg-transparent px-4 text-[14px] text-slate-700 outline-none transition-all duration-300 placeholder:text-slate-400"
+                className={`journal-search-input min-w-0 flex-1 bg-transparent text-[14px] text-slate-700 outline-none transition-all duration-300 placeholder:text-slate-400 ${
+                  legacyLinkEnabled ? "px-3" : "px-4"
+                }`}
               />
 
               <button
                 type="submit"
-                className="journal-search-button cursor-pointer px-4 text-[13px] font-medium text-[#111433] transition-all duration-300 hover:text-[#22b8e8]"
+                className={`journal-search-button cursor-pointer text-[13px] font-medium text-[#111433] transition-all duration-300 hover:text-[#22b8e8] ${
+                  legacyLinkEnabled ? "px-3" : "px-4"
+                }`}
               >
                 Search
               </button>
             </form>
+
+            {legacyPosition === "between-search-submit"
+              ? renderLegacyButton()
+              : null}
 
             <SmartLink
               href={normalizeUrl(submitMenu?.url || submitManuscriptUrl)}
               label={submitMenu?.label || "Submit Manuscript"}
               isExternal={submitMenu?.isExternal ?? true}
               openInNewTab={submitMenu?.openInNewTab ?? true}
-              className="journal-submit-button inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-[#111433] bg-[#111433] px-5 text-[14px] font-semibold text-white shadow-sm transition-all duration-300 hover:bg-[#1e2557]"
+              className={`journal-submit-button inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-[#111433] bg-[#111433] text-[14px] font-semibold text-white shadow-sm transition-all duration-300 hover:bg-[#1e2557] ${
+                legacyLinkEnabled ? "px-4" : "px-5"
+              }`}
             />
+
+            {legacyPosition === "after-submit" ? renderLegacyButton() : null}
           </div>
 
-          <div className="flex items-center gap-2 xl:hidden">
+          <div
+            className={`flex items-center gap-2 ${
+              legacyLinkEnabled ? "ml-auto min-[1420px]:hidden" : "xl:hidden"
+            }`}
+          >
             <button
               type="button"
               onClick={() => {
@@ -752,7 +842,7 @@ export default function PublicNavbar() {
             <button
               type="button"
               onClick={handleMobileMenuToggle}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-[22px] font-semibold text-[#111433] transition-all duration-300 hover:scale-105 hover:border-[#22b8e8] hover:bg-[#eef8fc] active:scale-95 xl:hidden"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-[22px] font-semibold text-[#111433] transition-all duration-300 hover:scale-105 hover:border-[#22b8e8] hover:bg-[#eef8fc] active:scale-95"
               aria-label="Toggle menu"
               aria-expanded={menuOpen}
             >
@@ -809,7 +899,9 @@ export default function PublicNavbar() {
         </div>
 
         <div
-          className={`border-t border-slate-200 transition-all duration-500 ease-in-out xl:hidden ${menuOpen
+          className={`border-t border-slate-200 transition-all duration-500 ease-in-out ${
+            legacyLinkEnabled ? "min-[1420px]:hidden" : "xl:hidden"
+          } ${menuOpen
             ? "max-h-[calc(100dvh-78px)] translate-y-0 overflow-y-auto overscroll-contain touch-pan-y py-4 opacity-100"
             : "max-h-0 -translate-y-2 overflow-hidden border-transparent py-0 opacity-0"
             }`}
@@ -880,6 +972,10 @@ export default function PublicNavbar() {
               className="inline-flex h-11 items-center justify-center rounded-full border border-[#f5c84b] bg-[#f5c84b] px-4 text-[14px] font-extrabold text-[#07162b] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#ffd86b] hover:bg-[#ffd86b] hover:text-[#07162b] active:translate-y-0 active:scale-[0.99]"
             />
 
+            {legacyLinkEnabled && legacyPosition !== "after-submit"
+              ? renderLegacyButton(true)
+              : null}
+
             <SmartLink
               href={normalizeUrl(submitMenu?.url || submitManuscriptUrl)}
               label={submitMenu?.label || "Submit Manuscript"}
@@ -888,6 +984,10 @@ export default function PublicNavbar() {
               onClick={() => setMenuOpen(false)}
               className="inline-flex h-11 items-center justify-center rounded-full border border-[#40546f] bg-[#24364f] px-4 text-[14px] font-extrabold text-white transition-all duration-300 hover:-translate-y-0.5 hover:border-[#f5c84b]/80 hover:bg-[#2f4664] hover:text-[#f5c84b] active:translate-y-0 active:scale-[0.99]"
             />
+
+            {legacyLinkEnabled && legacyPosition === "after-submit"
+              ? renderLegacyButton(true)
+              : null}
 
             {/* <form
               onSubmit={handleSearch}

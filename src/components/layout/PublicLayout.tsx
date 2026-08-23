@@ -1,7 +1,6 @@
 import { ReactNode } from "react";
 import JournalHero from "./JournalHero";
 import PublicNavbar from "./PublicNavbar";
-import LegacyNavbarButton from "./LegacyNavbarButton";
 import JournalAnnouncement from "./JournalAnnouncement";
 import PublicFooter from "./PublicFooter";
 import { PublicHomepageContent } from "@/services/publicHomepageService";
@@ -44,7 +43,6 @@ export default function PublicLayout({
 
       <JournalAnnouncement />
       <PublicNavbar />
-      <LegacyNavbarButton />
       {children}
       <PublicFooter />
     </>
