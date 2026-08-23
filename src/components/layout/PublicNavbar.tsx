@@ -671,11 +671,11 @@ export default function PublicNavbar() {
         <nav
           className={
             legacyLinkEnabled
-              ? "flex min-h-[78px] items-center gap-3"
+              ? "flex min-h-[78px] items-center justify-center gap-4"
               : "flex min-h-[78px] items-center justify-between gap-6"
           }
         >
-          <Link href="/" className="flex min-w-0 shrink-0 items-center gap-4">
+          <Link href="/" className="flex min-w-0 shrink-0 items-center">
             <div className="journal-logo-wrap relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm transition-all duration-300">
               <Image
                 src="/images/bup.png"
@@ -690,7 +690,7 @@ export default function PublicNavbar() {
           <div
             className={
               legacyLinkEnabled
-                ? "hidden items-center gap-0.5 min-[1420px]:flex"
+                ? "hidden items-center gap-1 min-[1420px]:flex"
                 : "hidden items-center gap-1 xl:flex"
             }
           >
@@ -754,9 +754,11 @@ export default function PublicNavbar() {
           </div>
 
           <div
-            className={`hidden items-center lg:flex ${
-              legacyLinkEnabled ? "ml-auto gap-2" : "gap-3"
-            }`}
+            className={
+              legacyLinkEnabled
+                ? "hidden items-center gap-2 min-[1420px]:flex"
+                : "hidden items-center gap-3 lg:flex"
+            }
           >
             {legacyPosition === "before-search"
               ? renderLegacyButton()
@@ -817,7 +819,9 @@ export default function PublicNavbar() {
                 setMenuOpen(false);
                 setMobileSearchOpen((current) => !current);
               }}
-              className={`inline-flex h-11 w-11 items-center justify-center rounded-full border text-[18px] font-semibold transition-all duration-300 active:scale-95 lg:hidden ${mobileSearchOpen
+              className={`inline-flex h-11 w-11 items-center justify-center rounded-full border text-[18px] font-semibold transition-all duration-300 active:scale-95 ${
+                legacyLinkEnabled ? "min-[1420px]:hidden" : "lg:hidden"
+              } ${mobileSearchOpen
                 ? "border-[#22b8e8] bg-[#eef8fc] text-[#087895]"
                 : "border-slate-200 bg-white text-[#111433] hover:border-[#22b8e8] hover:bg-[#eef8fc] hover:text-[#087895]"
                 }`}
@@ -857,7 +861,9 @@ export default function PublicNavbar() {
         </nav>
 
         <div
-          className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-in-out lg:hidden ${mobileSearchOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+          className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
+            legacyLinkEnabled ? "min-[1420px]:hidden" : "lg:hidden"
+          } ${mobileSearchOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
             }`}
         >
           <div className="min-h-0">
