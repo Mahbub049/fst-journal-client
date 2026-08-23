@@ -12,6 +12,18 @@ function getArticleDownloadUrl(issueSlug: string, articleSlug: string) {
   return `${BROWSER_API_URL}/issues/${issueSlug}/articles/${articleSlug}/download`;
 }
 
+function getDoiUrl(value?: string) {
+  let cleanDoi = String(value || "").trim();
+
+  if (!cleanDoi) return "#";
+
+  cleanDoi = cleanDoi.replace(/^doi:\s*/i, "").trim();
+  cleanDoi = cleanDoi.replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, "");
+  cleanDoi = cleanDoi.replace(/\s+/g, "");
+
+  return `https://doi.org/${cleanDoi}`;
+}
+
 async function getArticleDetails(slug: string, articleSlug: string) {
   try {
     const res = await fetch(
@@ -121,7 +133,7 @@ export default async function ArticleDetailsPage({
                     <div>
                       <span className="font-bold text-slate-950">DOI: </span>
                       <a
-                        href={article.doi}
+                        href={getDoiUrl(article.doi)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="break-all text-[#111433] hover:text-[#22b8e8] hover:underline [overflow-wrap:anywhere]"
@@ -184,7 +196,7 @@ export default async function ArticleDetailsPage({
                     <p>
                       <span className="font-semibold text-slate-950">DOI:</span>{" "}
                       <a
-                        href={article.doi}
+                        href={getDoiUrl(article.doi)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="break-all text-[#111433] hover:text-[#22b8e8] hover:underline [overflow-wrap:anywhere]"
