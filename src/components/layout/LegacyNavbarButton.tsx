@@ -42,6 +42,29 @@ export default function LegacyNavbarButton() {
     };
   }, []);
 
+  const isEnabled = Boolean(
+    settings?.enabled && settings.label?.trim() && settings.url?.trim()
+  );
+
+  // Only when the optional old-site button is enabled, switch the desktop
+  // navbar into a slightly wider/compact layout. This keeps the normal navbar
+  // completely unchanged when the button is disabled, while preventing the
+  // fixed-size logo from being squeezed into/under the Home link.
+  useEffect(() => {
+    const navbar = document.querySelector<HTMLElement>(".journal-navbar");
+    if (!navbar) return;
+
+    if (isEnabled) {
+      navbar.classList.add("journal-navbar-has-old-site");
+    } else {
+      navbar.classList.remove("journal-navbar-has-old-site");
+    }
+
+    return () => {
+      navbar.classList.remove("journal-navbar-has-old-site");
+    };
+  }, [isEnabled]);
+
   useEffect(() => {
     const navbar = document.querySelector<HTMLElement>(".journal-navbar");
     if (!navbar) return;
@@ -137,7 +160,7 @@ export default function LegacyNavbarButton() {
 
   const mobileOrder = settings?.position === "after-submit" ? 3 : 1;
 
-  if (!settings?.enabled || !settings.label?.trim() || !settings.url?.trim()) {
+  if (!isEnabled || !settings) {
     return null;
   }
 
@@ -146,6 +169,67 @@ export default function LegacyNavbarButton() {
 
   return (
     <>
+      {/*
+        The extra button needs more horizontal room than the standard navbar.
+        These rules are intentionally scoped to journal-navbar-has-old-site, so
+        disabling the button restores the original navbar design automatically.
+      */}
+      <style>{`
+        @media (min-width: 1280px) {
+          .journal-navbar-has-old-site > div {
+            max-width: 1536px !important;
+            padding-left: 20px !important;
+            padding-right: 20px !important;
+          }
+
+          .journal-navbar-has-old-site nav {
+            gap: 12px !important;
+          }
+
+          .journal-navbar-has-old-site nav > a:first-child {
+            flex-shrink: 0 !important;
+            min-width: 48px !important;
+          }
+
+          .journal-navbar-has-old-site .nav-link {
+            padding-left: 9px !important;
+            padding-right: 9px !important;
+            white-space: nowrap;
+          }
+
+          .journal-navbar-has-old-site .journal-search-form {
+            width: clamp(190px, 15vw, 230px) !important;
+          }
+
+          .journal-navbar-has-old-site .journal-cfp-button,
+          .journal-navbar-has-old-site .journal-submit-button,
+          .journal-navbar-has-old-site .journal-old-site-button {
+            padding-left: 16px !important;
+            padding-right: 16px !important;
+          }
+        }
+
+        @media (min-width: 1280px) and (max-width: 1439px) {
+          .journal-navbar-has-old-site .nav-link {
+            padding-left: 7px !important;
+            padding-right: 7px !important;
+            font-size: 13px !important;
+          }
+
+          .journal-navbar-has-old-site .journal-search-form {
+            width: 180px !important;
+          }
+
+          .journal-navbar-has-old-site .journal-cfp-button,
+          .journal-navbar-has-old-site .journal-submit-button,
+          .journal-navbar-has-old-site .journal-old-site-button {
+            padding-left: 12px !important;
+            padding-right: 12px !important;
+            font-size: 13px !important;
+          }
+        }
+      `}</style>
+
       {desktopTarget
         ? createPortal(
             <a
