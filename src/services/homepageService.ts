@@ -33,6 +33,9 @@ export type HomepageLaunchModalFrequency =
   | "once-per-session"
   | "once-per-day";
 
+export type HomepageCelebrationStyle = "confetti" | "fireworks" | "both";
+export type HomepageCelebrationFrequency = "once-per-session" | "every-page";
+
 export type HomepageCarouselImage = {
   _id?: string;
   imageUrl: string;
@@ -93,6 +96,14 @@ export type HomepageContent = {
   launchModalEndAt: string | null;
   launchModalFrequency: HomepageLaunchModalFrequency;
   launchModalDismissible: boolean;
+  launchModalAutoCloseSeconds: number;
+
+  celebrationEnabled: boolean;
+  celebrationStyle: HomepageCelebrationStyle;
+  celebrationDurationSeconds: number;
+  celebrationFrequency: HomepageCelebrationFrequency;
+  celebrationStartAt: string | null;
+  celebrationEndAt: string | null;
 
   isPublished: boolean;
 };

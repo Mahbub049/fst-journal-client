@@ -3,6 +3,7 @@ import JournalHero from "./JournalHero";
 import PublicNavbar from "./PublicNavbar";
 import JournalAnnouncement from "./JournalAnnouncement";
 import PublicFooter from "./PublicFooter";
+import SiteCelebration from "./SiteCelebration";
 import { PublicHomepageContent } from "@/services/publicHomepageService";
 
 type PublicLayoutProps = {
@@ -43,6 +44,7 @@ export default function PublicLayout({
 
       <JournalAnnouncement />
       <PublicNavbar />
+      <SiteCelebration homepage={homepage} />
       {children}
       <PublicFooter />
     </>

@@ -13,6 +13,7 @@ import {
 import AdminLayout from "@/components/admin/AdminLayout";
 import HomepageLegacyWebsiteSettings from "@/components/admin/HomepageLegacyWebsiteSettings";
 import HomepageLaunchModalSettings from "@/components/admin/HomepageLaunchModalSettings";
+import HomepageCelebrationSettings from "@/components/admin/HomepageCelebrationSettings";
 import {
   getAdminHomepage,
   HomepageButton,
@@ -76,6 +77,14 @@ const emptyHomepage: HomepageContent = {
   launchModalEndAt: null,
   launchModalFrequency: "once-per-session",
   launchModalDismissible: true,
+  launchModalAutoCloseSeconds: 0,
+
+  celebrationEnabled: false,
+  celebrationStyle: "both",
+  celebrationDurationSeconds: 8,
+  celebrationFrequency: "once-per-session",
+  celebrationStartAt: null,
+  celebrationEndAt: null,
 
   isPublished: true,
 };
@@ -465,6 +474,8 @@ export default function AdminHomepagePage() {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
             <HomepageLaunchModalSettings form={form} updateField={updateField} />
+
+            <HomepageCelebrationSettings form={form} updateField={updateField} />
 
             <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-bold text-slate-950">

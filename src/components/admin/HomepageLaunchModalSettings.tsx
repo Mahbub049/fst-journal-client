@@ -331,6 +331,37 @@ export default function HomepageLaunchModalSettings({ form, updateField }: Props
           </div>
         </div>
 
+        <div className="rounded-2xl border border-cyan-200 bg-cyan-50/70 p-4">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-center">
+            <div>
+              <p className="text-sm font-bold text-slate-800">Automatic Display Time</p>
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                Set how many seconds the modal stays visible before it closes smoothly on its own. Use 0 to keep it open until the visitor closes it or follows a button.
+              </p>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                Auto-close after (seconds)
+              </label>
+              <input
+                type="number"
+                min={0}
+                max={120}
+                step={1}
+                value={form.launchModalAutoCloseSeconds}
+                onChange={(event) =>
+                  updateField(
+                    "launchModalAutoCloseSeconds",
+                    Math.min(Math.max(Number(event.target.value) || 0, 0), 120),
+                  )
+                }
+                className={inputClass}
+              />
+              <p className="mt-1 text-xs text-slate-500">0 = no automatic close</p>
+            </div>
+          </div>
+        </div>
+
         <label className="flex w-fit cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
           <input
             type="checkbox"
