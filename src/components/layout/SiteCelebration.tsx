@@ -1,10 +1,12 @@
 "use client";
 
 import { CSSProperties, useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
 import {
   getPublicHomepage,
   PublicHomepageContent,
 } from "@/services/publicHomepageService";
+import { matchesPublicDisplayScope } from "@/lib/publicDisplayScope";
 
 const SESSION_KEY = "jfst_celebration_seen_session";
 
@@ -30,6 +32,7 @@ type Props = {
 };
 
 export default function SiteCelebration({ homepage }: Props) {
+  const pathname = usePathname();
   const [resolvedHomepage, setResolvedHomepage] =
     useState<PublicHomepageContent | null>(homepage || null);
   const [active, setActive] = useState(false);
@@ -46,8 +49,7 @@ export default function SiteCelebration({ homepage }: Props) {
         if (mounted) setResolvedHomepage(data);
       })
       .catch(() => {
-        // The celebration is decorative. A settings fetch failure should never
-        // affect the public site itself.
+        // Decorative settings must never affect the public site itself.
       });
 
     return () => {
@@ -67,12 +69,25 @@ export default function SiteCelebration({ homepage }: Props) {
         resolvedHomepage?.celebrationFrequency || "once-per-session",
       startAt: resolvedHomepage?.celebrationStartAt || null,
       endAt: resolvedHomepage?.celebrationEndAt || null,
+      scope: resolvedHomepage?.celebrationScope || "all",
+      customPaths: resolvedHomepage?.celebrationCustomPaths || [],
     }),
     [resolvedHomepage],
   );
 
+  const allowedOnCurrentPage = matchesPublicDisplayScope({
+    pathname: pathname || "/",
+    scope: config.scope,
+    customPaths: config.customPaths,
+  });
+
   useEffect(() => {
-    if (!config.enabled || !isWithinSchedule(config.startAt, config.endAt)) {
+    if (
+      !resolvedHomepage ||
+      !config.enabled ||
+      !allowedOnCurrentPage ||
+      !isWithinSchedule(config.startAt, config.endAt)
+    ) {
       setActive(false);
       return;
     }
@@ -81,6 +96,7 @@ export default function SiteCelebration({ homepage }: Props) {
       typeof window !== "undefined" &&
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
     ) {
+      setActive(false);
       return;
     }
 
@@ -89,6 +105,7 @@ export default function SiteCelebration({ homepage }: Props) {
         config.frequency === "once-per-session" &&
         sessionStorage.getItem(SESSION_KEY) === "1"
       ) {
+        setActive(false);
         return;
       }
 
@@ -111,11 +128,14 @@ export default function SiteCelebration({ homepage }: Props) {
       setActive(false);
     };
   }, [
+    allowedOnCurrentPage,
     config.duration,
     config.enabled,
     config.endAt,
     config.frequency,
     config.startAt,
+    pathname,
+    resolvedHomepage,
   ]);
 
   if (!active) return null;

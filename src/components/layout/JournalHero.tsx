@@ -7,10 +7,7 @@ import {
   getPublicHomepage,
   PublicHomepageContent,
 } from "@/services/publicHomepageService";
-
-type Props = {
-  homepage?: PublicHomepageContent | null;
-};
+import { getRecentIssues } from "@/services/issues.service";
 
 const fallbackMetrics = [
   {
@@ -29,34 +26,54 @@ const fallbackMetrics = [
   },
 ];
 
+type Props = {
+  homepage?: PublicHomepageContent | null;
+};
+
 export default function JournalHero({ homepage }: Props) {
   const [heroData, setHeroData] = useState<PublicHomepageContent | null>(
     homepage || null,
   );
+  const [latestIssueCover, setLatestIssueCover] = useState("");
 
   useEffect(() => {
-    if (homepage) {
-      setHeroData(homepage);
-      return;
-    }
+    let mounted = true;
 
-    const loadHomepageData = async () => {
-      try {
-        const data = await getPublicHomepage();
-        setHeroData(data);
-      } catch {
+    const loadHeroData = async () => {
+      const [homepageResult, issuesResult] = await Promise.allSettled([
+        homepage ? Promise.resolve(homepage) : getPublicHomepage(),
+        getRecentIssues(),
+      ]);
+
+      if (!mounted) return;
+
+      if (homepageResult.status === "fulfilled") {
+        setHeroData(homepageResult.value || null);
+      } else if (!homepage) {
         setHeroData(null);
+      }
+
+      if (issuesResult.status === "fulfilled") {
+        const cover =
+          issuesResult.value.find((issue) => issue.isRecent && issue.coverImage)?.coverImage ||
+          issuesResult.value.find((issue) => issue.coverImage)?.coverImage ||
+          "";
+        setLatestIssueCover(cover);
       }
     };
 
-    loadHomepageData();
+    void loadHeroData();
+
+    return () => {
+      mounted = false;
+    };
   }, [homepage]);
 
   const heroTitle = heroData?.heroTitle || "Journal of FST";
   const heroSubtitle =
-    heroData?.heroSubtitle ||
-    "Bangladesh University of Professionals (BUP)";
-  const journalCoverImage = heroData?.journalCoverImage || "/images/cover.jpg";
+    heroData?.heroSubtitle || "Bangladesh University of Professionals (BUP)";
+  const journalCoverImage =
+    latestIssueCover || heroData?.journalCoverImage || "/images/cover.jpg";
   const publishingModel = heroData?.publishingModel || "Hybrid";
   const issnOnline = heroData?.issnOnline || "3134-7339";
   const issnPrint = heroData?.issnPrint || "2959-4812";
@@ -89,7 +106,7 @@ export default function JournalHero({ homepage }: Props) {
               <div className="relative aspect-[0.72] overflow-hidden rounded-[1.05rem] bg-[#0b1f3a]">
                 <Image
                   src={journalCoverImage}
-                  alt="Journal of FST cover"
+                  alt="Latest Journal of FST issue cover"
                   fill
                   className="object-cover"
                   priority
@@ -225,14 +242,7 @@ function HeroNetworkLines() {
       />
 
       {nodes.map(([cx, cy, fill]) => (
-        <circle
-          key={`${cx}-${cy}`}
-          cx={cx}
-          cy={cy}
-          r="2.2"
-          fill={fill}
-          opacity="0.76"
-        />
+        <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="2.2" fill={fill} opacity="0.76" />
       ))}
     </svg>
   );

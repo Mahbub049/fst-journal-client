@@ -6,7 +6,6 @@ import JournalInfoSidebar from "@/components/home/JournalInfoSidebar";
 import HomepageCarousel from "@/components/home/HomepageCarousel";
 import OverviewSection from "@/components/home/OverviewSection";
 import RecentIssuesSection from "@/components/home/RecentIssuesSection";
-import HomepageLaunchModal from "@/components/home/HomepageLaunchModal";
 import { getServerApiBaseUrl } from "@/lib/apiBase";
 import { PublicHomepageContent } from "@/services/publicHomepageService";
 import { Article, Issue } from "@/types/issue";
@@ -17,14 +16,8 @@ const HOME_ISSUE_LIMIT = 3;
 
 async function fetchJson<T>(url: string): Promise<T | null> {
   try {
-    const response = await fetch(url, {
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) return null;
     return response.json();
   } catch {
     return null;
@@ -33,34 +26,26 @@ async function fetchJson<T>(url: string): Promise<T | null> {
 
 async function getHomepageData(): Promise<PublicHomepageContent | null> {
   const API_URL = getServerApiBaseUrl();
-
   const data = await fetchJson<{
     success: boolean;
     homepage: PublicHomepageContent;
   }>(`${API_URL}/homepage`);
-
   return data?.homepage || null;
 }
 
 async function getInitialArticles(): Promise<Article[]> {
   const API_URL = getServerApiBaseUrl();
-
-  const data = await fetchJson<{
-    success: boolean;
-    data: Article[];
-  }>(`${API_URL}/issues/articles/home?tab=latest`);
-
+  const data = await fetchJson<{ success: boolean; data: Article[] }>(
+    `${API_URL}/issues/articles/home?tab=latest`,
+  );
   return Array.isArray(data?.data) ? data.data : [];
 }
 
 async function getInitialRecentIssues(): Promise<Issue[]> {
   const API_URL = getServerApiBaseUrl();
-
-  const data = await fetchJson<{
-    success: boolean;
-    data: Issue[];
-  }>(`${API_URL}/issues/recent`);
-
+  const data = await fetchJson<{ success: boolean; data: Issue[] }>(
+    `${API_URL}/issues/recent`,
+  );
   return Array.isArray(data?.data) ? data.data.slice(0, HOME_ISSUE_LIMIT) : [];
 }
 
@@ -73,7 +58,6 @@ export default async function HomePage() {
 
   return (
     <PublicLayout homepage={homepage}>
-      <HomepageLaunchModal homepage={homepage} />
       <main className="bg-[#f7f8fb]">
         <Container className="py-10 md:py-14">
           <div className="grid items-stretch overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.07)] lg:grid-cols-[minmax(0,1.4fr)_minmax(360px,0.82fr)]">
@@ -92,15 +76,8 @@ export default async function HomePage() {
         <ExecutiveEditorsSection homepage={homepage} />
 
         <Container className="space-y-10 py-10 md:py-14">
-          <ArticlesSection
-            homepage={homepage}
-            initialArticles={initialArticles}
-          />
-
-          <RecentIssuesSection
-            homepage={homepage}
-            initialIssues={initialIssues}
-          />
+          <ArticlesSection homepage={homepage} initialArticles={initialArticles} />
+          <RecentIssuesSection homepage={homepage} initialIssues={initialIssues} />
         </Container>
       </main>
     </PublicLayout>

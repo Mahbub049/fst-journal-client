@@ -1,4 +1,5 @@
 import api from "@/lib/api";
+import type { PublicDisplayScope } from "@/lib/publicDisplayScope";
 
 export type HomepageMetric = {
   _id?: string;
@@ -25,7 +26,6 @@ export type HomepageButton = {
   order: number;
   isActive: boolean;
 };
-
 
 export type HomepageLaunchModalLayout = "text" | "image-text" | "image";
 export type HomepageLaunchModalFrequency =
@@ -98,6 +98,8 @@ export type PublicHomepageContent = {
   launchModalFrequency: HomepageLaunchModalFrequency;
   launchModalDismissible: boolean;
   launchModalAutoCloseSeconds: number;
+  launchModalScope?: PublicDisplayScope;
+  launchModalCustomPaths?: string[];
 
   celebrationEnabled: boolean;
   celebrationStyle: HomepageCelebrationStyle;
@@ -105,6 +107,8 @@ export type PublicHomepageContent = {
   celebrationFrequency: HomepageCelebrationFrequency;
   celebrationStartAt: string | null;
   celebrationEndAt: string | null;
+  celebrationScope?: PublicDisplayScope;
+  celebrationCustomPaths?: string[];
 
   isPublished: boolean;
 };

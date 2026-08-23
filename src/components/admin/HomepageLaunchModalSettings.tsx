@@ -1,9 +1,13 @@
 "use client";
 
-import { ImageIcon, Loader2, Sparkles, UploadCloud, X } from "lucide-react";
+import { ImageIcon, Loader2, MapPin, Sparkles, UploadCloud, X } from "lucide-react";
 import { useState } from "react";
 import type { HomepageContent } from "@/services/homepageService";
 import { uploadMedia } from "@/services/mediaService";
+import {
+  parseCustomDisplayPaths,
+  type PublicDisplayScope,
+} from "@/lib/publicDisplayScope";
 
 type Props = {
   form: HomepageContent;
@@ -16,9 +20,33 @@ type Props = {
 const inputClass =
   "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10";
 
+const scopeOptions: Array<{
+  value: PublicDisplayScope;
+  title: string;
+  description: string;
+}> = [
+  {
+    value: "homepage",
+    title: "Homepage Only",
+    description: "Show the modal only when a visitor opens the homepage.",
+  },
+  {
+    value: "all",
+    title: "Every Public Page",
+    description: "Allow the modal on homepage, issues, articles and other public pages.",
+  },
+  {
+    value: "custom",
+    title: "Custom Pages",
+    description: "Choose exact public paths or sections where the modal may appear.",
+  },
+];
+
 export default function HomepageLaunchModalSettings({ form, updateField }: Props) {
   const [uploading, setUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState("");
+  const scope = form.launchModalScope || "homepage";
+  const customPaths = form.launchModalCustomPaths || [];
 
   const uploadImage = async (file?: File | null) => {
     if (!file) return;
@@ -36,9 +64,7 @@ export default function HomepageLaunchModalSettings({ form, updateField }: Props
         folder: "homepage-launch-modal",
       });
       updateField("launchModalImageUrl", uploaded.fileUrl);
-      setUploadMessage(
-        "Modal image uploaded. Save Homepage Management to publish it.",
-      );
+      setUploadMessage("Modal image uploaded. Save Homepage Management to publish it.");
     } catch (error: any) {
       setUploadMessage(
         error?.response?.data?.message || "Failed to upload modal image.",
@@ -60,11 +86,10 @@ export default function HomepageLaunchModalSettings({ form, updateField }: Props
               <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#7de4ee]">
                 Visitor Welcome Experience
               </p>
-              <h2 className="mt-1 text-xl font-bold">Homepage Launch Modal</h2>
+              <h2 className="mt-1 text-xl font-bold">Launch / Announcement Modal</h2>
               <p className="mt-1 max-w-3xl text-sm leading-6 text-white/70">
-                Use this for the website inauguration now, and later for major
-                announcements. It can be text-only, image with text, or a full
-                image poster.
+                Use this for inauguration and later announcements. Control its design,
+                schedule, display duration and exactly where it can appear.
               </p>
             </div>
           </div>
@@ -86,6 +111,67 @@ export default function HomepageLaunchModalSettings({ form, updateField }: Props
       </div>
 
       <div className="space-y-6 p-6">
+        <div className="rounded-2xl border border-cyan-200 bg-cyan-50/60 p-4">
+          <div className="flex items-center gap-2 text-slate-800">
+            <MapPin className="h-4 w-4 text-[#005A78]" />
+            <p className="text-sm font-bold">Where should the modal appear?</p>
+          </div>
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
+            {scopeOptions.map((option) => {
+              const selected = scope === option.value;
+              return (
+                <label
+                  key={option.value}
+                  className={`cursor-pointer rounded-2xl border p-4 transition ${
+                    selected
+                      ? "border-[#005A78] bg-white shadow-sm"
+                      : "border-slate-200 bg-white/60 hover:border-slate-300"
+                  }`}
+                >
+                  <div className="flex gap-3">
+                    <input
+                      type="radio"
+                      name="launch-modal-scope"
+                      checked={selected}
+                      onChange={() => updateField("launchModalScope", option.value)}
+                      className="mt-1 h-4 w-4 accent-[#005A78]"
+                    />
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">{option.title}</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                        {option.description}
+                      </p>
+                    </div>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+
+          {scope === "custom" ? (
+            <div className="mt-4">
+              <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                Custom Public Paths
+              </label>
+              <textarea
+                rows={4}
+                value={customPaths.join("\n")}
+                onChange={(event) =>
+                  updateField(
+                    "launchModalCustomPaths",
+                    parseCustomDisplayPaths(event.target.value),
+                  )
+                }
+                placeholder={'One per line, for example:\n/issues/archive\n/editorial-board\n/issues/*'}
+                className={inputClass}
+              />
+              <p className="mt-1.5 text-xs leading-5 text-slate-500">
+                Use exact paths or <strong>*</strong> for a section, e.g. <strong>/issues/*</strong>.
+              </p>
+            </div>
+          ) : null}
+        </div>
+
         <div>
           <p className="text-sm font-bold text-slate-800">Modal Layout</p>
           <div className="mt-3 grid gap-3 md:grid-cols-3">
@@ -137,9 +223,7 @@ export default function HomepageLaunchModalSettings({ form, updateField }: Props
             </label>
             <input
               value={form.launchModalEyebrow}
-              onChange={(event) =>
-                updateField("launchModalEyebrow", event.target.value)
-              }
+              onChange={(event) => updateField("launchModalEyebrow", event.target.value)}
               className={inputClass}
             />
           </div>
@@ -149,9 +233,7 @@ export default function HomepageLaunchModalSettings({ form, updateField }: Props
             </label>
             <input
               value={form.launchModalTitle}
-              onChange={(event) =>
-                updateField("launchModalTitle", event.target.value)
-              }
+              onChange={(event) => updateField("launchModalTitle", event.target.value)}
               className={inputClass}
             />
           </div>
@@ -164,9 +246,7 @@ export default function HomepageLaunchModalSettings({ form, updateField }: Props
           <textarea
             rows={5}
             value={form.launchModalMessage}
-            onChange={(event) =>
-              updateField("launchModalMessage", event.target.value)
-            }
+            onChange={(event) => updateField("launchModalMessage", event.target.value)}
             className={inputClass}
           />
         </div>
@@ -179,8 +259,7 @@ export default function HomepageLaunchModalSettings({ form, updateField }: Props
             <div>
               <p className="text-sm font-bold text-slate-800">Modal Image</p>
               <p className="text-xs text-slate-500">
-                Required for Photo + Text and Full Image layouts. Optional for
-                Designed Welcome.
+                Required for Photo + Text and Full Image layouts. Optional for Designed Welcome.
               </p>
             </div>
           </div>
@@ -188,9 +267,7 @@ export default function HomepageLaunchModalSettings({ form, updateField }: Props
           <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_auto]">
             <input
               value={form.launchModalImageUrl}
-              onChange={(event) =>
-                updateField("launchModalImageUrl", event.target.value)
-              }
+              onChange={(event) => updateField("launchModalImageUrl", event.target.value)}
               placeholder="Image URL or upload below"
               className={inputClass}
             />
@@ -227,53 +304,37 @@ export default function HomepageLaunchModalSettings({ form, updateField }: Props
 
           <input
             value={form.launchModalImageAlt}
-            onChange={(event) =>
-              updateField("launchModalImageAlt", event.target.value)
-            }
+            onChange={(event) => updateField("launchModalImageAlt", event.target.value)}
             placeholder="Image alternative text"
             className={`${inputClass} mt-3`}
           />
           {uploadMessage ? (
-            <p className="mt-2 text-xs font-semibold text-slate-600">
-              {uploadMessage}
-            </p>
+            <p className="mt-2 text-xs font-semibold text-slate-600">{uploadMessage}</p>
           ) : null}
         </div>
 
         <div className="grid gap-4 lg:grid-cols-3">
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-              Primary Button Text
-            </label>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700">Primary Button Text</label>
             <input
               value={form.launchModalPrimaryLabel}
-              onChange={(event) =>
-                updateField("launchModalPrimaryLabel", event.target.value)
-              }
+              onChange={(event) => updateField("launchModalPrimaryLabel", event.target.value)}
               className={inputClass}
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-              Primary Button Link
-            </label>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700">Primary Button Link</label>
             <input
               value={form.launchModalPrimaryUrl}
-              onChange={(event) =>
-                updateField("launchModalPrimaryUrl", event.target.value)
-              }
+              onChange={(event) => updateField("launchModalPrimaryUrl", event.target.value)}
               className={inputClass}
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-              Close Button Text
-            </label>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700">Close Button Text</label>
             <input
               value={form.launchModalSecondaryLabel}
-              onChange={(event) =>
-                updateField("launchModalSecondaryLabel", event.target.value)
-              }
+              onChange={(event) => updateField("launchModalSecondaryLabel", event.target.value)}
               className={inputClass}
             />
           </div>
@@ -281,9 +342,7 @@ export default function HomepageLaunchModalSettings({ form, updateField }: Props
 
         <div className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:grid-cols-3">
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-              Start Showing
-            </label>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700">Start Showing</label>
             <input
               type="datetime-local"
               value={toDateTimeLocalValue(form.launchModalStartAt)}
@@ -295,9 +354,7 @@ export default function HomepageLaunchModalSettings({ form, updateField }: Props
             <p className="mt-1 text-xs text-slate-500">Leave blank to start now.</p>
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-              Stop Showing
-            </label>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700">Stop Showing</label>
             <input
               type="datetime-local"
               value={toDateTimeLocalValue(form.launchModalEndAt)}
@@ -306,14 +363,10 @@ export default function HomepageLaunchModalSettings({ form, updateField }: Props
               }
               className={inputClass}
             />
-            <p className="mt-1 text-xs text-slate-500">
-              Perfect for keeping the inauguration modal live only a few days.
-            </p>
+            <p className="mt-1 text-xs text-slate-500">Useful for a temporary launch period.</p>
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-              Show Frequency
-            </label>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700">Show Frequency</label>
             <select
               value={form.launchModalFrequency}
               onChange={(event) =>
@@ -326,7 +379,7 @@ export default function HomepageLaunchModalSettings({ form, updateField }: Props
             >
               <option value="once-per-session">Once per browser session</option>
               <option value="once-per-day">Once per day</option>
-              <option value="every-visit">Every homepage visit</option>
+              <option value="every-visit">Every matching page visit</option>
             </select>
           </div>
         </div>
@@ -336,13 +389,12 @@ export default function HomepageLaunchModalSettings({ form, updateField }: Props
             <div>
               <p className="text-sm font-bold text-slate-800">Automatic Display Time</p>
               <p className="mt-1 text-xs leading-5 text-slate-600">
-                Set how many seconds the modal stays visible before it closes smoothly on its own. Use 0 to keep it open until the visitor closes it or follows a button.
+                Set how many seconds the modal stays visible before it closes smoothly.
+                Use 0 to keep it open until the visitor closes it or follows a button.
               </p>
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                Auto-close after (seconds)
-              </label>
+              <label className="mb-1.5 block text-sm font-semibold text-slate-700">Auto-close after (seconds)</label>
               <input
                 type="number"
                 min={0}
@@ -366,18 +418,15 @@ export default function HomepageLaunchModalSettings({ form, updateField }: Props
           <input
             type="checkbox"
             checked={form.launchModalDismissible}
-            onChange={(event) =>
-              updateField("launchModalDismissible", event.target.checked)
-            }
+            onChange={(event) => updateField("launchModalDismissible", event.target.checked)}
             className="h-4 w-4 accent-[#005A78]"
           />
           Allow visitors to close the modal with ×, outside click, or Escape
         </label>
 
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">
-          Suggested inauguration setup: <strong>Designed Welcome</strong>, show
-          once per session, enable it on launch day, and set an automatic stop
-          date after 3–7 days.
+          Suggested launch setup: <strong>Homepage Only</strong>, <strong>Designed Welcome</strong>,
+          once per session, with an automatic stop date after 3–7 days.
         </div>
       </div>
     </section>

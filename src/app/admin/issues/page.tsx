@@ -29,6 +29,7 @@ import {
 import { Issue } from "@/types/issue";
 import { uploadMedia } from "@/services/mediaService";
 import { confirmAdminAction } from "@/lib/adminDialogs";
+import { showAdminSuccessToast } from "@/lib/adminToast";
 
 type IssueStatusFilter = "all" | "published" | "draft" | "recent";
 
@@ -63,18 +64,17 @@ const monthNames = [
   "December",
 ];
 
-const getDefaultPublicationDateLabel = () => {
-  return `July ${new Date().getFullYear()}`;
-};
+const inputClass =
+  "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10";
+
+const getDefaultPublicationDateLabel = () => `July ${new Date().getFullYear()}`;
 
 const getMonthInputValue = (label: string) => {
   const match = String(label || "").trim().match(/^([A-Za-z]+)\s+(\d{4})$/);
   if (!match) return "";
-
   const monthIndex = monthNames.findIndex(
-    (month) => month.toLowerCase() === match[1].toLowerCase()
+    (month) => month.toLowerCase() === match[1].toLowerCase(),
   );
-
   if (monthIndex < 0) return "";
   return `${match[2]}-${String(monthIndex + 1).padStart(2, "0")}`;
 };
@@ -82,10 +82,8 @@ const getMonthInputValue = (label: string) => {
 const getPublicationDateLabelFromMonth = (value: string) => {
   const match = String(value || "").match(/^(\d{4})-(\d{2})$/);
   if (!match) return "";
-
   const monthIndex = Number(match[2]) - 1;
   if (monthIndex < 0 || monthIndex > 11) return "";
-
   return `${monthNames[monthIndex]} ${match[1]}`;
 };
 
@@ -95,7 +93,6 @@ const getNextVolume = (issues: Issue[]) => {
     const value = match ? Number(match[0]) : 0;
     return Number.isFinite(value) ? Math.max(max, value) : max;
   }, 0);
-
   return String(maxVolume + 1).padStart(2, "0");
 };
 
@@ -121,27 +118,27 @@ const buildCreateIssueForm = (issues: Issue[] = []): IssueFormState => {
   };
 };
 
-const makeSlug = (text: string) => {
-  return text
+const makeSlug = (text: string) =>
+  text
     .toLowerCase()
     .trim()
     .replace(/&/g, "and")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-};
 
 const formatTwoDigitValue = (value: string) => {
   const trimmed = value.trim();
   const numericMatch = trimmed.match(/\d+/);
-
-  if (!numericMatch) {
-    return makeSlug(trimmed);
-  }
-
+  if (!numericMatch) return makeSlug(trimmed);
   return numericMatch[0].padStart(2, "0");
 };
 
-const buildIssueSlug = (form: Pick<IssueFormState, "title" | "volume" | "issueNumber" | "publishDateLabel">) => {
+const buildIssueSlug = (
+  form: Pick<
+    IssueFormState,
+    "title" | "volume" | "issueNumber" | "publishDateLabel"
+  >,
+) => {
   const titleSlug = makeSlug(form.title);
   const volumeSlug = form.volume.trim()
     ? `volume-${formatTwoDigitValue(form.volume)}`
@@ -150,7 +147,6 @@ const buildIssueSlug = (form: Pick<IssueFormState, "title" | "volume" | "issueNu
     ? `issue-${formatTwoDigitValue(form.issueNumber)}`
     : "";
   const dateSlug = makeSlug(form.publishDateLabel);
-
   return [titleSlug, volumeSlug, issueSlug, dateSlug].filter(Boolean).join("-");
 };
 
@@ -166,18 +162,18 @@ export default function AdminIssuesPage() {
   const [allIssues, setAllIssues] = useState<Issue[]>([]);
   const [form, setForm] = useState<IssueFormState>(() => buildCreateIssueForm());
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<IssueStatusFilter>("all");
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingPdf, setUploadingPdf] = useState(false);
   const [reordering, setReordering] = useState(false);
   const [draggedIssueId, setDraggedIssueId] = useState<string | null>(null);
-
   const [message, setMessage] = useState("");
+  const [uploadMessage, setUploadMessage] = useState("");
 
   const generatedSlug = useMemo(() => buildIssueSlug(form), [form]);
   const canReorderIssues = statusFilter === "all" && search.trim().length === 0;
@@ -185,10 +181,7 @@ export default function AdminIssuesPage() {
   const fetchIssues = async () => {
     try {
       setLoading(true);
-      const data = await getAdminIssues({
-        search,
-        status: statusFilter,
-      });
+      const data = await getAdminIssues({ search, status: statusFilter });
       setIssues(data);
     } catch {
       setMessage("Failed to load issues.");
@@ -197,48 +190,55 @@ export default function AdminIssuesPage() {
     }
   };
 
+  const refreshAllIssues = async () => {
+    const data = await getAdminIssues({ status: "all" });
+    setAllIssues(data);
+    return data;
+  };
+
   useEffect(() => {
-    fetchIssues();
+    void fetchIssues();
   }, [statusFilter]);
 
   useEffect(() => {
-    const loadCreateDefaults = async () => {
-      try {
-        const data = await getAdminIssues({ status: "all" });
-        setAllIssues(data);
-        setForm((current) =>
-          editingId ? current : buildCreateIssueForm(data)
-        );
-      } catch {
-        // The normal issue list request already shows any loading error.
-      }
-    };
-
-    loadCreateDefaults();
+    void refreshAllIssues()
+      .then((data) => setForm(buildCreateIssueForm(data)))
+      .catch(() => undefined);
   }, []);
+
+  useEffect(() => {
+    if (!formOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !saving) closeFormModal();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [formOpen, saving]);
 
   const sortedIssues = useMemo(() => {
     return [...issues].sort((a, b) => {
       const orderA = Number(a.order || 0);
       const orderB = Number(b.order || 0);
-
-      if (orderA !== orderB) {
-        return orderA - orderB;
-      }
-
+      if (orderA !== orderB) return orderA - orderB;
       return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
     });
   }, [issues]);
 
-  const resetForm = () => {
-    setForm(buildCreateIssueForm(allIssues));
+  const openCreateModal = () => {
     setEditingId(null);
+    setForm(buildCreateIssueForm(allIssues));
     setMessage("");
+    setUploadMessage("");
+    setFormOpen(true);
   };
 
-  const handleEdit = (issue: Issue) => {
+  const openEditModal = (issue: Issue) => {
     setEditingId(issue._id);
-
     setForm({
       title: issue.title || "",
       category: issue.category || DEFAULT_ISSUE_CATEGORY,
@@ -251,59 +251,73 @@ export default function AdminIssuesPage() {
       isRecent: issue.isRecent ?? true,
       isPublished: issue.isPublished ?? true,
     });
-
     setMessage("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setUploadMessage("");
+    setFormOpen(true);
   };
 
-  const buildPayload = (): IssuePayload => {
-    return {
-      title: form.title.trim(),
-      slug: generatedSlug,
-      category: DEFAULT_ISSUE_CATEGORY,
-      issn: form.issn.trim(),
-      volume: form.volume.trim(),
-      issueNumber: form.issueNumber.trim(),
-      publishDateLabel: form.publishDateLabel.trim(),
-      coverImage: form.coverImage.trim(),
-      pdfUrl: form.pdfUrl.trim(),
-      isRecent: form.isRecent,
-      isPublished: form.isPublished,
-    };
+  const closeFormModal = () => {
+    if (saving) return;
+    setFormOpen(false);
+    setEditingId(null);
+    setUploadMessage("");
+    setForm(buildCreateIssueForm(allIssues));
   };
+
+  const updateField = <K extends keyof IssueFormState>(
+    field: K,
+    value: IssueFormState[K],
+  ) => {
+    setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const buildPayload = (): IssuePayload => ({
+    title: form.title.trim(),
+    slug: generatedSlug,
+    category: DEFAULT_ISSUE_CATEGORY,
+    // ISSN is intentionally hidden from issue management. Existing values are
+    // preserved while editing; newly created issues do not need an issue-level ISSN.
+    issn: form.issn.trim(),
+    volume: form.volume.trim(),
+    issueNumber: form.issueNumber.trim(),
+    publishDateLabel: form.publishDateLabel.trim(),
+    coverImage: form.coverImage.trim(),
+    pdfUrl: form.pdfUrl.trim(),
+    isRecent: form.isRecent,
+    isPublished: form.isPublished,
+  });
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (!form.title.trim() || !form.volume.trim() || !form.issueNumber.trim()) {
+      setUploadMessage("Title, volume and issue number are required.");
+      return;
+    }
+
     try {
       setSaving(true);
       setMessage("");
-
+      setUploadMessage("");
       const payload = buildPayload();
 
       if (editingId) {
         await updateAdminIssue(editingId, payload);
-        await fetchIssues();
-        const refreshedIssues = await getAdminIssues({ status: "all" });
-        setAllIssues(refreshedIssues);
-        setEditingId(null);
-        setForm(buildCreateIssueForm(refreshedIssues));
-        setMessage(
-          "Issue updated successfully. Its article PDF folder is ready on the server."
-        );
+        void showAdminSuccessToast("Issue saved");
+        setMessage("Issue updated successfully.");
       } else {
         await createAdminIssue(payload);
-        await fetchIssues();
-        const refreshedIssues = await getAdminIssues({ status: "all" });
-        setAllIssues(refreshedIssues);
-        setEditingId(null);
-        setForm(buildCreateIssueForm(refreshedIssues));
-        setMessage(
-          "Issue created successfully. It is now first in public order and its article PDF folder has been created automatically."
-        );
+        void showAdminSuccessToast("Issue created");
+        setMessage("Issue created successfully and added to the public order.");
       }
+
+      await fetchIssues();
+      const refreshed = await refreshAllIssues();
+      setForm(buildCreateIssueForm(refreshed));
+      setEditingId(null);
+      setFormOpen(false);
     } catch (error: any) {
-      setMessage(error?.response?.data?.message || "Failed to save issue.");
+      setUploadMessage(error?.response?.data?.message || "Failed to save issue.");
     } finally {
       setSaving(false);
     }
@@ -311,43 +325,28 @@ export default function AdminIssuesPage() {
 
   const handleMediaUpload = async (
     field: "coverImage" | "pdfUrl",
-    file: File | undefined
+    file?: File,
   ) => {
     if (!file) return;
 
     try {
-      if (field === "coverImage") {
-        setUploadingCover(true);
-      } else {
-        setUploadingPdf(true);
-      }
-
-      setMessage("");
-
+      field === "coverImage" ? setUploadingCover(true) : setUploadingPdf(true);
+      setUploadMessage("");
       const media = await uploadMedia({
         file,
         title: file.name,
         folder: "issues",
       });
-
-      setForm((prev) => ({
-        ...prev,
-        [field]: media.fileUrl,
-      }));
-
-      setMessage(
+      updateField(field, media.fileUrl);
+      setUploadMessage(
         field === "coverImage"
           ? "Cover image uploaded successfully."
-          : "Issue PDF uploaded successfully."
+          : "Issue PDF uploaded successfully.",
       );
     } catch (error: any) {
-      setMessage(error?.response?.data?.message || "Failed to upload file.");
+      setUploadMessage(error?.response?.data?.message || "Failed to upload file.");
     } finally {
-      if (field === "coverImage") {
-        setUploadingCover(false);
-      } else {
-        setUploadingPdf(false);
-      }
+      field === "coverImage" ? setUploadingCover(false) : setUploadingPdf(false);
     }
   };
 
@@ -363,11 +362,11 @@ export default function AdminIssuesPage() {
         ...issue,
         order: index,
       }));
-
       setIssues(orderedWithIndex);
       await reorderAdminIssues(orderedWithIndex.map((issue) => issue._id));
+      void showAdminSuccessToast("Issue order saved");
       await fetchIssues();
-      setMessage("Issue display order updated. The public website will follow this order.");
+      setMessage("Public issue order updated.");
     } catch (error: any) {
       setMessage(error?.response?.data?.message || "Failed to update issue order.");
       await fetchIssues();
@@ -382,15 +381,9 @@ export default function AdminIssuesPage() {
       setDraggedIssueId(null);
       return;
     }
-
     const fromIndex = sortedIssues.findIndex((issue) => issue._id === draggedIssueId);
     const toIndex = sortedIssues.findIndex((issue) => issue._id === targetIssueId);
-
-    if (fromIndex < 0 || toIndex < 0) {
-      setDraggedIssueId(null);
-      return;
-    }
-
+    if (fromIndex < 0 || toIndex < 0) return;
     await saveIssueOrder(reorderList(sortedIssues, fromIndex, toIndex));
   };
 
@@ -406,23 +399,15 @@ export default function AdminIssuesPage() {
       confirmButtonText: "Delete issue",
       destructive: true,
     });
-
     if (!confirmed) return;
 
     try {
       await deleteAdminIssue(issue._id);
+      void showAdminSuccessToast("Issue deleted");
       setMessage("Issue deleted successfully.");
-
-      if (editingId === issue._id) {
-        resetForm();
-      }
-
       await fetchIssues();
-      const refreshedIssues = await getAdminIssues({ status: "all" });
-      setAllIssues(refreshedIssues);
-      if (!editingId || editingId === issue._id) {
-        setForm(buildCreateIssueForm(refreshedIssues));
-      }
+      const refreshed = await refreshAllIssues();
+      setForm(buildCreateIssueForm(refreshed));
     } catch (error: any) {
       setMessage(error?.response?.data?.message || "Failed to delete issue.");
     }
@@ -436,600 +421,421 @@ export default function AdminIssuesPage() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#005A78]">
                 Issues CMS
               </p>
-              <h1 className="mt-2 text-2xl font-bold text-slate-950">
-                Issues Management
-              </h1>
-              <p className="mt-2 max-w-3xl text-sm text-slate-600">
-                Create issues with automatic slugs and control the public display
-                order using drag and drop.
+              <h1 className="mt-2 text-2xl font-bold text-slate-950">Issues Management</h1>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                Manage published and draft issues, reorder the public archive, and open the issue form only when you need it.
               </p>
             </div>
 
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-              Public issue order follows this list.
-            </div>
+            <button
+              type="button"
+              onClick={openCreateModal}
+              className="inline-flex w-fit items-center gap-2 rounded-2xl bg-[#005A78] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#004968] hover:shadow-md"
+            >
+              <Plus className="h-4 w-4" />
+              Create New Issue
+            </button>
           </div>
-        </div>
+        </section>
 
-        {message && (
+        {message ? (
           <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-700 shadow-sm">
             {message}
           </div>
-        )}
+        ) : null}
 
-        <div className="grid gap-6 xl:grid-cols-[430px_1fr]">
-          <form
-            onSubmit={handleSubmit}
-            className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
-          >
-            <div className="mb-5 flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-bold text-slate-950">
-                  {editingId ? "Edit Issue" : "Create Issue"}
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Fill issue details. The slug and display position are handled automatically.
-                </p>
-              </div>
-
-              {editingId && (
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-50"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
+        <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-col gap-4 border-b border-slate-200 p-5 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-slate-950">Issue List</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                {canReorderIssues
+                  ? "Drag issues or use the arrows to change public display order."
+                  : "Clear search and choose All to enable public reordering."}
+              </p>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                  Issue Title
-                </label>
-                <input
-                  value={form.title}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, title: event.target.value }))
-                  }
-                  placeholder="Example: Journal of FST"
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
-                  required
-                />
-              </div>
-
-              <div className="rounded-2xl border border-dashed border-[#005A78]/25 bg-[#005A78]/5 px-4 py-3">
-                <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.18em] text-[#005A78]">
-                  Auto-generated slug
-                </label>
-                <p className="break-all text-sm font-semibold text-slate-700">
-                  {generatedSlug || "journal-of-fst-volume-03-issue-01-july-2025"}
-                </p>
-                {/* <p className="mt-1 text-xs text-slate-500">
-                  Format: issue-title-volume-no-issue-no-publication-date-label.
-                </p> */}
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                    Volume
-                  </label>
-                  <input
-                    value={form.volume}
-                    inputMode="numeric"
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, volume: event.target.value }))
-                    }
-                    onBlur={() =>
-                      setForm((prev) => ({
-                        ...prev,
-                        volume: prev.volume ? formatTwoDigitValue(prev.volume) : prev.volume,
-                      }))
-                    }
-                    placeholder="04"
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                    Issue No.
-                  </label>
-                  <input
-                    value={form.issueNumber}
-                    inputMode="numeric"
-                    onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        issueNumber: event.target.value,
-                      }))
-                    }
-                    onBlur={() =>
-                      setForm((prev) => ({
-                        ...prev,
-                        issueNumber: prev.issueNumber
-                          ? formatTwoDigitValue(prev.issueNumber)
-                          : prev.issueNumber,
-                      }))
-                    }
-                    placeholder="01"
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                  Publication Month & Year
-                </label>
-                <input
-                  type="month"
-                  value={getMonthInputValue(form.publishDateLabel)}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      publishDateLabel: getPublicationDateLabelFromMonth(
-                        event.target.value
-                      ),
-                    }))
-                  }
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
-                  required
-                />
-                <p className="mt-1.5 text-xs text-slate-500">
-                  Saved publicly as {form.publishDateLabel || "Month Year"}. New issues default to July of the current year.
-                </p>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                  ISSN
-                </label>
-                <input
-                  value={form.issn}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      issn: event.target.value,
-                    }))
-                  }
-                  placeholder="ISSN value"
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                  Cover Image URL
-                </label>
-                <input
-                  value={form.coverImage}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      coverImage: event.target.value,
-                    }))
-                  }
-                  placeholder="/media/issues/issue-cover.jpg or image URL"
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
-                  required
-                />
-
-                <div className="mt-2 flex flex-wrap items-center gap-3">
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
-                    {uploadingCover ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Upload className="h-4 w-4" />
-                    )}
-                    {uploadingCover ? "Uploading..." : "Upload Cover"}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      disabled={uploadingCover}
-                      onChange={(event) =>
-                        handleMediaUpload("coverImage", event.target.files?.[0])
-                      }
-                    />
-                  </label>
-
-                  {form.coverImage && (
-                    <a
-                      href={form.coverImage}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-semibold text-[#005A78] hover:underline"
-                    >
-                      Preview cover
-                    </a>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                  Issue PDF URL
-                </label>
-                <input
-                  value={form.pdfUrl}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      pdfUrl: event.target.value,
-                    }))
-                  }
-                  placeholder="Optional PDF URL"
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
-                />
-
-                <div className="mt-2 flex flex-wrap items-center gap-3">
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
-                    {uploadingPdf ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Upload className="h-4 w-4" />
-                    )}
-                    {uploadingPdf ? "Uploading..." : "Upload PDF"}
-                    <input
-                      type="file"
-                      accept="application/pdf,.pdf"
-                      className="hidden"
-                      disabled={uploadingPdf}
-                      onChange={(event) =>
-                        handleMediaUpload("pdfUrl", event.target.files?.[0])
-                      }
-                    />
-                  </label>
-
-                  {form.pdfUrl && (
-                    <a
-                      href={form.pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-semibold text-[#005A78] hover:underline"
-                    >
-                      Open PDF
-                    </a>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                <label className="flex items-center gap-3 text-sm font-semibold text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={form.isRecent}
-                    onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        isRecent: event.target.checked,
-                      }))
-                    }
-                    className="h-4 w-4"
-                  />
-                  Mark as recent issue
-                </label>
-
-                <label className="flex items-center gap-3 text-sm font-semibold text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={form.isPublished}
-                    onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        isPublished: event.target.checked,
-                      }))
-                    }
-                    className="h-4 w-4"
-                  />
-                  Published
-                </label>
-              </div>
-
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold leading-5 text-amber-800">
-                New issues are automatically inserted at the top of the public display order.
-                The newest three published issues appear in the Issues navbar dropdown.
-                <span className="mt-1 block text-amber-900">
-                  Article folder: public/pdfs/articles/volume-{formatTwoDigitValue(form.volume || "00")}_issue-{formatTwoDigitValue(form.issueNumber || "00")}
-                </span>
-              </div>
-
-              <div className="flex flex-wrap gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#005A78] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#004765] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {saving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : editingId ? (
-                    <Save className="h-4 w-4" />
-                  ) : (
-                    <Plus className="h-4 w-4" />
-                  )}
-
-                  {saving
-                    ? "Saving..."
-                    : editingId
-                      ? "Update Issue"
-                      : "Create Issue"}
-                </button>
-
-                {editingId && (
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-                  >
-                    Cancel
-                  </button>
-                )}
-              </div>
-            </div>
-          </form>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-slate-950">
-                  Issue List & Display Order
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Drag issues to control which one appears first on the public website.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={fetchIssues}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Refresh
-              </button>
-            </div>
-
-            <form
-              onSubmit={handleSearchSubmit}
-              className="mb-4 grid gap-3 lg:grid-cols-[1fr_180px_auto]"
-            >
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <form onSubmit={handleSearchSubmit} className="flex h-11 min-w-[260px] overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search by title, slug, volume, issue no."
-                  className="w-full rounded-xl border border-slate-200 py-3 pl-11 pr-4 text-sm outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
+                  placeholder="Search issues"
+                  className="min-w-0 flex-1 bg-transparent px-4 text-sm outline-none"
                 />
-              </div>
+                <button type="submit" className="px-4 text-slate-500 hover:text-[#005A78]" aria-label="Search">
+                  <Search className="h-4 w-4" />
+                </button>
+              </form>
 
               <select
                 value={statusFilter}
-                onChange={(event) =>
-                  setStatusFilter(event.target.value as IssueStatusFilter)
-                }
-                className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
+                onChange={(event) => setStatusFilter(event.target.value as IssueStatusFilter)}
+                className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none focus:border-[#005A78]"
               >
-                <option value="all">All</option>
+                <option value="all">All Issues</option>
                 <option value="published">Published</option>
                 <option value="draft">Draft</option>
                 <option value="recent">Recent</option>
               </select>
 
               <button
-                type="submit"
-                className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
+                type="button"
+                onClick={() => void fetchIssues()}
+                className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:border-[#005A78] hover:text-[#005A78]"
               >
-                Search
+                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                Refresh
               </button>
-            </form>
-{/* 
-            <div
-              className={[
-                "mb-5 rounded-2xl border px-4 py-3 text-sm font-semibold",
-                canReorderIssues
-                  ? "border-cyan-200 bg-cyan-50 text-cyan-800"
-                  : "border-amber-200 bg-amber-50 text-amber-800",
-              ].join(" ")}
-            >
-              {canReorderIssues
-                ? "Ordering mode is active. Drag an issue, or use the arrow buttons, then the public site will follow the saved order."
-                : "Ordering is disabled while searching or filtering. Select All and clear the search box to rearrange issues."}
-            </div> */}
+            </div>
+          </div>
 
+          <div className="p-5">
             {loading ? (
-              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-8 text-center">
-                <Loader2 className="mx-auto h-6 w-6 animate-spin text-[#005A78]" />
-                <p className="mt-3 text-sm font-semibold text-slate-600">
-                  Loading issues...
-                </p>
+              <div className="flex min-h-[240px] items-center justify-center text-slate-500">
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading issues...
               </div>
             ) : sortedIssues.length === 0 ? (
-              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-8 text-center">
-                <h3 className="font-bold text-slate-800">No issues found</h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  Create the first journal issue from the form.
-                </p>
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-12 text-center">
+                <p className="font-bold text-slate-800">No issues found</p>
+                <p className="mt-1 text-sm text-slate-500">Create a new issue or adjust the current filters.</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {sortedIssues.map((issue, index) => (
-                  <div
+                  <article
                     key={issue._id}
                     draggable={canReorderIssues && !reordering}
-                    onDragStart={() => setDraggedIssueId(issue._id)}
-                    onDragOver={(event) => {
-                      if (canReorderIssues) event.preventDefault();
-                    }}
-                    onDrop={() => handleIssueDrop(issue._id)}
+                    onDragStart={() => canReorderIssues && setDraggedIssueId(issue._id)}
+                    onDragOver={(event) => canReorderIssues && event.preventDefault()}
+                    onDrop={() => void handleIssueDrop(issue._id)}
                     onDragEnd={() => setDraggedIssueId(null)}
-                    className={[
-                      "rounded-2xl border bg-slate-50 p-4 transition",
+                    className={`group grid gap-4 rounded-2xl border bg-white p-4 transition lg:grid-cols-[auto_82px_minmax(0,1fr)_auto] lg:items-center ${
                       draggedIssueId === issue._id
-                        ? "border-[#005A78] opacity-70 ring-2 ring-[#005A78]/15"
-                        : "border-slate-200 hover:border-[#005A78]/30",
-                      canReorderIssues ? "cursor-move" : "cursor-default",
-                    ].join(" ")}
+                        ? "border-[#005A78] bg-cyan-50/40 shadow-md"
+                        : "border-slate-200 hover:border-slate-300 hover:shadow-sm"
+                    }`}
                   >
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="flex gap-4">
-                        <div className="flex shrink-0 flex-col items-center gap-2">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#005A78] text-xs font-black text-white shadow-sm">
-                            {index + 1}
-                          </div>
-
-                          <div
-                            className={[
-                              "flex h-9 w-9 items-center justify-center rounded-full border bg-white text-slate-400",
-                              canReorderIssues
-                                ? "border-slate-200"
-                                : "border-slate-100 opacity-50",
-                            ].join(" ")}
-                            title="Drag to reorder"
-                          >
-                            {reordering && draggedIssueId === issue._id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <GripVertical className="h-4 w-4" />
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="h-24 w-16 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
-                          {issue.coverImage ? (
-                            <img
-                              src={issue.coverImage}
-                              alt={issue.title}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center text-xs font-bold text-slate-400">
-                              No Cover
-                            </div>
-                          )}
-                        </div>
-
-                        <div>
-                          <h3 className="font-bold text-slate-950">
-                            {issue.title}
-                          </h3>
-
-                          <p className="mt-1 break-all text-sm text-slate-500">
-                            /issues/{issue.slug}
-                          </p>
-
-                          <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
-                            <span className="rounded-full bg-white px-3 py-1 text-slate-700">
-                              Vol. {issue.volume}
-                            </span>
-                            <span className="rounded-full bg-white px-3 py-1 text-slate-700">
-                              Issue {issue.issueNumber}
-                            </span>
-                            <span className="rounded-full bg-white px-3 py-1 text-slate-700">
-                              {issue.publishDateLabel}
-                            </span>
-                            <span className="rounded-full bg-[#005A78]/10 px-3 py-1 text-[#005A78]">
-                              Public position {index + 1}
-                            </span>
-                          </div>
-
-                          <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
-                            <span
-                              className={[
-                                "inline-flex items-center gap-1 rounded-full px-3 py-1",
-                                issue.isPublished
-                                  ? "bg-emerald-50 text-emerald-700"
-                                  : "bg-rose-50 text-rose-700",
-                              ].join(" ")}
-                            >
-                              {issue.isPublished ? (
-                                <Eye className="h-3 w-3" />
-                              ) : (
-                                <EyeOff className="h-3 w-3" />
-                              )}
-                              {issue.isPublished ? "Published" : "Draft"}
-                            </span>
-
-                            {issue.isRecent && (
-                              <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">
-                                Recent
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap justify-end gap-2">
-                        <button
-                          type="button"
-                          disabled={!canReorderIssues || reordering || index === 0}
-                          onClick={() => moveIssue(index, index - 1)}
-                          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
-                          title="Move up"
-                        >
-                          <ArrowUp className="h-4 w-4" />
-                        </button>
-
-                        <button
-                          type="button"
-                          disabled={
-                            !canReorderIssues ||
-                            reordering ||
-                            index === sortedIssues.length - 1
-                          }
-                          onClick={() => moveIssue(index, index + 1)}
-                          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
-                          title="Move down"
-                        >
-                          <ArrowDown className="h-4 w-4" />
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleEdit(issue)}
-                          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-100"
-                        >
-                          <Edit className="h-4 w-4" />
-                          Edit
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(issue)}
-                          className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-700 transition hover:bg-rose-100"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          Delete
-                        </button>
-                      </div>
+                    <div className="hidden cursor-grab text-slate-300 active:cursor-grabbing lg:block">
+                      <GripVertical className="h-5 w-5" />
                     </div>
 
-                    {issue.pdfUrl && (
-                      <div className="mt-4 rounded-xl bg-white px-4 py-3 text-xs font-semibold text-slate-500">
-                        PDF:{" "}
-                        <span className="break-all text-slate-700">
-                          {issue.pdfUrl}
+                    <div className="relative h-[106px] w-[76px] overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-sm">
+                      {issue.coverImage ? (
+                        <img
+                          src={issue.coverImage}
+                          alt={`${issue.title} cover`}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center px-2 text-center text-[10px] font-bold text-slate-400">
+                          NO COVER
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-full bg-[#005A78]/10 px-2.5 py-1 text-[11px] font-black uppercase tracking-wide text-[#005A78]">
+                          #{index + 1}
                         </span>
+                        {issue.isPublished ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
+                            <Eye className="h-3 w-3" /> Published
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600">
+                            <EyeOff className="h-3 w-3" /> Draft
+                          </span>
+                        )}
+                        {issue.isRecent ? (
+                          <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">Recent</span>
+                        ) : null}
                       </div>
-                    )}
-                  </div>
+
+                      <h3 className="mt-2 truncate text-base font-bold text-slate-950">{issue.title}</h3>
+                      <p className="mt-1 text-sm font-semibold text-slate-600">
+                        Volume {issue.volume || "—"} · Issue {issue.issueNumber || "—"} · {issue.publishDateLabel || "No date"}
+                      </p>
+                      <p className="mt-1 truncate text-xs text-slate-400">/{issue.slug}</p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                      <button
+                        type="button"
+                        disabled={!canReorderIssues || reordering || index === 0}
+                        onClick={() => void moveIssue(index, index - 1)}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-[#005A78] hover:text-[#005A78] disabled:cursor-not-allowed disabled:opacity-35"
+                        aria-label="Move issue up"
+                      >
+                        <ArrowUp className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!canReorderIssues || reordering || index === sortedIssues.length - 1}
+                        onClick={() => void moveIssue(index, index + 1)}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-[#005A78] hover:text-[#005A78] disabled:cursor-not-allowed disabled:opacity-35"
+                        aria-label="Move issue down"
+                      >
+                        <ArrowDown className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(issue)}
+                        className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 transition hover:border-[#005A78] hover:text-[#005A78]"
+                      >
+                        <Edit className="h-4 w-4" /> Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleDelete(issue)}
+                        className="inline-flex h-10 items-center gap-2 rounded-xl border border-rose-200 bg-white px-3 text-sm font-bold text-rose-700 transition hover:bg-rose-50"
+                      >
+                        <Trash2 className="h-4 w-4" /> Delete
+                      </button>
+                    </div>
+                  </article>
                 ))}
               </div>
             )}
           </div>
-        </div>
+        </section>
       </div>
+
+      {formOpen ? (
+        <div
+          className="fixed inset-0 z-[500] flex items-center justify-center bg-[#071a33]/70 px-4 py-6 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !saving) closeFormModal();
+          }}
+        >
+          <form
+            onSubmit={handleSubmit}
+            className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-[28px] border border-white/20 bg-white shadow-[0_28px_90px_rgba(2,8,23,0.35)]"
+          >
+            <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-slate-200 bg-white/95 px-6 py-5 backdrop-blur">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#005A78]">
+                  {editingId ? "Edit Existing Issue" : "Create Journal Issue"}
+                </p>
+                <h2 className="mt-1 text-xl font-bold text-slate-950">
+                  {editingId ? "Update Issue Details" : "New Issue Details"}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={closeFormModal}
+                disabled={saving}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50"
+                aria-label="Close issue form"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-6 p-6">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="md:col-span-2">
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Journal / Issue Title</label>
+                  <input
+                    value={form.title}
+                    onChange={(event) => updateField("title", event.target.value)}
+                    className={inputClass}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Volume</label>
+                  <input
+                    value={form.volume}
+                    onChange={(event) => updateField("volume", event.target.value)}
+                    placeholder="04"
+                    className={inputClass}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Issue Number</label>
+                  <input
+                    value={form.issueNumber}
+                    onChange={(event) => updateField("issueNumber", event.target.value)}
+                    placeholder="01"
+                    className={inputClass}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Publication Month</label>
+                  <input
+                    type="month"
+                    value={getMonthInputValue(form.publishDateLabel)}
+                    onChange={(event) =>
+                      updateField(
+                        "publishDateLabel",
+                        getPublicationDateLabelFromMonth(event.target.value),
+                      )
+                    }
+                    className={inputClass}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Generated URL Slug</label>
+                  <input value={generatedSlug} readOnly className={`${inputClass} bg-slate-50 text-slate-500`} />
+                </div>
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <MediaField
+                  title="Issue Cover Image"
+                  value={form.coverImage}
+                  accept="image/*"
+                  uploading={uploadingCover}
+                  onUpload={(file) => void handleMediaUpload("coverImage", file)}
+                  onClear={() => updateField("coverImage", "")}
+                  previewImage
+                />
+                <MediaField
+                  title="Issue PDF"
+                  value={form.pdfUrl}
+                  accept="application/pdf"
+                  uploading={uploadingPdf}
+                  onUpload={(file) => void handleMediaUpload("pdfUrl", file)}
+                  onClear={() => updateField("pdfUrl", "")}
+                />
+              </div>
+
+              {uploadMessage ? (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
+                  {uploadMessage}
+                </div>
+              ) : null}
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">Show as Recent Issue</p>
+                    <p className="mt-1 text-xs text-slate-500">Allows the issue to appear in recent-issue areas.</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={form.isRecent}
+                    onChange={(event) => updateField("isRecent", event.target.checked)}
+                    className="h-4 w-4 accent-[#005A78]"
+                  />
+                </label>
+
+                <label className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">Published</p>
+                    <p className="mt-1 text-xs text-slate-500">Draft issues stay hidden from public visitors.</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={form.isPublished}
+                    onChange={(event) => updateField("isPublished", event.target.checked)}
+                    className="h-4 w-4 accent-[#005A78]"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white/95 px-6 py-4 backdrop-blur sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={closeFormModal}
+                disabled={saving}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#005A78] px-5 text-sm font-bold text-white shadow-sm transition hover:bg-[#004968] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                {saving ? "Saving..." : editingId ? "Save Changes" : "Create Issue"}
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
     </AdminLayout>
+  );
+}
+
+function MediaField({
+  title,
+  value,
+  accept,
+  uploading,
+  onUpload,
+  onClear,
+  previewImage = false,
+}: {
+  title: string;
+  value: string;
+  accept: string;
+  uploading: boolean;
+  onUpload: (file?: File) => void;
+  onClear: () => void;
+  previewImage?: boolean;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-bold text-slate-800">{title}</p>
+          <p className="mt-1 text-xs text-slate-500">Upload a replacement or keep the current file.</p>
+        </div>
+        {value ? (
+          <button
+            type="button"
+            onClick={onClear}
+            className="text-xs font-bold text-rose-600 hover:text-rose-700"
+          >
+            Clear
+          </button>
+        ) : null}
+      </div>
+
+      {previewImage && value ? (
+        <div className="mt-3 h-36 overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <img src={value} alt="Issue cover preview" className="h-full w-full object-contain" />
+        </div>
+      ) : null}
+
+      <div className="mt-3 flex gap-2">
+        <input
+          value={value}
+          readOnly
+          placeholder="No file selected"
+          className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-500 outline-none"
+        />
+        <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[#005A78]/20 bg-white px-4 py-2.5 text-sm font-bold text-[#005A78] transition hover:bg-cyan-50">
+          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+          {uploading ? "Uploading" : "Upload"}
+          <input
+            type="file"
+            accept={accept}
+            disabled={uploading}
+            className="hidden"
+            onChange={(event) => {
+              onUpload(event.target.files?.[0]);
+              event.target.value = "";
+            }}
+          />
+        </label>
+      </div>
+    </div>
   );
 }

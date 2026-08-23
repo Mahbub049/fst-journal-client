@@ -1,4 +1,6 @@
 import api from "@/lib/api";
+import { showAdminSuccessToast } from "@/lib/adminToast";
+import type { PublicDisplayScope } from "@/lib/publicDisplayScope";
 
 export type HomepageMetric = {
   _id?: string;
@@ -25,7 +27,6 @@ export type HomepageButton = {
   order: number;
   isActive: boolean;
 };
-
 
 export type HomepageLaunchModalLayout = "text" | "image-text" | "image";
 export type HomepageLaunchModalFrequency =
@@ -97,6 +98,8 @@ export type HomepageContent = {
   launchModalFrequency: HomepageLaunchModalFrequency;
   launchModalDismissible: boolean;
   launchModalAutoCloseSeconds: number;
+  launchModalScope?: PublicDisplayScope;
+  launchModalCustomPaths?: string[];
 
   celebrationEnabled: boolean;
   celebrationStyle: HomepageCelebrationStyle;
@@ -104,6 +107,8 @@ export type HomepageContent = {
   celebrationFrequency: HomepageCelebrationFrequency;
   celebrationStartAt: string | null;
   celebrationEndAt: string | null;
+  celebrationScope?: PublicDisplayScope;
+  celebrationCustomPaths?: string[];
 
   isPublished: boolean;
 };
@@ -115,5 +120,6 @@ export const getAdminHomepage = async () => {
 
 export const updateAdminHomepage = async (payload: HomepageContent) => {
   const { data } = await api.put("/homepage/admin", payload);
+  void showAdminSuccessToast("Homepage saved");
   return data.homepage as HomepageContent;
 };
