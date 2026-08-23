@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import {
   Edit,
   ExternalLink,
@@ -33,6 +33,7 @@ import {
 } from "@/services/editorialBoardService";
 import { uploadMedia } from "@/services/mediaService";
 import { confirmAdminAction, promptAdminText } from "@/lib/adminDialogs";
+import { showAdminSuccessToast } from "@/lib/adminToast";
 
 type StatusFilter = "all" | "active" | "inactive";
 
@@ -159,9 +160,9 @@ export default function AdminEditorialBoardPage() {
   const [savingConfig, setSavingConfig] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [message, setMessage] = useState("");
+  const [memberModalOpen, setMemberModalOpen] = useState(false);
   const [draggingMemberId, setDraggingMemberId] = useState<string | null>(null);
   const [draggingTaxonomy, setDraggingTaxonomy] = useState<{ type: "category" | "area"; index: number } | null>(null);
-  const memberFormRef = useRef<HTMLFormElement | null>(null);
 
   const fetchData = async () => {
     try {
@@ -212,6 +213,30 @@ export default function AdminEditorialBoardPage() {
     setForm(emptyEditor(config));
     setEditingId(null);
   };
+
+  const openCreateMemberModal = () => {
+    resetMemberForm();
+    setMemberModalOpen(true);
+  };
+
+  const closeMemberModal = () => {
+    resetMemberForm();
+    setMemberModalOpen(false);
+  };
+
+  useEffect(() => {
+    if (!memberModalOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !savingMember) closeMemberModal();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [memberModalOpen, savingMember]);
 
   const buildPayload = (): EditorialBoardPayload => ({
     category: form.category.trim(),
@@ -264,9 +289,7 @@ export default function AdminEditorialBoardPage() {
       biographyLabel: member.biographyLabel || "View Full Biography",
       isActive: member.isActive,
     });
-    requestAnimationFrame(() =>
-      memberFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-    );
+    setMemberModalOpen(true);
   };
 
   const handleProfileImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -296,12 +319,13 @@ export default function AdminEditorialBoardPage() {
       const payload = buildPayload();
       if (editingId) {
         await updateAdminEditorialBoard(editingId, payload);
-        setMessage("Editorial board member updated successfully.");
+        void showAdminSuccessToast("Editorial member updated");
       } else {
         await createAdminEditorialBoard(payload);
-        setMessage("Editorial board member created successfully.");
+        void showAdminSuccessToast("Editorial member created");
       }
       resetMemberForm();
+      setMemberModalOpen(false);
       await fetchData();
     } catch (error: any) {
       setMessage(error?.response?.data?.message || "Failed to save editorial board member.");
@@ -506,17 +530,39 @@ export default function AdminEditorialBoardPage() {
                 Control the public page content, dynamic count cards, editorial office, roles, editorial areas, and member profiles from one place.
               </p>
             </div>
-            <a href="/editorial-board" target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700">
-              <ExternalLink size={17} /> View Public Page
-            </a>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={openCreateMemberModal}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#071a33] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#0d2d4b] hover:shadow-md"
+              >
+                <Plus size={17} /> Create Member
+              </button>
+              <a href="/editorial-board" target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
+                <ExternalLink size={17} /> View Public Page
+              </a>
+            </div>
           </div>
         </div>
 
         {message && <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-700 shadow-sm">{message}</div>}
 
-        <div className="grid gap-6 xl:grid-cols-[430px_minmax(0,1fr)]">
-          <form ref={memberFormRef} onSubmit={handleSubmitMember} className="scroll-mt-24 self-start rounded-3xl border border-slate-200 bg-white p-6 shadow-sm xl:sticky xl:top-24">
-            <div className="mb-5 flex items-start justify-between gap-3"><div><h2 className="text-lg font-bold text-slate-950">{editingId ? "Edit Member" : "Create Member"}</h2><p className="mt-1 text-sm text-slate-500">Assign an existing role and editorial area. Manage roles and editorial areas below.</p></div>{editingId && <button type="button" onClick={resetMemberForm} className="rounded-full border border-slate-200 p-2"><X size={16} /></button>}</div>
+        {memberModalOpen ? (
+          <div
+            className="fixed inset-0 z-[1300] flex items-center justify-center bg-[#031020]/65 p-3 backdrop-blur-sm sm:p-5"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget && !savingMember) closeMemberModal();
+            }}
+          >
+            <form onSubmit={handleSubmitMember} className="max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-[28px] border border-white/20 bg-white p-5 shadow-[0_30px_100px_rgba(2,12,27,0.38)] sm:p-7">
+            <div className="sticky -top-5 z-20 mb-6 flex items-start justify-between gap-4 border-b border-slate-200 bg-white/95 pb-5 pt-1 backdrop-blur sm:-top-7">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#07809b]">Editorial Profile Editor</p>
+                <h2 className="mt-1 text-xl font-bold text-slate-950">{editingId ? "Edit Editorial Member" : "Create Editorial Member"}</h2>
+                <p className="mt-1 text-sm leading-6 text-slate-500">Add the member profile, role, area, biography, image and optional academic profile links.</p>
+              </div>
+              <button type="button" onClick={closeMemberModal} disabled={savingMember} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-100 disabled:opacity-50" aria-label="Close member editor"><X size={16} /></button>
+            </div>
             <div className="space-y-4">
               <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Category / Role</label><select value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm">{activeCategories.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select></div>
               <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Editorial Area</label><select value={form.editorialArea} onChange={(e) => setForm((p) => ({ ...p, editorialArea: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm">{activeAreas.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select></div>
@@ -595,17 +641,21 @@ export default function AdminEditorialBoardPage() {
               </div>
               <div><label className="mb-1.5 block text-sm font-semibold text-slate-700">Full Biography / Description</label><p className="mb-2 text-xs leading-5 text-slate-500">This text is shown only on the member&apos;s separate details page, not below the main card.</p><textarea value={form.bio} onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))} rows={7} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" /></div>
               <label className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4 text-sm font-semibold"><input type="checkbox" checked={form.isActive} onChange={(e) => setForm((p) => ({ ...p, isActive: e.target.checked }))} /> Visible on public page</label>
-              <button type="submit" disabled={savingMember} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#005A78] text-sm font-bold text-white disabled:opacity-60">{savingMember ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}{savingMember ? "Saving..." : editingId ? "Update Member" : "Create Member"}</button>
+              <div className="sticky -bottom-5 z-20 flex flex-wrap gap-3 border-t border-slate-200 bg-white/95 pb-1 pt-5 backdrop-blur sm:-bottom-7">
+                <button type="submit" disabled={savingMember} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#005A78] px-5 text-sm font-bold text-white transition hover:bg-[#004765] disabled:opacity-60">{savingMember ? <Loader2 size={16} className="animate-spin" /> : editingId ? <Save size={16} /> : <Plus size={16} />}{savingMember ? "Saving..." : editingId ? "Update Member" : "Create Member"}</button>
+                <button type="button" onClick={closeMemberModal} className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-700 transition hover:bg-slate-50">Cancel</button>
+              </div>
             </div>
-          </form>
+            </form>
+          </div>
+        ) : null}
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><div><h2 className="text-lg font-bold text-slate-950">Editorial Board Members</h2><p className="mt-1 text-sm text-slate-500">Drag members within the same role to control display order.</p></div><button type="button" onClick={fetchData} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold"><RefreshCw size={16} /> Refresh</button></div>
             <form onSubmit={(e) => { e.preventDefault(); fetchData(); }} className="mb-5 grid gap-3 lg:grid-cols-[1fr_170px_190px_130px_auto]"><div className="relative"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search members" className="h-11 w-full rounded-xl border border-slate-200 pl-11 pr-4 text-sm" /></div><select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm"><option value="all">All Roles</option>{config.categories.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select><select value={areaFilter} onChange={(e) => setAreaFilter(e.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm"><option value="all">All Areas</option>{config.editorialAreas.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select><select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm"><option value="all">All Status</option><option value="active">Active</option><option value="inactive">Inactive</option></select><button type="submit" className="h-11 rounded-xl bg-slate-950 px-4 text-sm font-bold text-white">Search</button></form>
 
             {loading ? <div className="flex min-h-64 items-center justify-center"><Loader2 className="animate-spin text-[#005A78]" /></div> : editors.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">No members found.</div> : <div className="space-y-3">{editors.map((member) => <div key={member._id} draggable onDragStart={() => setDraggingMemberId(member._id)} onDragOver={(e) => e.preventDefault()} onDrop={() => dropMember(member)} onDragEnd={() => setDraggingMemberId(null)} className={`rounded-2xl border p-4 transition ${draggingMemberId === member._id ? "border-[#005A78] bg-cyan-50 opacity-60" : "border-slate-200 bg-slate-50"}`}><div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"><div className="flex min-w-0 gap-4"><GripVertical className="mt-7 shrink-0 cursor-grab text-slate-400" size={18} /><div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white">{member.profileImage ? <img src={member.profileImage} alt={member.name} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center"><UserRound className="text-slate-400" size={30} /></div>}</div><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-slate-950">{member.name}</h3><button type="button" onClick={() => toggleMember(member)} className={`rounded-full px-3 py-1 text-xs font-bold ${member.isActive ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>{member.isActive ? "Active" : "Inactive"}</button></div><p className="mt-1 text-sm font-semibold text-[#005A78]">{member.category}</p><p className="mt-1 text-sm text-slate-600">{member.editorialArea}</p><p className="mt-1 text-sm text-slate-500">{member.designation}{member.institution ? ` · ${member.institution}` : ""}</p>{member.expertise?.length > 0 && <div className="mt-2 flex flex-wrap gap-2">{member.expertise.map((item) => <span key={item} className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600">{item}</span>)}</div>}</div></div><div className="flex gap-2"><button type="button" onClick={() => handleEditMember(member)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold"><Edit size={14} /> Edit</button><button type="button" onClick={() => deleteMember(member)} className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700"><Trash2 size={14} /> Delete</button></div></div></div>)}</div>}
-          </section>
-        </div>
+        </section>
 
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">

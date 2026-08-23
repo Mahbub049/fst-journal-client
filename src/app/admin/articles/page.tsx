@@ -4,6 +4,8 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
+  ChevronDown,
+  ChevronUp,
   Edit,
   Eye,
   EyeOff,
@@ -38,6 +40,7 @@ import { getAdminIssues } from "@/services/issues.service";
 import { Article, Issue, PopulatedIssue } from "@/types/issue";
 import { getBrowserFileOrigin } from "@/lib/apiBase";
 import { confirmAdminAction } from "@/lib/adminDialogs";
+import { showAdminSuccessToast } from "@/lib/adminToast";
 
 type PublicationFilter = "all" | "published" | "draft";
 
@@ -235,6 +238,8 @@ export default function AdminArticlesPage() {
   const [draggedArticleId, setDraggedArticleId] = useState<string | null>(null);
 
   const [message, setMessage] = useState("");
+  const [articleModalOpen, setArticleModalOpen] = useState(false);
+  const [showAdvancedFields, setShowAdvancedFields] = useState(false);
 
   const clearPendingPdfState = (discardServerCopy = true) => {
     const tempUrl = pendingPdfUrl;
@@ -335,8 +340,33 @@ export default function AdminArticlesPage() {
       publishDate: getIssueFirstPublishDate(latestIssue),
     });
     setEditingId(null);
+    setShowAdvancedFields(false);
     setMessage("");
   };
+
+  const openCreateArticleModal = () => {
+    resetForm();
+    setArticleModalOpen(true);
+  };
+
+  const closeArticleModal = () => {
+    resetForm();
+    setArticleModalOpen(false);
+  };
+
+  useEffect(() => {
+    if (!articleModalOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !saving) closeArticleModal();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [articleModalOpen, saving]);
 
   const handleTitleChange = (value: string) => {
     setForm((prev) => ({
@@ -378,8 +408,9 @@ export default function AdminArticlesPage() {
       isPublished: article.isPublished ?? true,
     });
 
+    setShowAdvancedFields(false);
+    setArticleModalOpen(true);
     setMessage("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const buildPayload = (): ArticlePayload => {
@@ -424,15 +455,14 @@ export default function AdminArticlesPage() {
 
       if (editingId) {
         await updateAdminArticle(editingId, payload);
-        setMessage("Article updated successfully.");
+        void showAdminSuccessToast("Article updated");
       } else {
         await createAdminArticle(payload);
-        setMessage(
-          "Article created successfully. It has been placed at the top of its issue."
-        );
+        void showAdminSuccessToast("Article created");
       }
 
       resetForm(false);
+      setArticleModalOpen(false);
       await fetchArticles();
     } catch (error: any) {
       setMessage(error?.response?.data?.message || "Failed to save article.");
@@ -453,7 +483,7 @@ export default function AdminArticlesPage() {
 
     try {
       await deleteAdminArticle(article._id);
-      setMessage("Article deleted successfully.");
+      void showAdminSuccessToast("Article deleted");
 
       if (editingId === article._id) {
         resetForm();
@@ -788,9 +818,14 @@ export default function AdminArticlesPage() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-                Local PDF upload enabled
-              </div>
+              <button
+                type="button"
+                onClick={openCreateArticleModal}
+                className="inline-flex items-center gap-2 rounded-2xl bg-[#071a33] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#0d2d4b] hover:shadow-md"
+              >
+                <Plus className="h-4 w-4" />
+                Create Article
+              </button>
 
               <button
                 type="button"
@@ -815,31 +850,37 @@ export default function AdminArticlesPage() {
           </div>
         )}
 
-        <div className="grid gap-6 xl:grid-cols-[460px_1fr]">
-          <form
-            onSubmit={handleSubmit}
-            className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+        {articleModalOpen ? (
+          <div
+            className="fixed inset-0 z-[1300] flex items-center justify-center bg-[#031020]/65 p-3 backdrop-blur-sm sm:p-5"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget && !saving) closeArticleModal();
+            }}
           >
-            <div className="mb-5 flex items-start justify-between gap-4">
+            <form
+              onSubmit={handleSubmit}
+              className="max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-[28px] border border-white/20 bg-white p-5 shadow-[0_30px_100px_rgba(2,12,27,0.38)] sm:p-7"
+            >
+            <div className="sticky -top-5 z-20 mb-6 flex items-start justify-between gap-4 border-b border-slate-200 bg-white/95 pb-5 pt-1 backdrop-blur sm:-top-7">
               <div>
-                <h2 className="text-lg font-bold text-slate-950">
-                  {editingId ? "Edit Article" : "Create Article"}
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#07809b]">Article Editor</p>
+                <h2 className="mt-1 text-xl font-bold text-slate-950">
+                  {editingId ? "Edit Article" : "Create New Article"}
                 </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Select issue, add metadata, upload or paste PDF link, and set
-                  publication status. Slug and position are automatic.
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  Core publishing fields are shown first. Use Advanced Fields only when you need counters, status, type, or visibility controls.
                 </p>
               </div>
 
-              {editingId && (
-                <button
-                  type="button"
-                  onClick={() => resetForm()}
-                  className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-50"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={closeArticleModal}
+                disabled={saving}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-100 disabled:opacity-50"
+                aria-label="Close article editor"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
 
             <div className="space-y-4">
@@ -1089,6 +1130,20 @@ export default function AdminArticlesPage() {
                 </label>
               </div>
 
+              <button
+                type="button"
+                onClick={() => setShowAdvancedFields((value) => !value)}
+                className="flex w-full items-center justify-between rounded-2xl border border-[#005A78]/15 bg-[#f3fafc] px-4 py-3 text-left transition hover:border-[#005A78]/30 hover:bg-[#edf8fb]"
+              >
+                <span>
+                  <span className="block text-sm font-bold text-[#005A78]">{showAdvancedFields ? "Hide advanced fields" : "Show advanced fields"}</span>
+                  <span className="mt-0.5 block text-xs text-slate-500">Views, downloads, citations, status, article type, access type and public visibility</span>
+                </span>
+                {showAdvancedFields ? <ChevronUp className="h-4 w-4 text-[#005A78]" /> : <ChevronDown className="h-4 w-4 text-[#005A78]" />}
+              </button>
+
+              {showAdvancedFields ? (
+                <>
               <div>
                 <label className="mb-1.5 block text-sm font-semibold text-slate-700">
                   Article ID
@@ -1241,8 +1296,10 @@ export default function AdminArticlesPage() {
                   Published / visible through public article API
                 </label>
               </div>
+                </>
+              ) : null}
 
-              <div className="flex flex-wrap gap-3 pt-2">
+              <div className="sticky -bottom-5 z-20 flex flex-wrap gap-3 border-t border-slate-200 bg-white/95 pb-1 pt-5 backdrop-blur sm:-bottom-7">
                 <button
                   type="submit"
                   disabled={saving}
@@ -1264,16 +1321,18 @@ export default function AdminArticlesPage() {
 
                 <button
                   type="button"
-                  onClick={() => resetForm()}
+                  onClick={closeArticleModal}
                   className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
                 >
-                  Reset
+                  Cancel
                 </button>
               </div>
             </div>
-          </form>
+            </form>
+          </div>
+        ) : null}
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h2 className="text-lg font-bold text-slate-950">
@@ -1638,7 +1697,6 @@ export default function AdminArticlesPage() {
               </div>
             )}
           </div>
-        </div>
       </div>
     </AdminLayout>
   );
