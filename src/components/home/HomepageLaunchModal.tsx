@@ -96,6 +96,9 @@ export default function HomepageLaunchModal({
       ),
       scope: resolvedHomepage?.launchModalScope || "homepage",
       customPaths: resolvedHomepage?.launchModalCustomPaths || [],
+      publishingModel: resolvedHomepage?.publishingModel || "Hybrid",
+      issnOnline: resolvedHomepage?.issnOnline || "3134-7339",
+      issnPrint: resolvedHomepage?.issnPrint || "2959-4812",
     }),
     [resolvedHomepage],
   );
@@ -347,32 +350,36 @@ export default function HomepageLaunchModal({
                       </div>
                       <div>
                         <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#087895]">
-                          Official Journal Website
+                          Online Journal Website
                         </p>
-                        <p className="mt-1 text-sm font-semibold text-slate-500">
-                          Faculty of Science & Technology, BUP
+                        <p className="mt-1.5 text-[15px] font-extrabold leading-5 text-slate-950 sm:text-base">
+                          Faculty of Science &amp; Technology, BUP
                         </p>
                       </div>
                     </div>
                   ) : null}
 
-                  <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#b78912]">
-                    {config.eyebrow}
-                  </p>
                   <h2
                     id="jfst-launch-modal-title"
-                    className="mt-3 text-[30px] font-semibold leading-[1.08] text-[#071a33] sm:text-[38px]"
+                    className="text-[30px] font-semibold leading-[1.08] text-[#071a33] sm:text-[38px]"
                     style={{ fontFamily: "var(--font-source-serif)" }}
                   >
                     {config.title}
                   </h2>
-                  <div className="mt-5 h-[3px] w-20 rounded-full bg-[#f5c84b]" />
 
-                  <p className="mt-6 whitespace-pre-line text-[14px] leading-7 text-slate-600 sm:text-[15px]">
-                    {config.message}
-                  </p>
+                  <div className="mt-5 flex items-center gap-2">
+                    <span className="h-[3px] w-12 rounded-full bg-[#f5c84b]" />
+                    <span className="h-[3px] w-5 rounded-full bg-[#22b8e8]" />
+                  </div>
 
-                  <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <JournalProfile
+                    publishingModel={config.publishingModel}
+                    issnOnline={config.issnOnline}
+                    issnPrint={config.issnPrint}
+                    compact={imageText}
+                  />
+
+                  <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
                     {config.primaryLabel && config.primaryUrl ? (
                       <ActionLink
                         href={config.primaryUrl}
@@ -419,6 +426,87 @@ export default function HomepageLaunchModal({
         }
       `}</style>
     </>
+  );
+}
+
+function JournalProfile({
+  publishingModel,
+  issnOnline,
+  issnPrint,
+  compact = false,
+}: {
+  publishingModel: string;
+  issnOnline: string;
+  issnPrint: string;
+  compact?: boolean;
+}) {
+  const items = [
+    {
+      label: "Publishing Model",
+      value: publishingModel,
+      accent: "bg-[#f5c84b]",
+    },
+    {
+      label: "Electronic ISSN",
+      value: issnOnline,
+      accent: "bg-[#22b8e8]",
+    },
+    {
+      label: "Print ISSN",
+      value: issnPrint,
+      accent: "bg-white/70",
+    },
+  ];
+
+  return (
+    <div className="relative mt-7 overflow-hidden rounded-[22px] border border-[#102c4c] bg-[#071a33] shadow-[0_18px_45px_rgba(7,26,51,0.16)]">
+      <div className="pointer-events-none absolute -right-14 -top-16 h-40 w-40 rounded-full border border-[#22b8e8]/15" />
+      <div className="pointer-events-none absolute -bottom-20 -left-12 h-44 w-44 rounded-full border border-[#f5c84b]/10" />
+      <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#22b8e8] via-[#f5c84b] to-[#22b8e8]" />
+
+      <div className="relative flex items-center justify-between gap-4 px-5 pb-3 pt-5">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#7cdcf0]">
+            Journal Profile
+          </p>
+          {!compact ? (
+            <p className="mt-1 text-xs font-medium text-white/45">
+              Core publication information at a glance
+            </p>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-1.5" aria-hidden="true">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#22b8e8]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-[#f5c84b]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-white/40" />
+        </div>
+      </div>
+
+      <div
+        className={`relative grid border-t border-white/10 ${
+          compact ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-3"
+        }`}
+      >
+        {items.map((item, index) => (
+          <div
+            key={item.label}
+            className={`relative px-5 py-4 ${
+              index > 0 ? "border-t border-white/10 sm:border-l sm:border-t-0" : ""
+            }`}
+          >
+            <span
+              className={`absolute left-5 top-0 h-[2px] w-8 rounded-full ${item.accent}`}
+            />
+            <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/45">
+              {item.label}
+            </p>
+            <p className="mt-1.5 text-lg font-extrabold tracking-[-0.02em] text-white sm:text-xl">
+              {item.value}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
