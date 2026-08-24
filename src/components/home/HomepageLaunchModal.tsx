@@ -99,6 +99,17 @@ export default function HomepageLaunchModal({
       publishingModel: resolvedHomepage?.publishingModel || "Hybrid",
       issnOnline: resolvedHomepage?.issnOnline || "3134-7339",
       issnPrint: resolvedHomepage?.issnPrint || "2959-4812",
+      websiteLabel:
+        resolvedHomepage?.launchModalWebsiteLabel || "ONLINE JOURNAL WEBSITE",
+      facultyLabel:
+        resolvedHomepage?.launchModalFacultyLabel ||
+        "Faculty of Science & Technology, BUP",
+      showJournalProfile:
+        resolvedHomepage?.launchModalShowJournalProfile ?? true,
+      showPrimaryButton:
+        resolvedHomepage?.launchModalShowPrimaryButton ?? true,
+      showSecondaryButton:
+        resolvedHomepage?.launchModalShowSecondaryButton ?? true,
     }),
     [resolvedHomepage],
   );
@@ -225,6 +236,12 @@ export default function HomepageLaunchModal({
   const hasImage = Boolean(config.imageUrl);
   const imageOnly = config.layout === "image" && hasImage;
   const imageText = config.layout === "image-text" && hasImage;
+  const showPrimaryAction =
+    config.showPrimaryButton &&
+    Boolean(config.primaryLabel && config.primaryUrl);
+  const showSecondaryAction =
+    config.showSecondaryButton && config.dismissible;
+  const showAnyAction = showPrimaryAction || showSecondaryAction;
 
   const actionClass =
     "transition-[transform,background-color,border-color,color,box-shadow] duration-300 ease-out hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.985]";
@@ -293,7 +310,7 @@ export default function HomepageLaunchModal({
                 />
               </div>
               <div className="flex flex-wrap items-center justify-center gap-3 border-t border-white/10 bg-[#071a33] p-4">
-                {config.primaryLabel && config.primaryUrl ? (
+                {showPrimaryAction ? (
                   <ActionLink
                     href={config.primaryUrl}
                     onClick={markSeen}
@@ -302,7 +319,7 @@ export default function HomepageLaunchModal({
                     {config.primaryLabel}
                   </ActionLink>
                 ) : null}
-                {config.dismissible ? (
+                {showSecondaryAction ? (
                   <button
                     type="button"
                     onClick={closeModal}
@@ -350,61 +367,71 @@ export default function HomepageLaunchModal({
                       </div>
                       <div>
                         <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#087895]">
-                          Online Journal Website
+                          {config.websiteLabel}
                         </p>
                         <p className="mt-1.5 text-[15px] font-extrabold leading-5 text-slate-950 sm:text-base">
-                          Faculty of Science &amp; Technology, BUP
+                          {config.facultyLabel}
                         </p>
                       </div>
                     </div>
                   ) : null}
 
-                  <h2
-                    id="jfst-launch-modal-title"
-                    className="text-[30px] font-semibold leading-[1.08] text-[#071a33] sm:text-[38px]"
-                    style={{ fontFamily: "var(--font-source-serif)" }}
-                  >
-                    {config.title}
-                  </h2>
+                  <ModalTitle title={config.title} />
 
-                  <div className="mt-5 flex items-center gap-2">
+                  <div className="mx-auto mt-5 flex w-fit items-center gap-2">
                     <span className="h-[3px] w-12 rounded-full bg-[#f5c84b]" />
                     <span className="h-[3px] w-5 rounded-full bg-[#22b8e8]" />
                   </div>
 
-                  <JournalProfile
-                    publishingModel={config.publishingModel}
-                    issnOnline={config.issnOnline}
-                    issnPrint={config.issnPrint}
-                    compact={imageText}
-                  />
+                  {config.showJournalProfile ? (
+                    <JournalProfile
+                      publishingModel={config.publishingModel}
+                      issnOnline={config.issnOnline}
+                      issnPrint={config.issnPrint}
+                      compact={imageText}
+                    />
+                  ) : null}
 
-                  <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
-                    {config.primaryLabel && config.primaryUrl ? (
-                      <ActionLink
-                        href={config.primaryUrl}
-                        onClick={markSeen}
-                        className={`inline-flex h-12 items-center justify-center rounded-full bg-[#071a33] px-6 text-sm font-extrabold text-white shadow-sm hover:bg-[#123a59] hover:shadow-lg ${actionClass}`}
-                      >
-                        {config.primaryLabel}
-                        <span className="ml-2 text-lg transition-transform duration-300 group-hover:translate-x-1">
-                          →
-                        </span>
-                      </ActionLink>
-                    ) : null}
+                  {showAnyAction ? (
+                    <div
+                      className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center ${
+                        config.showJournalProfile ? "mt-7" : "mt-10"
+                      }`}
+                    >
+                      {showPrimaryAction ? (
+                        <ActionLink
+                          href={config.primaryUrl}
+                          onClick={markSeen}
+                          className={`inline-flex h-12 items-center justify-center rounded-full bg-[#071a33] px-6 text-sm font-extrabold text-white shadow-sm hover:bg-[#123a59] hover:shadow-lg ${actionClass}`}
+                        >
+                          {config.primaryLabel}
+                          <span className="ml-2 text-lg transition-transform duration-300 group-hover:translate-x-1">
+                            →
+                          </span>
+                        </ActionLink>
+                      ) : null}
 
-                    {config.dismissible ? (
-                      <button
-                        type="button"
-                        onClick={closeModal}
-                        className={`inline-flex h-12 items-center justify-center rounded-full border border-slate-200 bg-white px-6 text-sm font-bold text-slate-700 hover:border-[#22b8e8] hover:bg-[#eef8fc] hover:text-[#087895] hover:shadow-sm ${actionClass}`}
-                      >
-                        {config.secondaryLabel}
-                      </button>
-                    ) : null}
-                  </div>
+                      {showSecondaryAction ? (
+                        <button
+                          type="button"
+                          onClick={closeModal}
+                          className={`inline-flex h-12 items-center justify-center rounded-full border border-slate-200 bg-white px-6 text-sm font-bold text-slate-700 hover:border-[#22b8e8] hover:bg-[#eef8fc] hover:text-[#087895] hover:shadow-sm ${actionClass}`}
+                        >
+                          {config.secondaryLabel}
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
 
-                  <p className="mt-7 text-xs leading-5 text-slate-400">
+                  <p
+                    className={`text-center text-xs leading-5 text-slate-400 ${
+                      showAnyAction
+                        ? "mt-7"
+                        : config.showJournalProfile
+                          ? "mt-6"
+                          : "mt-10"
+                    }`}
+                  >
                     Journal of FST · Bangladesh University of Professionals
                   </p>
                 </div>
@@ -426,6 +453,62 @@ export default function HomepageLaunchModal({
         }
       `}</style>
     </>
+  );
+}
+
+function ModalTitle({ title }: { title: string }) {
+  const rawTitle = String(title || "").trim();
+  const normalized = rawTitle.replace(/\s+/g, " ").toLowerCase();
+
+  const legacyTitles = new Set([
+    "welcome to the journal of fst",
+    "welcome to the journal of fst.",
+    "welcome to the new journal of fst website",
+  ]);
+
+  const lines = (
+    rawTitle.includes("\n")
+      ? rawTitle.split(/\r?\n/)
+      : legacyTitles.has(normalized)
+        ? ["Welcome", "to the", "Journal of FST."]
+        : [rawTitle || "Welcome", "to the", "Journal of FST."]
+  )
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length === 3) {
+    return (
+      <h2
+        id="jfst-launch-modal-title"
+        className="mx-auto max-w-xl text-center text-[#071a33]"
+      >
+        <span
+          className="block text-[34px] font-semibold leading-none sm:text-[43px]"
+          style={{ fontFamily: "var(--font-source-serif)" }}
+        >
+          {lines[0]}
+        </span>
+        <span className="my-2 block text-[12px] font-black uppercase tracking-[0.34em] text-[#087895] sm:text-[13px]">
+          {lines[1]}
+        </span>
+        <span
+          className="block text-[38px] font-semibold leading-[1.02] sm:text-[48px]"
+          style={{ fontFamily: "var(--font-source-serif)" }}
+        >
+          {lines[2]}
+        </span>
+      </h2>
+    );
+  }
+
+  return (
+    <h2
+      id="jfst-launch-modal-title"
+      className="mx-auto max-w-xl whitespace-pre-line text-center text-[32px] font-semibold leading-[1.08] text-[#071a33] sm:text-[42px]"
+      style={{ fontFamily: "var(--font-source-serif)" }}
+    >
+      {lines.join("\n")}
+    </h2>
   );
 }
 

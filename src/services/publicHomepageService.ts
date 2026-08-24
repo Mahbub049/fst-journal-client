@@ -46,7 +46,6 @@ export type HomepageCarouselImage = {
 
 export type PublicHomepageContent = {
   _id?: string;
-
   heroTitle: string;
   heroSubtitle: string;
   journalCoverImage: string;
@@ -100,6 +99,11 @@ export type PublicHomepageContent = {
   launchModalAutoCloseSeconds: number;
   launchModalScope?: PublicDisplayScope;
   launchModalCustomPaths?: string[];
+  launchModalWebsiteLabel?: string;
+  launchModalFacultyLabel?: string;
+  launchModalShowJournalProfile?: boolean;
+  launchModalShowPrimaryButton?: boolean;
+  launchModalShowSecondaryButton?: boolean;
 
   celebrationEnabled: boolean;
   celebrationStyle: HomepageCelebrationStyle;
@@ -112,6 +116,7 @@ export type PublicHomepageContent = {
 
   isPublished: boolean;
 };
+
 
 type PublicHomepageResponse = {
   success: boolean;

@@ -100,6 +100,11 @@ export type HomepageContent = {
   launchModalAutoCloseSeconds: number;
   launchModalScope?: PublicDisplayScope;
   launchModalCustomPaths?: string[];
+  launchModalWebsiteLabel?: string;
+  launchModalFacultyLabel?: string;
+  launchModalShowJournalProfile?: boolean;
+  launchModalShowPrimaryButton?: boolean;
+  launchModalShowSecondaryButton?: boolean;
 
   celebrationEnabled: boolean;
   celebrationStyle: HomepageCelebrationStyle;
