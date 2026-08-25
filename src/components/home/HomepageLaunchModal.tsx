@@ -423,17 +423,6 @@ export default function HomepageLaunchModal({
                     </div>
                   ) : null}
 
-                  <p
-                    className={`text-center text-xs leading-5 text-slate-400 ${
-                      showAnyAction
-                        ? "mt-7"
-                        : config.showJournalProfile
-                          ? "mt-6"
-                          : "mt-10"
-                    }`}
-                  >
-                    Journal of FST · Bangladesh University of Professionals
-                  </p>
                 </div>
               </div>
             </div>
@@ -470,10 +459,15 @@ function ModalTitle({ title }: { title: string }) {
     rawTitle.includes("\n")
       ? rawTitle.split(/\r?\n/)
       : legacyTitles.has(normalized)
-        ? ["Welcome", "to the", "Journal of FST."]
-        : [rawTitle || "Welcome", "to the", "Journal of FST."]
+        ? ["Welcome", "to the", "Journal of FST"]
+        : [rawTitle || "Welcome", "to the", "Journal of FST"]
   )
-    .map((line) => line.trim())
+    .map((line) => {
+      const trimmed = line.trim();
+      return trimmed.toLowerCase() === "journal of fst."
+        ? "Journal of FST"
+        : trimmed;
+    })
     .filter(Boolean);
 
   if (lines.length === 3) {
