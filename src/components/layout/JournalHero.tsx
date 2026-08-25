@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { CSSProperties, useEffect, useState } from "react";
 import Image from "next/image";
 import Container from "@/components/common/Container";
 import {
@@ -25,6 +25,12 @@ const fallbackMetrics = [
     isActive: true,
   },
 ];
+
+const orbitDots = Array.from({ length: 9 }, (_, index) => ({
+  id: index,
+  angle: `${index * 40}deg`,
+  delay: `${index * -0.6}s`,
+}));
 
 type Props = {
   homepage?: PublicHomepageContent | null;
@@ -55,7 +61,8 @@ export default function JournalHero({ homepage }: Props) {
 
       if (issuesResult.status === "fulfilled") {
         const cover =
-          issuesResult.value.find((issue) => issue.isRecent && issue.coverImage)?.coverImage ||
+          issuesResult.value.find((issue) => issue.isRecent && issue.coverImage)
+            ?.coverImage ||
           issuesResult.value.find((issue) => issue.coverImage)?.coverImage ||
           "";
         setLatestIssueCover(cover);
@@ -97,8 +104,8 @@ export default function JournalHero({ homepage }: Props) {
       <div className="absolute right-[-130px] top-[-110px] h-96 w-96 rounded-full bg-[#f5c84b]/12 blur-3xl" />
       <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#7de4ee]/55 to-transparent" />
 
-      <Container className="relative pt-10 pb-6 md:pt-14 md:pb-8">
-        <div className="grid gap-8 lg:grid-cols-[230px_minmax(0,1fr)_250px] lg:items-center">
+      <Container className="relative pt-7 pb-5 md:pt-9 md:pb-6">
+        <div className="grid gap-8 lg:grid-cols-[230px_minmax(0,1fr)_250px] lg:items-end">
           <div className="relative mx-auto w-[200px] lg:mx-0">
             <div className="absolute -inset-4 rounded-[2.2rem] bg-[#7de4ee]/15 blur-2xl" />
             <div className="absolute -inset-2 rounded-[1.9rem] border border-[#7de4ee]/16" />
@@ -115,21 +122,23 @@ export default function JournalHero({ homepage }: Props) {
             </div>
           </div>
 
-          <div className="text-center lg:text-left">
+          <div className="text-center">
+            <JournalOrbitLogo />
+
             <h1
-              className="max-w-5xl text-[38px] font-semibold leading-[1.07] tracking-tight text-white md:text-[56px]"
+              className="mx-auto mt-2 max-w-5xl text-[38px] font-semibold leading-[1.05] tracking-tight text-white md:text-[56px]"
               style={{ fontFamily: "var(--font-source-serif)" }}
             >
               {heroTitle}
             </h1>
 
             {heroSubtitle ? (
-              <p className="mx-auto mt-5 max-w-3xl text-[15px] leading-8 text-white/78 lg:mx-0 md:text-[16px]">
+              <p className="mx-auto mt-2 max-w-3xl text-[15px] leading-7 text-white/78 md:text-[16px]">
                 {heroSubtitle}
               </p>
             ) : null}
 
-            <div className="mt-7 grid gap-3 sm:grid-cols-3 md:max-w-4xl">
+            <div className="mt-4 grid gap-3 sm:grid-cols-3 md:max-w-4xl">
               <InfoCard label="Publishing Model" value={publishingModel} />
               <InfoCard label="Electronic ISSN" value={issnOnline} />
               <InfoCard label="Print ISSN" value={issnPrint} />
@@ -173,6 +182,72 @@ function InfoCard({ label, value }: { label: string; value: string }) {
         {label}
       </p>
       <p className="mt-2 text-[21px] font-extrabold text-white">{value}</p>
+    </div>
+  );
+}
+
+function JournalOrbitLogo() {
+  return (
+    <div className="relative mx-auto mb-1 flex h-32 w-32 items-center justify-center sm:h-36 sm:w-36">
+      <div className="absolute inset-0 rounded-full border border-[#6dd6ec]/25" />
+      <div className="absolute inset-[11px] rounded-full border border-white/[0.08] animate-[reverseSpin_13s_linear_infinite]" />
+
+      {orbitDots.map((dot) => (
+        <span
+          key={dot.id}
+          className="absolute left-1/2 top-1/2 h-[5px] w-[5px] rounded-full bg-[#7ee0f3] shadow-[0_0_10px_rgba(126,224,243,.85)] animate-[orbitDot_8s_linear_infinite]"
+          style={
+            {
+              "--angle": dot.angle,
+              animationDelay: dot.delay,
+            } as CSSProperties
+          }
+        />
+      ))}
+
+      <div className="relative h-32 w-32 overflow-hidden rounded-full border border-white/10 bg-white shadow-[0_22px_68px_rgba(0,0,0,0.26)] animate-[logoFloat_5s_ease-in-out_infinite] sm:h-36 sm:w-36">
+        <Image
+          src="/images/journal-of-fst-logo.svg"
+          alt="Journal of FST logo"
+          fill
+          className="object-contain p-0.5 sm:p-1"
+          priority
+        />
+      </div>
+
+      <style jsx>{`
+        @keyframes orbitDot {
+          0% {
+            transform: translate(-50%, -50%) rotate(var(--angle)) translateY(-72px);
+          }
+          100% {
+            transform: translate(-50%, -50%) rotate(calc(var(--angle) + 360deg))
+              translateY(-72px);
+          }
+        }
+
+        @keyframes logoFloat {
+          0%,
+          100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-6px);
+          }
+        }
+
+        @media (min-width: 640px) {
+          @keyframes orbitDot {
+            0% {
+              transform: translate(-50%, -50%) rotate(var(--angle)) translateY(-80px);
+            }
+            100% {
+              transform: translate(-50%, -50%) rotate(calc(var(--angle) + 360deg))
+                translateY(-80px);
+            }
+          }
+        }
+      `}</style>
     </div>
   );
 }
