@@ -105,8 +105,8 @@ export default function JournalHero({ homepage }: Props) {
       <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#7de4ee]/55 to-transparent" />
 
       <Container className="relative pt-7 pb-5 md:pt-9 md:pb-6">
-        <div className="grid gap-8 lg:grid-cols-[230px_minmax(0,1fr)_250px] lg:items-end">
-          <div className="relative mx-auto w-[200px] lg:mx-0">
+        <div className="grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)_250px] lg:items-end">
+          <div className="relative mx-auto w-[224px] lg:mx-0 lg:w-[238px]">
             <div className="absolute -inset-4 rounded-[2.2rem] bg-[#7de4ee]/15 blur-2xl" />
             <div className="absolute -inset-2 rounded-[1.9rem] border border-[#7de4ee]/16" />
             <div className="relative overflow-hidden rounded-[1.55rem] border border-white/16 bg-white/10 p-3 shadow-[0_28px_70px_rgba(0,0,0,0.32)] backdrop-blur-xl">
@@ -115,7 +115,7 @@ export default function JournalHero({ homepage }: Props) {
                   src={journalCoverImage}
                   alt="Latest Journal of FST issue cover"
                   fill
-                  className="object-cover"
+                  className="object-contain"
                   priority
                 />
               </div>
