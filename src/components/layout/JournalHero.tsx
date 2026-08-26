@@ -207,7 +207,7 @@ function JournalOrbitLogo() {
 
       <div className="relative h-32 w-32 overflow-hidden rounded-full border border-white/10 bg-white shadow-[0_22px_68px_rgba(0,0,0,0.26)] animate-[logoFloat_5s_ease-in-out_infinite] sm:h-36 sm:w-36">
         <Image
-          src="/images/journal-of-fst-logo.svg"
+          src="/images/journal-of-fst-logo.png"
           alt="Journal of FST logo"
           fill
           className="object-contain p-0.5 sm:p-1"

@@ -236,7 +236,7 @@ export default function InaugurationPage() {
                 ].join(" ")}
               >
                 <img
-                  src="/images/journal-of-fst-logo.svg"
+                  src="/images/journal-of-fst-logo.png"
                   alt="Journal of FST"
                   className="h-full w-full object-contain p-0.5"
                 />
