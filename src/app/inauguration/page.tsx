@@ -5,13 +5,102 @@ import { useRouter } from "next/navigation";
 import { Check, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-type Stage = "ready" | "launching" | "inaugurated" | "opening";
+type Stage = "ceremony" | "honouree" | "ready" | "launching" | "inaugurated" | "opening";
 
+const CURTAIN_BLACK_FADE_MS = 700;
+const CURTAIN_BLACK_HOLD_MS = 180;
+const CURTAIN_OVERLAY_FADE_IN_MS = 520;
+const CURTAIN_EXIT_MS = 900;
+const CURTAIN_FAILSAFE_MS = 15000;
 const REDIRECT_AFTER_MS = 14500;
+
+const INAUGURATOR = {
+  name: "Major General Md Mahbub-ul Alam",
+  title: "BSP, ndc, afwc, psc, MPhil, PhD",
+  role: "Vice Chancellor, Bangladesh University of Professionals (BUP)",
+};
+
+
+function PowerPointCurtainOverlay({
+  visible,
+  entered,
+  fading,
+  onPlaying,
+  onEnded,
+}: {
+  visible: boolean;
+  entered: boolean;
+  fading: boolean;
+  onPlaying: () => void;
+  onEnded: () => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (!visible || !entered) return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    let cancelled = false;
+
+    const startPlayback = () => {
+      if (cancelled) return;
+      video.currentTime = 0;
+      const playPromise = video.play();
+      playPromise?.catch((error) => {
+        console.error("Unable to play PowerPoint curtain overlay:", error);
+      });
+    };
+
+    if (video.readyState >= 2) {
+      startPlayback();
+    } else {
+      video.addEventListener("loadeddata", startPlayback, { once: true });
+    }
+
+    return () => {
+      cancelled = true;
+      video.removeEventListener("loadeddata", startPlayback);
+    };
+  }, [visible, entered]);
+
+  if (!visible) return null;
+
+  return (
+    <div
+      className={`ppt-curtain-overlay ${entered ? "ppt-curtain-overlay-entered" : ""} ${fading ? "ppt-curtain-overlay-fading" : ""}`}
+      aria-hidden="true"
+    >
+      <video
+        ref={videoRef}
+        className="ppt-curtain-video"
+        src="/videos/powerpoint-curtain-alpha.webm"
+        poster="/images/powerpoint-curtain-poster.jpg"
+        preload="auto"
+        muted
+        playsInline
+        onPlaying={onPlaying}
+        onEnded={onEnded}
+        onStalled={() => {
+          videoRef.current?.play().catch(() => undefined);
+        }}
+        onWaiting={() => {
+          videoRef.current?.play().catch(() => undefined);
+        }}
+      />
+    </div>
+  );
+}
 
 export default function InaugurationPage() {
   const router = useRouter();
-  const [stage, setStage] = useState<Stage>("ready");
+  const [stage, setStage] = useState<Stage>("ceremony");
+  const [curtainVisible, setCurtainVisible] = useState(false);
+  const [curtainEntered, setCurtainEntered] = useState(false);
+  const [curtainFading, setCurtainFading] = useState(false);
+  const [curtainVeilVisible, setCurtainVeilVisible] = useState(false);
+  const curtainStartedRef = useRef(false);
+  const curtainFinishedRef = useRef(false);
   const [countdown, setCountdown] = useState(5);
   const timers = useRef<number[]>([]);
 
@@ -21,7 +110,9 @@ export default function InaugurationPage() {
   };
 
   useEffect(() => {
-    return clearTimers;
+    return () => {
+      clearTimers();
+    };
   }, []);
 
   useEffect(() => {
@@ -83,6 +174,78 @@ export default function InaugurationPage() {
     [],
   );
 
+  const beginInauguration = () => {
+    if (stage !== "ceremony") return;
+
+    clearTimers();
+    curtainStartedRef.current = false;
+    curtainFinishedRef.current = false;
+    setCurtainEntered(false);
+    setCurtainFading(false);
+    setCurtainVisible(false);
+
+    // 1) Fade the current inauguration screen all the way to pure black.
+    setCurtainVeilVisible(true);
+
+    const blackReachedAt = CURTAIN_BLACK_FADE_MS;
+    const curtainMountAt = blackReachedAt + CURTAIN_BLACK_HOLD_MS;
+    const curtainEnterAt = curtainMountAt + 80;
+    const blackReleaseAt = curtainEnterAt + CURTAIN_OVERLAY_FADE_IN_MS;
+
+    timers.current.push(
+      // While completely black, swap the page underneath and mount the curtain
+      // video invisibly so it can decode before playback begins.
+      window.setTimeout(() => {
+        setStage("honouree");
+        setCurtainVisible(true);
+      }, curtainMountAt),
+      // Fade the fully CLOSED PowerPoint curtain in over the black frame. The video
+      // begins only when this state is reached, so no opening frames are skipped.
+      window.setTimeout(() => {
+        setCurtainEntered(true);
+      }, curtainEnterAt),
+      // Once the closed curtain is visible, remove the black veil. The video then
+      // continues through the COMPLETE PowerPoint transition until the curtains
+      // have moved entirely off-screen.
+      window.setTimeout(() => setCurtainVeilVisible(false), blackReleaseAt),
+      // Local video playback should always finish first; this exists only as a true
+      // recovery fallback if the browser fails to emit onEnded.
+      window.setTimeout(() => {
+        if (!curtainFinishedRef.current) {
+          handleCurtainEnded();
+        }
+      }, CURTAIN_FAILSAFE_MS),
+    );
+  };
+
+  const handleCurtainPlaying = () => {
+    if (curtainStartedRef.current) return;
+    curtainStartedRef.current = true;
+
+    // The underlay is already switched during the fade-to-curtain prelude.
+  };
+
+  const handleCurtainEnded = () => {
+    if (curtainFinishedRef.current) return;
+    curtainFinishedRef.current = true;
+
+    // The transparent WebM already freezes its chosen open-curtain frame for
+    // five seconds, so when it ends the honouree has received the full hold.
+    // Reveal the existing Launch Now screen beneath and softly dissolve the
+    // exact same PowerPoint curtain away.
+    setStage("ready");
+    setCurtainFading(true);
+    setCurtainVeilVisible(false);
+
+    timers.current.push(
+      window.setTimeout(() => {
+        setCurtainVisible(false);
+        setCurtainEntered(false);
+        setCurtainFading(false);
+      }, CURTAIN_EXIT_MS),
+    );
+  };
+
   const inaugurate = () => {
     if (stage !== "ready") return;
 
@@ -95,6 +258,35 @@ export default function InaugurationPage() {
       window.setTimeout(() => router.push("/"), REDIRECT_AFTER_MS),
     );
   };
+
+  // Keyboard control for the ceremony: Enter activates whichever main action
+  // is currently available — first "Inaugurate", then later "Launch Now".
+  useEffect(() => {
+    const handleEnter = (event: KeyboardEvent) => {
+      if (event.key !== "Enter" || event.repeat) return;
+
+      const target = event.target as HTMLElement | null;
+      if (
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.tagName === "SELECT" ||
+        target?.isContentEditable
+      ) {
+        return;
+      }
+
+      if (stage === "ceremony") {
+        event.preventDefault();
+        beginInauguration();
+      } else if (stage === "ready") {
+        event.preventDefault();
+        inaugurate();
+      }
+    };
+
+    window.addEventListener("keydown", handleEnter);
+    return () => window.removeEventListener("keydown", handleEnter);
+  }, [stage]);
 
   const isCelebrating = stage === "inaugurated" || stage === "opening";
   const isInMotion = stage !== "ready";
@@ -168,8 +360,9 @@ export default function InaugurationPage() {
               <Image
                 src="/images/bup.png"
                 alt="Bangladesh University of Professionals"
-                fill
-                className="object-contain p-1"
+                width={48}
+                height={48}
+                className="h-full w-full object-contain p-1"
                 priority
               />
             </div>
@@ -236,7 +429,7 @@ export default function InaugurationPage() {
                 ].join(" ")}
               >
                 <img
-                  src="/images/journal-of-fst-logo.png"
+                  src="/images/journal-of-fst-logo.svg"
                   alt="Journal of FST"
                   className="h-full w-full object-contain p-0.5"
                 />
@@ -250,6 +443,110 @@ export default function InaugurationPage() {
                 </>
               )}
             </div>
+
+            {stage === "ceremony" && (
+              <div className="animate-[stageIn_.7s_ease-out_both]">
+                <div className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-[#6fd7eb]/20 bg-[#0a2940]/55 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-[#8be4f4] shadow-[0_12px_42px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:text-[11px]">
+                  <span className="h-2 w-2 rounded-full bg-[#d8b55b] shadow-[0_0_13px_rgba(216,181,91,.75)] animate-[statusDot_2.1s_ease-in-out_infinite]" />
+                  Official Inauguration Ceremony
+                </div>
+
+                <p className="font-serif text-[clamp(1.35rem,2vw,2rem)] font-semibold tracking-[0.08em] text-[#e0b955]">
+                  Bangladesh University of Professionals
+                </p>
+
+                <h1 className="mx-auto mt-5 max-w-5xl font-serif text-[clamp(3rem,6.2vw,6.7rem)] font-semibold leading-[0.94] tracking-[-0.035em] text-white">
+                  Journal of FST
+                </h1>
+
+                <div className="mx-auto mt-6 flex max-w-2xl items-center justify-center gap-4 text-[#7fdaec]/75">
+                  <span className="h-px w-16 bg-gradient-to-r from-transparent to-[#78d9ed]/45 sm:w-24" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] sm:text-xs">
+                    Faculty of Science &amp; Technology
+                  </span>
+                  <span className="h-px w-16 bg-gradient-to-l from-transparent to-[#78d9ed]/45 sm:w-24" />
+                </div>
+
+                <p className="mx-auto mt-7 max-w-2xl text-base leading-8 text-white/50 sm:text-lg">
+                  Mark the official beginning of the Journal of FST digital platform.
+                </p>
+
+                <div className="relative mt-11 inline-flex">
+                  <span className="pointer-events-none absolute inset-[-18px] rounded-[30px] border border-[#d8b55b]/14 animate-[inaugurateHalo_2.6s_ease-in-out_infinite]" />
+                  <span className="pointer-events-none absolute inset-[-36px] rounded-[42px] border border-[#78d9ed]/8 animate-[inaugurateHalo_2.6s_ease-in-out_.5s_infinite]" />
+                  <button
+                    type="button"
+                    onClick={beginInauguration}
+                    className="group relative inline-flex min-w-[320px] items-center justify-center gap-4 overflow-hidden rounded-[22px] border border-[#f3d47e]/55 bg-gradient-to-r from-[#e5bd58] via-[#dfb553] to-[#cfa147] px-9 py-5 text-[#061827] shadow-[0_25px_85px_rgba(216,181,91,0.24)] transition duration-300 hover:-translate-y-1 hover:scale-[1.015] hover:brightness-105 focus:outline-none focus:ring-4 focus:ring-[#d8b55b]/20 sm:min-w-[390px] sm:px-12 sm:py-6 animate-[buttonBreathe_2.8s_ease-in-out_infinite]"
+                  >
+                    <span className="absolute inset-y-0 -left-20 w-14 rotate-12 bg-white/20 blur-md animate-[buttonSweep_3.5s_ease-in-out_infinite]" />
+                    <span className="relative flex h-11 w-11 items-center justify-center rounded-full border border-[#061827]/15 bg-[#061827]/8 shadow-[inset_0_1px_0_rgba(255,255,255,.2)]">
+                      <Sparkles className="h-5 w-5" />
+                    </span>
+                    <span className="relative font-serif text-[clamp(1.35rem,1.7vw,1.65rem)] font-semibold tracking-[0.02em]">
+                      Inaugurate
+                    </span>
+                    <span className="relative h-2.5 w-2.5 rounded-full bg-[#0b5d78] shadow-[0_0_12px_rgba(11,93,120,.48)] transition-transform duration-300 group-hover:translate-x-1" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {stage === "honouree" && (
+              <div className="honouree-scene animate-[stageIn_.9s_ease-out_both]">
+                <div className="honouree-spotlight" aria-hidden="true" />
+                <div className="honouree-sparkles" aria-hidden="true">
+                  {Array.from({ length: 18 }, (_, index) => (
+                    <span
+                      key={index}
+                      style={{
+                        left: `${7 + ((index * 37) % 86)}%`,
+                        top: `${8 + ((index * 53) % 66)}%`,
+                        animationDelay: `${index * -0.17}s`,
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <div className="relative z-10 mx-auto max-w-5xl px-4">
+                  <div className="mx-auto flex items-center justify-center gap-5 sm:gap-7">
+                    <span className="h-px w-20 bg-gradient-to-r from-transparent to-[#d8b55b]/80 sm:w-40" />
+                    <span className="text-[#d8b55b] text-xl sm:text-2xl">✦</span>
+                    <span className="h-px w-20 bg-gradient-to-l from-transparent to-[#d8b55b]/80 sm:w-40" />
+                  </div>
+
+                  <h2 className="mt-3 font-serif text-[clamp(2.2rem,4.2vw,4.5rem)] font-semibold leading-none tracking-[-0.02em] text-[#e1b84f] [text-shadow:0_8px_30px_rgba(216,181,91,.14)]">
+                    Inaugurated By
+                  </h2>
+
+                  <div className="mx-auto mt-5 h-px max-w-3xl bg-gradient-to-r from-transparent via-[#d8b55b]/60 to-transparent" />
+
+                  <p className="mx-auto mt-7 max-w-5xl font-serif text-[clamp(2.35rem,4.8vw,5.35rem)] font-semibold leading-[1.02] tracking-[-0.035em] text-white [text-shadow:0_8px_40px_rgba(0,0,0,.38)]">
+                    {INAUGURATOR.name}
+                  </p>
+
+                  <p className="mx-auto mt-4 max-w-3xl text-[clamp(.86rem,1.35vw,1.22rem)] font-extrabold tracking-[0.07em] text-[#e4b94e]">
+                    {INAUGURATOR.title}
+                  </p>
+
+                  <p className="mx-auto mt-4 max-w-4xl font-serif text-[clamp(1.05rem,1.8vw,1.65rem)] leading-relaxed text-white/88">
+                    {INAUGURATOR.role}
+                  </p>
+
+                  <div className="mx-auto mt-7 flex items-center justify-center gap-4 text-[#d8b55b]">
+                    <span className="h-px w-24 bg-gradient-to-r from-transparent to-[#d8b55b]/75 sm:w-44" />
+                    <span className="text-lg">◇</span>
+                    <span className="h-px w-24 bg-gradient-to-l from-transparent to-[#d8b55b]/75 sm:w-44" />
+                  </div>
+                </div>
+
+                <div className="honouree-floor" aria-hidden="true">
+                  <span className="honouree-floor-ring honouree-floor-ring-one" />
+                  <span className="honouree-floor-ring honouree-floor-ring-two" />
+                  <span className="honouree-floor-glow" />
+                </div>
+              </div>
+            )}
 
             {stage === "ready" && (
               <div className="animate-[stageIn_.7s_ease-out_both]">
@@ -410,6 +707,19 @@ export default function InaugurationPage() {
         </section>
 
       </div>
+
+      <div
+        className={`curtain-prelude-veil ${curtainVeilVisible ? "curtain-prelude-veil-visible" : ""}`}
+        aria-hidden="true"
+      />
+
+      <PowerPointCurtainOverlay
+        visible={curtainVisible}
+        entered={curtainEntered}
+        fading={curtainFading}
+        onPlaying={handleCurtainPlaying}
+        onEnded={handleCurtainEnded}
+      />
 
       <style jsx global>{`
         @keyframes statusDot {
@@ -754,13 +1064,151 @@ export default function InaugurationPage() {
           }
         }
 
-        @media (prefers-reduced-motion: reduce) {
-          * {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            scroll-behavior: auto !important;
-          }
+        @keyframes inaugurateHalo {
+          0%, 100% { opacity: 0.28; transform: scale(0.98); }
+          50% { opacity: 0.85; transform: scale(1.035); }
         }
+
+        @keyframes honoureeLine {
+          0%, 100% { transform: translateX(-90%); opacity: 0.25; }
+          50% { transform: translateX(190%); opacity: 1; }
+        }
+
+        /* ===== Genuine PowerPoint Curtains transition overlay ===== */
+        .curtain-prelude-veil {
+          position: fixed;
+          inset: 0;
+          z-index: 999;
+          pointer-events: none;
+          opacity: 0;
+          background: #000;
+          transition: opacity ${CURTAIN_BLACK_FADE_MS}ms cubic-bezier(.25,.46,.45,.94);
+          will-change: opacity;
+        }
+
+        .curtain-prelude-veil-visible {
+          opacity: 1;
+        }
+
+        .ppt-curtain-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 1000;
+          overflow: hidden;
+          pointer-events: none;
+          opacity: 0;
+          background: transparent;
+          transition: opacity ${CURTAIN_OVERLAY_FADE_IN_MS}ms cubic-bezier(.25,.46,.45,.94);
+          will-change: opacity;
+        }
+
+        .ppt-curtain-overlay-entered {
+          opacity: 1;
+        }
+
+        .ppt-curtain-overlay-fading {
+          opacity: 0;
+        }
+
+        .ppt-curtain-video {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+          background: transparent;
+          transform: translateZ(0);
+          backface-visibility: hidden;
+        }
+
+        /* ===== Inaugurated-by slide, matching the reference artwork ===== */
+        .honouree-scene {
+          position: relative;
+          min-height: 430px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2rem 0 7rem;
+        }
+
+        .honouree-spotlight {
+          position: absolute;
+          z-index: 0;
+          left: 50%;
+          top: -18%;
+          width: min(74vw, 960px);
+          height: 84%;
+          transform: translateX(-50%);
+          opacity: .55;
+          background: conic-gradient(from 166deg at 50% 0%, transparent 0 41%, rgba(231,240,221,.10) 46%, rgba(255,244,201,.18) 50%, rgba(231,240,221,.10) 54%, transparent 59% 100%);
+          filter: blur(8px);
+          animation: spotlightPulse 4.8s ease-in-out infinite;
+        }
+
+        .honouree-sparkles span {
+          position: absolute;
+          z-index: 1;
+          width: 3px;
+          height: 3px;
+          border-radius: 50%;
+          background: #f1d37b;
+          box-shadow: 0 0 12px rgba(241,211,123,.72);
+          animation: starTwinkle 2.5s ease-in-out infinite;
+        }
+
+        .honouree-floor {
+          position: absolute;
+          z-index: 0;
+          left: 50%;
+          bottom: -5px;
+          width: min(72vw, 900px);
+          height: 130px;
+          transform: translateX(-50%);
+          perspective: 650px;
+        }
+
+        .honouree-floor-ring {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          border: 1.5px solid rgba(219, 176, 70, .72);
+          border-radius: 50%;
+          transform: translate(-50%, -50%) rotateX(68deg);
+          box-shadow: 0 0 22px rgba(219,176,70,.16);
+        }
+
+        .honouree-floor-ring-one { width: 72%; height: 115%; }
+        .honouree-floor-ring-two { width: 100%; height: 155%; opacity: .6; }
+        .honouree-floor-glow {
+          position: absolute;
+          left: 50%;
+          top: 46%;
+          width: 72%;
+          height: 24px;
+          transform: translate(-50%, -50%);
+          background: radial-gradient(ellipse, rgba(255,215,118,.42), transparent 68%);
+          filter: blur(5px);
+        }
+
+        @keyframes spotlightPulse {
+          0%,100% { opacity: .36; }
+          50% { opacity: .66; }
+        }
+
+        @keyframes starTwinkle {
+          0%,100% { opacity: .16; transform: scale(.7); }
+          50% { opacity: 1; transform: scale(1.35); }
+        }
+
+        @media (max-width: 760px) {
+          .curtain-rope { width: 62px; height: 13px; }
+          .curtain-tassel { transform: scale(.78); }
+          .honouree-scene { min-height: 420px; padding-bottom: 5rem; }
+          .honouree-floor { width: 90vw; }
+          .curtain-top-swag { left: 3%; right: 3%; }
+        }
+
       `}</style>
     </main>
   );
