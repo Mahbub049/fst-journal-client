@@ -216,6 +216,25 @@ const createSubmissionType = (order: number): SubmissionType => ({
   isActive: true,
 });
 
+type CallForPaperTab =
+  | "invitation"
+  | "important"
+  | "submission"
+  | "research"
+  | "requirements"
+  | "manuscript"
+  | "contact";
+
+const CALL_FOR_PAPER_TABS: { id: CallForPaperTab; label: string }[] = [
+  { id: "invitation", label: "Publication Invitation" },
+  { id: "important", label: "Important Information Sidebar" },
+  { id: "submission", label: "Submission Format" },
+  { id: "research", label: "Suggested Research Areas" },
+  { id: "requirements", label: "Final Submission Requirements" },
+  { id: "manuscript", label: "Submit Manuscript" },
+  { id: "contact", label: "Contact" },
+];
+
 const serverFileBaseUrl = getBrowserFileOrigin();
 
 const mergeCallForPaperContent = (
@@ -473,6 +492,15 @@ export default function AdminCallForPapersPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<"pdf" | "poster" | "">("");
   const [message, setMessage] = useState("");
+  const [activeTab, setActiveTab] = useState<CallForPaperTab>("invitation");
+
+  // Show feedback briefly; a previously displayed success must not stay on screen
+  // while the administrator continues editing other sections.
+  useEffect(() => {
+    if (!message) return;
+    const timer = window.setTimeout(() => setMessage(""), 4800);
+    return () => window.clearTimeout(timer);
+  }, [message]);
 
   useEffect(() => {
     let isMounted = true;
@@ -593,8 +621,23 @@ export default function AdminCallForPapersPage() {
 
       if (type === "pdf") {
         const updated = await uploadAdminCallForPaperPdf(file);
-        setForm(mergeCallForPaperContent(updated));
-        setMessage("PDF uploaded and replaced successfully in /pdfs/call-for-papers.pdf.");
+        // Preserve unsaved changes in every other tab. The backend publishes the
+        // new PDF immediately and returns its cache-busted canonical URL.
+        setForm((previous) => {
+          const previousLink = (previous.pdfActionButtonLink || "").trim();
+          const oldPdfUrl = (previous.pdfUrl || "").trim();
+          const linkWasPdf = !previousLink || previousLink === oldPdfUrl ||
+            previousLink.startsWith("/pdfs/call-for-papers.pdf") ||
+            previousLink.startsWith("/api/call-for-papers/pdf");
+          return {
+            ...previous,
+            pdfUrl: updated.pdfUrl,
+            pdfActionButtonLink: linkWasPdf
+              ? updated.pdfActionButtonLink || updated.pdfUrl
+              : previous.pdfActionButtonLink,
+          };
+        });
+        setMessage("New PDF uploaded successfully. The public page now uses the replacement.");
         return;
       }
 
@@ -687,8 +730,45 @@ export default function AdminCallForPapersPage() {
           </div>
         </div>
 
+        <nav
+          aria-label="Call for Papers sections"
+          className="sticky top-[72px] z-20 rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-sm backdrop-blur-xl"
+        >
+          <div role="tablist" aria-label="Edit Call for Papers" className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]">
+            {CALL_FOR_PAPER_TABS.map((tab, index) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                id={`cfp-tab-${tab.id}`}
+                aria-selected={activeTab === tab.id}
+                aria-controls={`cfp-panel-${tab.id}`}
+                onClick={() => setActiveTab(tab.id)}
+                className={`inline-flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005A78] ${
+                  activeTab === tab.id
+                    ? "bg-[#005A78] text-white shadow-sm"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-[#005A78]"
+                }`}
+              >
+                <span className={`text-[11px] ${activeTab === tab.id ? "text-cyan-100" : "text-slate-400"}`}>
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </nav>
+
         {message && (
-          <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-700 shadow-sm">
+          <div
+            role="status"
+            aria-live="polite"
+            className={`rounded-2xl border px-5 py-4 text-sm font-semibold shadow-sm ${
+              /failed|error|could not/i.test(message)
+                ? "border-rose-200 bg-rose-50 text-rose-800"
+                : "border-emerald-200 bg-emerald-50 text-emerald-800"
+            }`}
+          >
             {message}
           </div>
         )}
@@ -702,6 +782,12 @@ export default function AdminCallForPapersPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div
+              id="cfp-panel-invitation"
+              role="tabpanel"
+              aria-labelledby="cfp-tab-invitation"
+              hidden={activeTab !== "invitation"}
+            >
             <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-bold text-slate-950">
                 Publication Invitation
@@ -870,7 +956,14 @@ export default function AdminCallForPapersPage() {
                 </label>
               </div>
             </section>
+            </div>
 
+            <div
+              id="cfp-panel-submission"
+              role="tabpanel"
+              aria-labelledby="cfp-tab-submission"
+              hidden={activeTab !== "submission"}
+            >
             <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-bold text-slate-950">
                 Submission Format
@@ -897,7 +990,14 @@ export default function AdminCallForPapersPage() {
                 </div>
               </div>
             </section>
+            </div>
 
+            <div
+              id="cfp-panel-research"
+              role="tabpanel"
+              aria-labelledby="cfp-tab-research"
+              hidden={activeTab !== "research"}
+            >
             <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-bold text-slate-950">
                 Suggested Research Areas
@@ -930,7 +1030,14 @@ export default function AdminCallForPapersPage() {
                 />
               </div>
             </section>
+            </div>
 
+            <div
+              id="cfp-panel-requirements"
+              role="tabpanel"
+              aria-labelledby="cfp-tab-requirements"
+              hidden={activeTab !== "requirements"}
+            >
             <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-bold text-slate-950">
                 Final Submission Requirements
@@ -943,7 +1050,14 @@ export default function AdminCallForPapersPage() {
                 </div>
               </div>
             </section>
+            </div>
 
+            <div
+              id="cfp-panel-important"
+              role="tabpanel"
+              aria-labelledby="cfp-tab-important"
+              hidden={activeTab !== "important"}
+            >
             <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="flex items-center justify-between gap-4">
                 <h2 className="text-lg font-bold text-slate-950">
@@ -999,7 +1113,14 @@ export default function AdminCallForPapersPage() {
                 ))}
               </div>
             </section>
+            </div>
 
+            <div
+              id="cfp-panel-manuscript"
+              role="tabpanel"
+              aria-labelledby="cfp-tab-manuscript"
+              hidden={activeTab !== "manuscript"}
+            >
             <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-bold text-slate-950">
                 Submit Manuscript Box
@@ -1016,7 +1137,14 @@ export default function AdminCallForPapersPage() {
                 <TextInput label="Guidelines Button Link" value={form.guidelinesButtonLink} onChange={(value) => updateField("guidelinesButtonLink", value)} />
               </div>
             </section>
+            </div>
 
+            <div
+              id="cfp-panel-contact"
+              role="tabpanel"
+              aria-labelledby="cfp-tab-contact"
+              hidden={activeTab !== "contact"}
+            >
             <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-bold text-slate-950">
                 Contact Box
@@ -1034,6 +1162,7 @@ export default function AdminCallForPapersPage() {
                 <TextInput label="Phone" value={form.contactPhone} onChange={(value) => updateField("contactPhone", value)} />
               </div>
             </section>
+            </div>
 
             <div className="sticky bottom-4 z-10 flex justify-end">
               <button

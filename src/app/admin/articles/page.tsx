@@ -11,7 +11,6 @@ import {
   EyeOff,
   ExternalLink,
   FileText,
-  GripVertical,
   Loader2,
   Plus,
   RefreshCw,
@@ -23,6 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import AdminLayout from "@/components/admin/AdminLayout";
+import SortableAdminList from "@/components/admin/SortableAdminList";
 import {
   ArticlePayload,
   ArticleStatus,
@@ -43,6 +43,52 @@ import { confirmAdminAction } from "@/lib/adminDialogs";
 import { showAdminSuccessToast } from "@/lib/adminToast";
 
 type PublicationFilter = "all" | "published" | "draft";
+type ArticleSortMode =
+  | "manual"
+  | "pages-asc"
+  | "pages-desc"
+  | "downloads-desc"
+  | "downloads-asc"
+  | "views-desc"
+  | "views-asc"
+  | "citations-desc"
+  | "title-asc"
+  | "title-desc";
+
+// Numeric comparison, not alphabetical: 1-22 comes before 23-41.
+// Unspecified page ranges always sort last, regardless of direction.
+const readPageRange = (pages: string): [number, number] | null => {
+  const numbers = String(pages || "").match(/\d+/g);
+  if (!numbers?.length) return null;
+  const start = Number(numbers[0]);
+  const end = numbers.length > 1 ? Number(numbers[1]) : start;
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+  return [start, end];
+};
+
+const compareArticlePages = (a: Article, b: Article, descending = false) => {
+  const first = readPageRange(a.pages);
+  const second = readPageRange(b.pages);
+  if (!first) return second ? 1 : 0;
+  if (!second) return -1;
+  const result = first[0] - second[0] || first[1] - second[1];
+  return descending ? -result : result;
+};
+
+const compareArticlesByMode = (a: Article, b: Article, mode: ArticleSortMode) => {
+  switch (mode) {
+    case "pages-asc": return compareArticlePages(a, b);
+    case "pages-desc": return compareArticlePages(a, b, true);
+    case "downloads-desc": return Number(b.downloads || 0) - Number(a.downloads || 0);
+    case "downloads-asc": return Number(a.downloads || 0) - Number(b.downloads || 0);
+    case "views-desc": return Number(b.views || 0) - Number(a.views || 0);
+    case "views-asc": return Number(a.views || 0) - Number(b.views || 0);
+    case "citations-desc": return Number(b.citations || 0) - Number(a.citations || 0);
+    case "title-asc": return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+    case "title-desc": return b.title.localeCompare(a.title, undefined, { sensitivity: "base" });
+    default: return 0;
+  }
+};
 
 type ArticleFormState = {
   issueId: string;
@@ -225,6 +271,8 @@ export default function AdminArticlesPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | ArticleStatus>("all");
   const [publicationFilter, setPublicationFilter] =
     useState<PublicationFilter>("all");
+  const [sortMode, setSortMode] = useState<ArticleSortMode>("manual");
+  const [orderMessage, setOrderMessage] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -235,7 +283,6 @@ export default function AdminArticlesPage() {
   const [reordering, setReordering] = useState(false);
   const [syncingAllCitations, setSyncingAllCitations] = useState(false);
   const [syncingArticleId, setSyncingArticleId] = useState<string | null>(null);
-  const [draggedArticleId, setDraggedArticleId] = useState<string | null>(null);
 
   const [message, setMessage] = useState("");
   const [articleModalOpen, setArticleModalOpen] = useState(false);
@@ -310,20 +357,23 @@ export default function AdminArticlesPage() {
 
   const sortedArticles = useMemo(() => {
     return [...articles].sort((a, b) => {
-      const orderA = Number(a.order || 0);
-      const orderB = Number(b.order || 0);
-
-      if (orderA !== orderB) return orderA - orderB;
-
-      return String(a._id).localeCompare(String(b._id));
+      if (sortMode !== "manual") {
+        const selectedDifference = compareArticlesByMode(a, b, sortMode);
+        if (selectedDifference) return selectedDifference;
+      }
+      const savedOrder = Number(a.order ?? 0) - Number(b.order ?? 0);
+      return savedOrder || String(a._id).localeCompare(String(b._id));
     });
-  }, [articles]);
+  }, [articles, sortMode]);
 
-  const canReorderArticles =
+  // Persisting order requires every paper in ONE issue, without partial filters.
+  const canEditArticleOrder =
     issueFilter !== "all" &&
     !search.trim() &&
     statusFilter === "all" &&
     publicationFilter === "all";
+  const canReorderArticles = canEditArticleOrder && sortMode === "manual";
+  const canApplyArticleSort = canEditArticleOrder && sortMode !== "manual" && !reordering;
 
   const selectedIssue = issues.find((issue) => issue._id === issueFilter);
   const selectedIssueLabel = selectedIssue
@@ -642,75 +692,52 @@ export default function AdminArticlesPage() {
     }
   };
 
-  const saveArticleOrder = async (orderedArticles: Article[]) => {
-    if (!canReorderArticles) {
-      setMessage(
-        "Select one issue and clear all search/status filters before changing article order."
-      );
-      return;
+  const saveArticleOrder = async (orderedArticles: Article[]): Promise<boolean> => {
+    if (!canEditArticleOrder || reordering) {
+      setOrderMessage("Select one issue and clear search/status filters before saving order.");
+      return false;
+    }
+    if (orderedArticles.length !== articles.length) return false;
+    const savedOrder = [...articles].sort((a, b) => Number(a.order ?? 0) - Number(b.order ?? 0));
+    if (orderedArticles.every((item, index) => item._id === savedOrder[index]?._id)) {
+      setOrderMessage("This order is already saved.");
+      return true;
     }
 
+    const previousArticles = articles;
+    const orderedWithIndex = orderedArticles.map((article, index) => ({
+      ...article,
+      order: index,
+    }));
+    setArticles(orderedWithIndex); // No loading screen or scroll reset.
+    setReordering(true);
+    setOrderMessage("Saving article order...");
     try {
-      setReordering(true);
-
-      const orderedWithIndex = orderedArticles.map((article, index) => ({
-        ...article,
-        order: index,
-      }));
-
-      setArticles(orderedWithIndex);
-      await reorderAdminArticles({
+      const saved = await reorderAdminArticles({
         issueId: issueFilter,
         articleIds: orderedWithIndex.map((article) => article._id),
       });
-      await fetchArticles();
-      setMessage(
-        "Article order updated. The selected issue page will follow this order."
-      );
+      setArticles(saved);
+      setOrderMessage("Article order saved.");
+      return true;
     } catch (error: any) {
-      setMessage(error?.response?.data?.message || "Failed to update article order.");
-      await fetchArticles();
+      setArticles(previousArticles);
+      setOrderMessage(error?.response?.data?.message || "Save failed; previous article order restored.");
+      return false;
     } finally {
       setReordering(false);
-      setDraggedArticleId(null);
     }
   };
 
-  const handleArticleDrop = async (targetArticleId: string) => {
-    if (
-      !draggedArticleId ||
-      draggedArticleId === targetArticleId ||
-      !canReorderArticles
-    ) {
-      setDraggedArticleId(null);
-      return;
-    }
-
-    const fromIndex = sortedArticles.findIndex(
-      (article) => article._id === draggedArticleId
-    );
-    const toIndex = sortedArticles.findIndex(
-      (article) => article._id === targetArticleId
-    );
-
-    if (fromIndex < 0 || toIndex < 0) {
-      setDraggedArticleId(null);
-      return;
-    }
-
-    await saveArticleOrder(reorderList(sortedArticles, fromIndex, toIndex));
+  const moveArticle = (fromIndex: number, toIndex: number) => {
+    if (!canReorderArticles || reordering || toIndex < 0 || toIndex >= sortedArticles.length || fromIndex === toIndex) return;
+    void saveArticleOrder(reorderList(sortedArticles, fromIndex, toIndex));
   };
 
-  const moveArticle = async (fromIndex: number, toIndex: number) => {
-    if (
-      toIndex < 0 ||
-      toIndex >= sortedArticles.length ||
-      fromIndex === toIndex
-    ) {
-      return;
-    }
-
-    await saveArticleOrder(reorderList(sortedArticles, fromIndex, toIndex));
+  const applyArticleSort = async () => {
+    if (!canApplyArticleSort) return;
+    const saved = await saveArticleOrder(sortedArticles);
+    if (saved) setSortMode("manual");
   };
 
   const getArticlePublicHref = (article: Article) => {
@@ -1356,7 +1383,7 @@ export default function AdminArticlesPage() {
 
             <form
               onSubmit={handleSearchSubmit}
-              className="mb-5 grid gap-3 xl:grid-cols-[1fr_220px_150px_150px_auto]"
+              className="mb-5 grid gap-3 xl:grid-cols-[minmax(0,1fr)_190px_125px_135px_195px_auto]"
             >
               <div className="relative">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -1370,6 +1397,7 @@ export default function AdminArticlesPage() {
 
               <select
                 value={issueFilter}
+                disabled={reordering}
                 onChange={(event) => setIssueFilter(event.target.value)}
                 className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold outline-none transition focus:border-[#005A78] focus:ring-2 focus:ring-[#005A78]/10"
               >
@@ -1383,6 +1411,7 @@ export default function AdminArticlesPage() {
 
               <select
                 value={statusFilter}
+                disabled={reordering}
                 onChange={(event) =>
                   setStatusFilter(event.target.value as "all" | ArticleStatus)
                 }
@@ -1395,6 +1424,7 @@ export default function AdminArticlesPage() {
 
               <select
                 value={publicationFilter}
+                disabled={reordering}
                 onChange={(event) =>
                   setPublicationFilter(event.target.value as PublicationFilter)
                 }
@@ -1403,6 +1433,25 @@ export default function AdminArticlesPage() {
                 <option value="all">All Visibility</option>
                 <option value="published">Visible</option>
                 <option value="draft">Hidden</option>
+              </select>
+
+              <select
+                aria-label="Sort articles"
+                disabled={reordering}
+                value={sortMode}
+                onChange={(event) => { setSortMode(event.target.value as ArticleSortMode); setOrderMessage(""); }}
+                className="min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-[#005A78]"
+              >
+                <option value="manual">Sort: Custom (saved)</option>
+                <option value="pages-asc">Pages: lowest first (1–22, 23–41)</option>
+                <option value="pages-desc">Pages: highest first</option>
+                <option value="downloads-desc">Downloads: most first</option>
+                <option value="downloads-asc">Downloads: least first</option>
+                <option value="views-desc">Views: most first</option>
+                <option value="views-asc">Views: least first</option>
+                <option value="citations-desc">Citations: most first</option>
+                <option value="title-asc">Title: A to Z</option>
+                <option value="title-desc">Title: Z to A</option>
               </select>
 
               <button
@@ -1415,15 +1464,36 @@ export default function AdminArticlesPage() {
 
             <div
               className={[
-                "mb-5 rounded-2xl border px-4 py-3 text-sm font-semibold",
+                "mb-5 flex flex-col gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold lg:flex-row lg:items-center lg:justify-between",
                 canReorderArticles
                   ? "border-[#005A78]/20 bg-[#005A78]/5 text-[#005A78]"
-                  : "border-amber-200 bg-amber-50 text-amber-700",
+                  : sortMode !== "manual"
+                    ? "border-cyan-200 bg-cyan-50 text-[#005A78]"
+                    : "border-amber-200 bg-amber-50 text-amber-700",
               ].join(" ")}
             >
-              {canReorderArticles
-                ? `Ordering mode is active for ${selectedIssueLabel}. Drag papers or use arrows. The top paper will show first on the issue page.`
-                : "Ordering is enabled only after selecting one issue with search/status/visibility filters cleared."}
+              <div>
+                <p>
+                  {canReorderArticles
+                    ? `Manual order: ${selectedIssueLabel}. Drag a grip to move a paper, with auto-scroll at the page edges, or use arrows.`
+                    : sortMode !== "manual"
+                      ? "Previewing your selected sort. Choose one issue and Apply to website to make this the actual public article order."
+                      : "Select one issue with search/status/visibility filters cleared to reorder papers."}
+                </p>
+                <p role="status" className="mt-1 min-h-4 text-xs font-bold">{orderMessage || "\u00a0"}</p>
+              </div>
+              {sortMode !== "manual" ? (
+                <button
+                  type="button"
+                  disabled={!canApplyArticleSort}
+                  onClick={() => void applyArticleSort()}
+                  title={canEditArticleOrder ? "Save this sequence to the issue's public page" : "Select one issue with no filters to apply this order"}
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#005A78] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#004968] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {reordering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Apply as issue order
+                </button>
+              ) : null}
             </div>
 
             {loading ? (
@@ -1444,46 +1514,21 @@ export default function AdminArticlesPage() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {sortedArticles.map((article, index) => (
+              <SortableAdminList
+                items={sortedArticles}
+                disabled={!canReorderArticles || reordering}
+                className="space-y-4"
+                handlePosition="top"
+                onReorder={(next) => { void saveArticleOrder(next); }}
+                renderItem={(article, index) => (
                   <div
-                    key={article._id}
-                    draggable={canReorderArticles && !reordering}
-                    onDragStart={() => setDraggedArticleId(article._id)}
-                    onDragOver={(event) => {
-                      if (canReorderArticles) event.preventDefault();
-                    }}
-                    onDrop={() => handleArticleDrop(article._id)}
-                    onDragEnd={() => setDraggedArticleId(null)}
-                    className={[
-                      "rounded-2xl border bg-slate-50 p-4 transition",
-                      draggedArticleId === article._id
-                        ? "border-[#005A78] opacity-70 ring-2 ring-[#005A78]/15"
-                        : "border-slate-200 hover:border-[#005A78]/30",
-                      canReorderArticles ? "cursor-move" : "cursor-default",
-                    ].join(" ")}
+                    className="rounded-2xl border border-slate-200 bg-slate-50 py-4 pl-12 pr-4 transition hover:border-[#005A78]/30"
                   >
                     <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                       <div className="flex min-w-0 gap-4">
                         <div className="flex shrink-0 flex-col items-center gap-2">
                           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#005A78] text-xs font-black text-white shadow-sm">
                             {index + 1}
-                          </div>
-
-                          <div
-                            className={[
-                              "flex h-9 w-9 items-center justify-center rounded-full border bg-white text-slate-400",
-                              canReorderArticles
-                                ? "border-slate-200"
-                                : "border-slate-100 opacity-50",
-                            ].join(" ")}
-                            title="Drag to reorder"
-                          >
-                            {reordering && draggedArticleId === article._id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <GripVertical className="h-4 w-4" />
-                            )}
                           </div>
                         </div>
 
@@ -1513,7 +1558,9 @@ export default function AdminArticlesPage() {
                             <span className="rounded-full bg-[#005A78]/10 px-3 py-1 text-[#005A78]">
                               {canReorderArticles
                                 ? `Issue position ${index + 1}`
-                                : `Saved order ${article.order ?? 0}`}
+                                : sortMode !== "manual"
+                                  ? `Preview position ${index + 1}`
+                                  : `Saved order ${article.order ?? 0}`}
                             </span>
                             <span className="rounded-full bg-white px-3 py-1 text-slate-700">
                               {article.articleType || "Research Article"}
@@ -1693,8 +1740,8 @@ export default function AdminArticlesPage() {
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
+                )}
+              />
             )}
           </div>
       </div>

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import {
@@ -14,6 +14,7 @@ type LoginStep = "credentials" | "loginOtp" | "forgotEmail" | "resetPassword";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const emailInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<LoginStep>("credentials");
   const [email, setEmail] = useState("");
@@ -27,6 +28,10 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  useEffect(() => {
+    if (step === "credentials") emailInputRef.current?.focus();
+  }, [step]);
 
   const cleanMessages = () => {
     setError("");
@@ -369,6 +374,8 @@ export default function AdminLoginPage() {
                       Email Address
                     </label>
                     <input
+                      ref={emailInputRef}
+                      autoFocus
                       type="email"
                       value={email}
                       onChange={(event) => setEmail(event.target.value)}
@@ -379,18 +386,12 @@ export default function AdminLoginPage() {
                     />
                   </div>
 
-                  <div>
+                  <div className="relative">
                     <div className="mb-2 flex items-center justify-between gap-3">
                       <label className="block text-sm font-semibold text-slate-700">
                         Password
                       </label>
-                      <button
-                        type="button"
-                        onClick={goToForgotPassword}
-                        className="cursor-pointer text-xs font-bold text-[#005A78] transition hover:text-[#003B5C]"
-                      >
-                        Forgot password?
-                      </button>
+
                     </div>
 
                     <div className="relative">
@@ -413,6 +414,13 @@ export default function AdminLoginPage() {
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </div>
+                    <button
+                      type="button"
+                      onClick={goToForgotPassword}
+                      className="absolute right-0 top-0 cursor-pointer text-xs font-bold text-[#005A78] transition hover:text-[#003B5C]"
+                    >
+                      Forgot password?
+                    </button>
                   </div>
 
                   <button

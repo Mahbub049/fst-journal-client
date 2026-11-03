@@ -350,7 +350,17 @@ function SmartLink({
   );
 }
 
-export default function PublicNavbar() {
+export type PublicNavbarInitialData = {
+  menus: PublicMenuItem[];
+  issues: Issue[];
+  legacyLinkSettings: NavbarLegacyLinkSettings | null;
+};
+
+export default function PublicNavbar({
+  initialData,
+}: {
+  initialData?: PublicNavbarInitialData | null;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const navbarRef = useRef<HTMLElement | null>(null);
@@ -358,10 +368,10 @@ export default function PublicNavbar() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-  const [menus, setMenus] = useState<PublicMenuItem[]>([]);
-  const [publicIssues, setPublicIssues] = useState<Issue[]>([]);
+  const [menus, setMenus] = useState<PublicMenuItem[]>(initialData?.menus || []);
+  const [publicIssues, setPublicIssues] = useState<Issue[]>(initialData?.issues || []);
   const [legacyLinkSettings, setLegacyLinkSettings] =
-    useState<NavbarLegacyLinkSettings | null>(null);
+    useState<NavbarLegacyLinkSettings | null>(initialData?.legacyLinkSettings || null);
   const [searchText, setSearchText] = useState("");
   const [isNavbarStuck, setIsNavbarStuck] = useState(false);
 
@@ -373,6 +383,10 @@ export default function PublicNavbar() {
   const desktopMenuBreakpoint = legacyLinkEnabled ? 1420 : 1280;
 
   useEffect(() => {
+    // Preloaded navigation avoids a visible jump between the fallback and the
+    // saved desktop layout. Only fetch on the client if SSR was unavailable.
+    if (initialData) return;
+    let mounted = true;
     const fetchNavbarData = async () => {
       const [menusResult, issuesResult, legacyLinkResult] =
         await Promise.allSettled([
@@ -381,6 +395,7 @@ export default function PublicNavbar() {
           getPublicNavbarLegacyLinkSettings(),
         ]);
 
+      if (!mounted) return;
       setMenus(menusResult.status === "fulfilled" ? menusResult.value : []);
       setPublicIssues(
         issuesResult.status === "fulfilled" ? issuesResult.value : [],
@@ -390,8 +405,9 @@ export default function PublicNavbar() {
       );
     };
 
-    fetchNavbarData();
-  }, []);
+    void fetchNavbarData();
+    return () => { mounted = false; };
+  }, [initialData]);
 
   useEffect(() => {
     const checkNavbarPosition = () => {
@@ -658,7 +674,7 @@ export default function PublicNavbar() {
   return (
     <header
       ref={navbarRef}
-      className={`journal-navbar sticky top-0 z-[100] border-b backdrop-blur-xl transition-all duration-300 ${isNavbarStuck
+      className={`journal-navbar sticky top-0 z-[100] border-b backdrop-blur-xl ${isNavbarStuck
         ? "journal-navbar-stuck border-[#15395e]/70 bg-[#071a33]/95 shadow-[0_16px_40px_rgba(2,8,23,0.22)]"
         : "border-slate-200 bg-white/95 shadow-sm"
         }`}

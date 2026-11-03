@@ -7,7 +7,6 @@ import {
   Edit,
   Eye,
   EyeOff,
-  GripVertical,
   Loader2,
   Plus,
   RefreshCw,
@@ -18,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
+import SortableAdminList from "@/components/admin/SortableAdminList";
 import {
   createAdminIssue,
   deleteAdminIssue,
@@ -32,6 +32,22 @@ import { confirmAdminAction } from "@/lib/adminDialogs";
 import { showAdminSuccessToast } from "@/lib/adminToast";
 
 type IssueStatusFilter = "all" | "published" | "draft" | "recent";
+type IssueSortMode = "manual" | "volume-desc" | "volume-asc";
+
+const getNumericPart = (value: string) => {
+  const match = String(value || "").match(/\d+/);
+  return match ? Number(match[0]) : -1;
+};
+
+const compareIssueNumber = (a: Issue, b: Issue) => {
+  const volume = getNumericPart(a.volume) - getNumericPart(b.volume);
+  if (volume) return volume;
+  const issue = getNumericPart(a.issueNumber) - getNumericPart(b.issueNumber);
+  if (issue) return issue;
+  const firstDate = Date.parse(`01 ${a.publishDateLabel || ""}`) || 0;
+  const secondDate = Date.parse(`01 ${b.publishDateLabel || ""}`) || 0;
+  return firstDate - secondDate;
+};
 
 type IssueFormState = {
   title: string;
@@ -166,17 +182,20 @@ export default function AdminIssuesPage() {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<IssueStatusFilter>("all");
+  const [sortMode, setSortMode] = useState<IssueSortMode>("manual");
+  const [orderMessage, setOrderMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingPdf, setUploadingPdf] = useState(false);
   const [reordering, setReordering] = useState(false);
-  const [draggedIssueId, setDraggedIssueId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [uploadMessage, setUploadMessage] = useState("");
 
   const generatedSlug = useMemo(() => buildIssueSlug(form), [form]);
-  const canReorderIssues = statusFilter === "all" && search.trim().length === 0;
+  const canEditIssueOrder = statusFilter === "all" && search.trim().length === 0;
+  const canReorderIssues = canEditIssueOrder && sortMode === "manual";
+  const canApplyIssueSort = canEditIssueOrder && sortMode !== "manual" && !reordering;
 
   const fetchIssues = async () => {
     try {
@@ -222,12 +241,18 @@ export default function AdminIssuesPage() {
 
   const sortedIssues = useMemo(() => {
     return [...issues].sort((a, b) => {
-      const orderA = Number(a.order || 0);
-      const orderB = Number(b.order || 0);
+      if (sortMode !== "manual") {
+        const numericDifference = compareIssueNumber(a, b);
+        if (numericDifference !== 0) {
+          return sortMode === "volume-asc" ? numericDifference : -numericDifference;
+        }
+      }
+      const orderA = Number(a.order ?? 0);
+      const orderB = Number(b.order ?? 0);
       if (orderA !== orderB) return orderA - orderB;
       return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
     });
-  }, [issues]);
+  }, [issues, sortMode]);
 
   const openCreateModal = () => {
     setEditingId(null);
@@ -350,46 +375,46 @@ export default function AdminIssuesPage() {
     }
   };
 
-  const saveIssueOrder = async (orderedIssues: Issue[]) => {
-    if (!canReorderIssues) {
-      setMessage("Clear search and select All before changing issue order.");
-      return;
+  const saveIssueOrder = async (orderedIssues: Issue[]): Promise<boolean> => {
+    if (!canEditIssueOrder || reordering) {
+      setOrderMessage("Clear search and select All Issues to save the public order.");
+      return false;
+    }
+    if (orderedIssues.length !== issues.length) return false;
+    if (orderedIssues.every((issue, index) => issue._id === [...issues].sort((a, b) => Number(a.order ?? 0) - Number(b.order ?? 0))[index]?._id)) {
+      setOrderMessage("This order is already saved.");
+      return true;
     }
 
+    const previousIssues = issues;
+    const orderedWithIndex = orderedIssues.map((issue, index) => ({ ...issue, order: index }));
+    setIssues(orderedWithIndex); // Keep rendered cards, scroll position and open filters intact.
+    setReordering(true);
+    setOrderMessage("Saving public issue order...");
     try {
-      setReordering(true);
-      const orderedWithIndex = orderedIssues.map((issue, index) => ({
-        ...issue,
-        order: index,
-      }));
-      setIssues(orderedWithIndex);
-      await reorderAdminIssues(orderedWithIndex.map((issue) => issue._id));
-      void showAdminSuccessToast("Issue order saved");
-      await fetchIssues();
-      setMessage("Public issue order updated.");
+      const saved = await reorderAdminIssues(orderedWithIndex.map((issue) => issue._id));
+      setIssues(saved);
+      setAllIssues(saved);
+      setOrderMessage("Issue order saved.");
+      return true;
     } catch (error: any) {
-      setMessage(error?.response?.data?.message || "Failed to update issue order.");
-      await fetchIssues();
+      setIssues(previousIssues);
+      setOrderMessage(error?.response?.data?.message || "Could not save issue order; previous order restored.");
+      return false;
     } finally {
       setReordering(false);
-      setDraggedIssueId(null);
     }
   };
 
-  const handleIssueDrop = async (targetIssueId: string) => {
-    if (!draggedIssueId || draggedIssueId === targetIssueId || !canReorderIssues) {
-      setDraggedIssueId(null);
-      return;
-    }
-    const fromIndex = sortedIssues.findIndex((issue) => issue._id === draggedIssueId);
-    const toIndex = sortedIssues.findIndex((issue) => issue._id === targetIssueId);
-    if (fromIndex < 0 || toIndex < 0) return;
-    await saveIssueOrder(reorderList(sortedIssues, fromIndex, toIndex));
+  const moveIssue = (fromIndex: number, toIndex: number) => {
+    if (!canReorderIssues || reordering || toIndex < 0 || toIndex >= sortedIssues.length || fromIndex === toIndex) return;
+    void saveIssueOrder(reorderList(sortedIssues, fromIndex, toIndex));
   };
 
-  const moveIssue = async (fromIndex: number, toIndex: number) => {
-    if (toIndex < 0 || toIndex >= sortedIssues.length || fromIndex === toIndex) return;
-    await saveIssueOrder(reorderList(sortedIssues, fromIndex, toIndex));
+  const applyIssueSort = async () => {
+    if (!canApplyIssueSort) return;
+    const saved = await saveIssueOrder(sortedIssues);
+    if (saved) setSortMode("manual");
   };
 
   const handleDelete = async (issue: Issue) => {
@@ -456,12 +481,15 @@ export default function AdminIssuesPage() {
               <h2 className="text-lg font-bold text-slate-950">Issue List</h2>
               <p className="mt-1 text-sm text-slate-500">
                 {canReorderIssues
-                  ? "Drag issues or use the arrows to change public display order."
-                  : "Clear search and choose All to enable public reordering."}
+                  ? "Drag the grip to move an issue, or use the arrows. The list auto-scrolls near its edges."
+                  : sortMode !== "manual"
+                    ? "Preview the selected order, then Apply to website to save it."
+                    : "Clear search and choose All Issues to enable public reordering."}
+                <span role="status" className="mt-1 block min-h-4 text-xs font-semibold text-[#005A78]">{orderMessage || "\u00a0"}</span>
               </p>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <form onSubmit={handleSearchSubmit} className="flex h-11 min-w-[260px] overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                 <input
                   value={search}
@@ -476,6 +504,7 @@ export default function AdminIssuesPage() {
 
               <select
                 value={statusFilter}
+                disabled={reordering}
                 onChange={(event) => setStatusFilter(event.target.value as IssueStatusFilter)}
                 className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none focus:border-[#005A78]"
               >
@@ -485,9 +514,34 @@ export default function AdminIssuesPage() {
                 <option value="recent">Recent</option>
               </select>
 
+              <select
+                aria-label="Sort issues"
+                disabled={reordering}
+                value={sortMode}
+                onChange={(event) => { setSortMode(event.target.value as IssueSortMode); setOrderMessage(""); }}
+                className="h-11 max-w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-[#005A78]"
+              >
+                <option value="manual">Custom (saved order)</option>
+                <option value="volume-desc">Volume / issue: 5 → 1 (newest first)</option>
+                <option value="volume-asc">Volume / issue: 1 → 5 (oldest first)</option>
+              </select>
+              {sortMode !== "manual" ? (
+                <button
+                  type="button"
+                  disabled={!canApplyIssueSort}
+                  onClick={() => void applyIssueSort()}
+                  className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#005A78] px-4 text-sm font-bold text-white transition hover:bg-[#004968] disabled:cursor-not-allowed disabled:opacity-40"
+                  title={canEditIssueOrder ? "Save this order to the public archive" : "Clear search and select All Issues first"}
+                >
+                  {reordering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Apply to website
+                </button>
+              ) : null}
+
               <button
                 type="button"
                 onClick={() => void fetchIssues()}
+                disabled={reordering}
                 className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:border-[#005A78] hover:text-[#005A78]"
               >
                 <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -507,25 +561,15 @@ export default function AdminIssuesPage() {
                 <p className="mt-1 text-sm text-slate-500">Create a new issue or adjust the current filters.</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {sortedIssues.map((issue, index) => (
+              <SortableAdminList
+                items={sortedIssues}
+                disabled={!canReorderIssues || reordering}
+                className="space-y-3"
+                onReorder={(next) => { void saveIssueOrder(next); }}
+                renderItem={(issue, index) => (
                   <article
-                    key={issue._id}
-                    draggable={canReorderIssues && !reordering}
-                    onDragStart={() => canReorderIssues && setDraggedIssueId(issue._id)}
-                    onDragOver={(event) => canReorderIssues && event.preventDefault()}
-                    onDrop={() => void handleIssueDrop(issue._id)}
-                    onDragEnd={() => setDraggedIssueId(null)}
-                    className={`group grid gap-4 rounded-2xl border bg-white p-4 transition lg:grid-cols-[auto_82px_minmax(0,1fr)_auto] lg:items-center ${
-                      draggedIssueId === issue._id
-                        ? "border-[#005A78] bg-cyan-50/40 shadow-md"
-                        : "border-slate-200 hover:border-slate-300 hover:shadow-sm"
-                    }`}
+                    className="group grid gap-4 rounded-2xl border border-slate-200 bg-white py-4 pl-12 pr-4 transition hover:border-slate-300 hover:shadow-sm lg:grid-cols-[82px_minmax(0,1fr)_auto] lg:items-center"
                   >
-                    <div className="hidden cursor-grab text-slate-300 active:cursor-grabbing lg:block">
-                      <GripVertical className="h-5 w-5" />
-                    </div>
-
                     <div className="relative h-[106px] w-[76px] overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-sm">
                       {issue.coverImage ? (
                         <img
@@ -570,7 +614,7 @@ export default function AdminIssuesPage() {
                       <button
                         type="button"
                         disabled={!canReorderIssues || reordering || index === 0}
-                        onClick={() => void moveIssue(index, index - 1)}
+                        onClick={() => moveIssue(index, index - 1)}
                         className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-[#005A78] hover:text-[#005A78] disabled:cursor-not-allowed disabled:opacity-35"
                         aria-label="Move issue up"
                       >
@@ -579,7 +623,7 @@ export default function AdminIssuesPage() {
                       <button
                         type="button"
                         disabled={!canReorderIssues || reordering || index === sortedIssues.length - 1}
-                        onClick={() => void moveIssue(index, index + 1)}
+                        onClick={() => moveIssue(index, index + 1)}
                         className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-[#005A78] hover:text-[#005A78] disabled:cursor-not-allowed disabled:opacity-35"
                         aria-label="Move issue down"
                       >
@@ -601,8 +645,8 @@ export default function AdminIssuesPage() {
                       </button>
                     </div>
                   </article>
-                ))}
-              </div>
+                )}
+              />
             )}
           </div>
         </section>
