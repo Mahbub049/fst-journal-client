@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
+import JournalMetricsSettings from "@/components/admin/JournalMetricsSettings";
 import HomepageLegacyWebsiteSettings from "@/components/admin/HomepageLegacyWebsiteSettings";
 import HomepageLaunchModalSettings from "@/components/admin/HomepageLaunchModalSettings";
 import HomepageCelebrationSettings from "@/components/admin/HomepageCelebrationSettings";
@@ -20,7 +21,6 @@ import {
   HomepageContent,
   HomepageCarouselImage,
   HomepageInfoItem,
-  HomepageMetric,
   updateAdminHomepage,
 } from "@/services/homepageService";
 import { uploadMedia } from "@/services/mediaService";
@@ -88,14 +88,6 @@ const emptyHomepage: HomepageContent = {
 
   isPublished: true,
 };
-
-const createMetric = (order: number): HomepageMetric => ({
-  label: "",
-  value: "",
-  description: "",
-  order,
-  isActive: true,
-});
 
 const createInfoItem = (order: number): HomepageInfoItem => ({
   label: "",
@@ -276,39 +268,6 @@ export default function AdminHomepagePage() {
     } finally {
       setCarouselUploadingIndex(null);
     }
-  };
-
-  const updateMetric = (
-    index: number,
-    field: keyof HomepageMetric,
-    value: any,
-  ) => {
-    const updated = [...form.metrics];
-    updated[index] = {
-      ...updated[index],
-      [field]: value,
-    };
-
-    updateField("metrics", updated);
-  };
-
-  const addMetric = () => {
-    updateField("metrics", [
-      ...form.metrics,
-      createMetric(form.metrics.length + 1),
-    ]);
-  };
-
-  const removeMetric = (index: number) => {
-    updateField(
-      "metrics",
-      form.metrics
-        .filter((_, itemIndex) => itemIndex !== index)
-        .map((item, itemIndex) => ({
-          ...item,
-          order: itemIndex + 1,
-        })),
-    );
   };
 
   const updateInfoItem = (
@@ -650,84 +609,7 @@ export default function AdminHomepagePage() {
               </div>
             </section>
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-950">
-                    Metric / Stat Cards
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    These values control the homepage score/stat boxes.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={addMetric}
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#005A78] px-4 py-2.5 text-sm font-bold text-white"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Metric
-                </button>
-              </div>
-
-              <div className="mt-5 space-y-4">
-                {form.metrics.map((metric, index) => (
-                  <div
-                    key={index}
-                    className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
-                  >
-                    <div className="grid gap-4 lg:grid-cols-[1fr_1fr_1.4fr_auto]">
-                      <input
-                        value={metric.label}
-                        onChange={(event) =>
-                          updateMetric(index, "label", event.target.value)
-                        }
-                        placeholder="Label"
-                        className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"
-                      />
-
-                      <input
-                        value={metric.value}
-                        onChange={(event) =>
-                          updateMetric(index, "value", event.target.value)
-                        }
-                        placeholder="Value"
-                        className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"
-                      />
-
-                      <input
-                        value={metric.description || ""}
-                        onChange={(event) =>
-                          updateMetric(index, "description", event.target.value)
-                        }
-                        placeholder="Description"
-                        className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#005A78]"
-                      />
-
-                      <button
-                        type="button"
-                        onClick={() => removeMetric(index)}
-                        className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-
-                    <label className="mt-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                      <input
-                        type="checkbox"
-                        checked={metric.isActive}
-                        onChange={(event) =>
-                          updateMetric(index, "isActive", event.target.checked)
-                        }
-                      />
-                      Active
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </section>
+            <JournalMetricsSettings />
 
             <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-bold text-slate-950">

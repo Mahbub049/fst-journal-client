@@ -8,23 +8,7 @@ import {
   PublicHomepageContent,
 } from "@/services/publicHomepageService";
 import { getRecentIssues } from "@/services/issues.service";
-
-const fallbackMetrics = [
-  {
-    label: "Cite Score",
-    value: "0.0",
-    description: "Citation performance indicator",
-    order: 1,
-    isActive: true,
-  },
-  {
-    label: "Impact Factor",
-    value: "0.0",
-    description: "Journal impact indicator",
-    order: 2,
-    isActive: true,
-  },
-];
+import { getJournalMetrics, type JournalMetrics } from "@/services/journalMetricsService";
 
 const orbitDots = Array.from({ length: 9 }, (_, index) => ({
   id: index,
@@ -41,6 +25,21 @@ export default function JournalHero({ homepage }: Props) {
     homepage || null,
   );
   const [latestIssueCover, setLatestIssueCover] = useState("");
+  const [journalMetrics, setJournalMetrics] = useState<JournalMetrics | null>(null);
+  useEffect(() => {
+    let mounted = true;
+    let pending = false;
+    const load = async () => {
+      if (pending) return;
+      pending = true;
+      try { const data = await getJournalMetrics(); if (mounted) setJournalMetrics(data); }
+      catch { /* Keep the last verified response if a refresh fails. */ }
+      finally { pending = false; }
+    };
+    void load();
+    const timer = window.setInterval(() => void load(), 60000);
+    return () => { mounted = false; window.clearInterval(timer); };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -85,13 +84,14 @@ export default function JournalHero({ homepage }: Props) {
   const issnOnline = heroData?.issnOnline || "3134-7339";
   const issnPrint = heroData?.issnPrint || "2959-4812";
 
-  const metrics =
-    heroData?.metrics?.filter((metric) => metric.isActive).length
-      ? heroData.metrics
-          .filter((metric) => metric.isActive)
-          .sort((a, b) => Number(a.order || 0) - Number(b.order || 0))
-          .slice(0, 2)
-      : fallbackMetrics;
+  const metrics = [
+    { label: "Cite Score", indicator: journalMetrics?.citeScore },
+    { label: "Impact Factor", indicator: journalMetrics?.impactFactor },
+  ].map(({label, indicator}) => ({
+    label,
+    value: journalMetrics?.enabled === false ? "0.0" : indicator?.value ?? "N/A",
+    estimated: journalMetrics?.enabled === true && indicator != null && Number.isFinite(Number(indicator.value)) && indicator.value.trim() !== "",
+  }));
 
   return (
     <section className="relative isolate overflow-hidden bg-[#061426] text-white">
@@ -157,7 +157,7 @@ export default function JournalHero({ homepage }: Props) {
                   className="rounded-3xl border border-white/12 bg-white/10 px-5 py-5"
                 >
                   <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#7de4ee]">
-                    {metric.label}
+                    {metric.label}{metric.estimated ? " (est.)" : ""}
                   </p>
 
                   <p className="mt-2 text-[34px] font-black leading-none text-white">
