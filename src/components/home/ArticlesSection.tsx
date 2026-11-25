@@ -268,15 +268,14 @@ export default function ArticlesSection({ homepage, initialArticles }: Props) {
           )}
         </AnimatePresence>
 
-        <div className="relative mt-7 flex flex-col items-center justify-center gap-2 border-t border-[#e4edf1] pt-6">
+        <div className="relative mt-5 flex items-center justify-center">
           <Link
             href={`/articles?tab=${activeTab}`}
             prefetch={false}
-            className="inline-flex min-h-12 items-center justify-center gap-3 rounded-full border border-[#0b1f3a] bg-[#0b1f3a] px-7 py-3 text-sm font-extrabold text-white shadow-sm transition hover:border-[#0a7180] hover:bg-[#0a7180] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0ea5b7]"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-[#0b1f3a] px-5 py-2 text-[13px] font-bold text-white shadow-sm transition hover:bg-[#0a7180] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0ea5b7]"
           >
             View All Articles <span aria-hidden="true">→</span>
           </Link>
-          <p className="text-center text-xs text-slate-500">Browse all results for {tabs.find((tab) => tab.value === activeTab)?.label.toLowerCase()}.</p>
         </div>
       </section>
     </MotionSection>

@@ -360,9 +360,9 @@ function ArticleListPage({
                 })}
               </div>
             )}
-            <div className="mt-7 flex justify-center border-t border-slate-200 pt-6">
-              <Link href={`/articles?tab=${archiveTab}`} prefetch={false} className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#0b1f3a] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#0a7180]">
-                View All Articles →
+            <div className="mt-5 flex justify-center">
+              <Link href={`/articles?tab=${archiveTab}`} prefetch={false} className="inline-flex items-center justify-center gap-2 rounded-full bg-[#0b1f3a] px-5 py-2 text-[13px] font-bold text-white shadow-sm transition hover:bg-[#0a7180] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0ea5b7]">
+                View All Articles <span aria-hidden="true">→</span>
               </Link>
             </div>
           </section>

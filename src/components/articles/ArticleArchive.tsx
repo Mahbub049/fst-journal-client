@@ -27,7 +27,7 @@ function ArticleRow({ article, number }: { article: ArchiveArticle; number: numb
         {article.accessType && <span className="rounded-full bg-[#e6f7f9] px-3 py-1 text-[#0a7180]">{article.accessType}</span>}
       </div>
       <h3 className="mt-3 text-lg font-bold leading-7 text-[#0b1f3a] md:text-[22px] md:leading-8">
-        <Link href={href} prefetch={false} className="break-words transition hover:text-[#0a7180] hover:underline">{article.title}</Link>
+        <Link href={href} prefetch={false} className="break-words no-underline transition-colors hover:text-[#0a7180] hover:no-underline">{article.title}</Link>
       </h3>
       <p className="mt-2 text-sm leading-6 text-slate-600">{article.authors?.join(", ") || "Author information unavailable"}</p>
       <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-sm leading-6 text-slate-500">
@@ -196,11 +196,9 @@ export default function ArticleArchive({ initialQuery, initialData }: { initialQ
       <div ref={resultsTop} className="scroll-mt-28 rounded-3xl border border-[#dce6ec] bg-[#fbfcfd] p-4 shadow-sm md:p-7" aria-busy={pending && !error}>
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="journal-subheading">Article directory</p>
-            <h2 className="mt-2 text-xl font-bold text-[#0b1f3a] md:text-2xl">{articleTabs.find(tab => tab.value === query.tab)?.label}</h2>
+            <h2 className="text-xl font-bold text-[#0b1f3a] md:text-2xl">{articleTabs.find(tab => tab.value === query.tab)?.label}</h2>
             <p className="mt-1 text-sm text-slate-500" role="status" aria-live="polite">{error ? "Unable to refresh results" : pending ? "Updating results…" : data?.total ? `Showing ${start}–${end} of ${data.total} articles` : "0 articles found"}</p>
           </div>
-          {(query.tab === "all" || query.tab === "latest") && <span className="rounded-full bg-[#e6f7f9] px-3 py-1.5 text-xs font-semibold text-[#0a7180]">Newest issue first</span>}
         </div>
         {error ? <div className="rounded-2xl border border-slate-200 bg-white p-7 text-center" role="alert"><p className="text-sm text-slate-600">{error}</p><button type="button" className={`${primary} mt-4`} onClick={() => { cache.current.delete(queryKey); setRetry(n => n + 1); }}>Try again</button></div>
         : !data ? <div className="space-y-4" aria-label="Loading articles">{Array.from({ length: 3 }, (_, i) => <div key={i} className="animate-pulse space-y-4 rounded-2xl border border-slate-200 bg-white p-6"><div className="h-3 w-28 rounded bg-slate-200"/><div className="h-5 w-4/5 rounded bg-slate-200"/><div className="h-4 w-1/2 rounded bg-slate-100"/></div>)}</div>
