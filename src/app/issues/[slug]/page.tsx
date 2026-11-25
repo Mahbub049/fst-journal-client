@@ -246,11 +246,13 @@ function ArticleListPage({
   subtitle,
   articles,
   emptyMessage,
+  archiveTab,
 }: {
   title: string;
   subtitle: string;
   articles: Article[];
   emptyMessage: string;
+  archiveTab: "topCited" | "mostPopular";
 }) {
   return (
     <PublicLayout>
@@ -358,6 +360,11 @@ function ArticleListPage({
                 })}
               </div>
             )}
+            <div className="mt-7 flex justify-center border-t border-slate-200 pt-6">
+              <Link href={`/articles?tab=${archiveTab}`} prefetch={false} className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#0b1f3a] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#0a7180]">
+                View All Articles →
+              </Link>
+            </div>
           </section>
         </Container>
       </main>
@@ -585,6 +592,7 @@ export default async function IssuesInnerPage({
     return (
       <ArticleListPage
         title={issuePages["most-cited"].title}
+        archiveTab="topCited"
         subtitle={issuePages["most-cited"].subtitle}
         articles={articles}
         emptyMessage="Add published articles with citation values from the admin panel."
@@ -598,6 +606,7 @@ export default async function IssuesInnerPage({
     return (
       <ArticleListPage
         title={issuePages["most-read"].title}
+        archiveTab="mostPopular"
         subtitle={issuePages["most-read"].subtitle}
         articles={articles}
         emptyMessage="Add published articles with view values from the admin panel."

@@ -64,20 +64,22 @@ export default function ArticlesSection({ homepage, initialArticles }: Props) {
       return;
     }
 
+    let cancelled = false;
     const loadArticles = async () => {
       try {
         setLoading(true);
         const data = await getHomeArticles(activeTab);
-        setArticles(data);
+        if (!cancelled) setArticles(data);
       } catch (error) {
         console.error("Failed to load homepage articles:", error);
-        setArticles([]);
+        if (!cancelled) setArticles([]);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     loadArticles();
+    return () => { cancelled = true; };
   }, [activeTab, initialArticles]);
 
   return (
@@ -265,6 +267,17 @@ export default function ArticlesSection({ homepage, initialArticles }: Props) {
             </motion.div>
           )}
         </AnimatePresence>
+
+        <div className="relative mt-7 flex flex-col items-center justify-center gap-2 border-t border-[#e4edf1] pt-6">
+          <Link
+            href={`/articles?tab=${activeTab}`}
+            prefetch={false}
+            className="inline-flex min-h-12 items-center justify-center gap-3 rounded-full border border-[#0b1f3a] bg-[#0b1f3a] px-7 py-3 text-sm font-extrabold text-white shadow-sm transition hover:border-[#0a7180] hover:bg-[#0a7180] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0ea5b7]"
+          >
+            View All Articles <span aria-hidden="true">→</span>
+          </Link>
+          <p className="text-center text-xs text-slate-500">Browse all results for {tabs.find((tab) => tab.value === activeTab)?.label.toLowerCase()}.</p>
+        </div>
       </section>
     </MotionSection>
   );
