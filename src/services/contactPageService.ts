@@ -28,7 +28,46 @@ export type ContactPageContent = {
   supportEmail: string;
   emailButtonLabel: string;
   emailSubject: string;
+  showMap: boolean;
+  mapTitle: string;
+  mapQuery: string;
+  mapEmbedUrl: string;
+  mapHeight: number;
   isPublished: boolean;
+};
+
+export const isGoogleMapsEmbedUrl = (value: string): boolean => {
+  if (!value.trim()) return true;
+  if (value.length > 4096) return false;
+  try {
+    const url = new URL(value.trim());
+    return (
+      url.origin === "https://www.google.com" &&
+      !url.username && !url.password &&
+      url.pathname === "/maps/embed" &&
+      Boolean(url.searchParams.get("pb"))
+    );
+  } catch {
+    return false;
+  }
+};
+
+export const getContactMap = (content: ContactPageContent) => {
+  const query = content.mapQuery?.trim() ||
+    [content.institution, content.address].map((value) => value?.trim()).filter(Boolean).join(", ") ||
+    "Bangladesh University of Professionals, Mirpur Cantonment, Dhaka, Bangladesh";
+  const customUrl = content.mapEmbedUrl?.trim();
+  const embedUrl = customUrl && isGoogleMapsEmbedUrl(customUrl)
+    ? customUrl
+    : `https://www.google.com/maps?q=${encodeURIComponent(query)}&z=16&output=embed`;
+  const height = Number(content.mapHeight);
+  return {
+    query,
+    embedUrl,
+    height: Number.isFinite(height) ? Math.min(640, Math.max(260, height)) : 420,
+    directionsUrl: `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query)}`,
+    mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`,
+  };
 };
 
 type ContactPageResponse = {

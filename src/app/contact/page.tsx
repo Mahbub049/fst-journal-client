@@ -1,8 +1,10 @@
+import { MapPin, Navigation, ExternalLink } from "lucide-react";
 import Container from "@/components/common/Container";
 import PublicLayout from "@/components/layout/PublicLayout";
 import {
   ContactPageContent,
   getPublicContactPage,
+  getContactMap,
 } from "@/services/contactPageService";
 import { buildGmailComposeUrl } from "@/lib/emailLinks";
 
@@ -37,6 +39,11 @@ const fallbackContact: ContactPageContent = {
   supportEmail: "editor.fstjournal@bup.edu.bd",
   emailButtonLabel: "Email Editorial Office",
   emailSubject: "Journal of FST editorial office inquiry",
+  showMap: true,
+  mapTitle: "Find Us on the Map",
+  mapQuery: "",
+  mapEmbedUrl: "",
+  mapHeight: 420,
   isPublished: true,
 };
 
@@ -65,6 +72,7 @@ export default async function ContactPage() {
     { label: content.phoneLabel, value: content.phone, type: "phone" },
   ].filter((item) => item.label.trim() && item.value.trim());
 
+  const map = getContactMap(content);
   const gmailUrl = buildGmailComposeUrl(content.email, content.emailSubject);
   const supportEmail = content.supportEmail?.trim() || content.email.trim();
   const supportGmailUrl = buildGmailComposeUrl(supportEmail, content.emailSubject);
@@ -202,6 +210,48 @@ export default async function ContactPage() {
               ) : null}
             </aside>
           </div>
+
+          {content.showMap !== false ? (
+            <section className="mt-8 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm" aria-label={content.mapTitle || "Campus location"}>
+              <div className="flex flex-col gap-5 border-b border-slate-200 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex min-w-0 items-start gap-4">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#005A78]/10 text-[#005A78]">
+                    <MapPin size={24} aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="journal-subheading">Location</p>
+                    {content.mapTitle ? (
+                      <h2 className="mt-2 text-[26px] font-semibold leading-tight text-slate-950 md:text-[30px]" style={{ fontFamily: "var(--font-source-serif)" }}>
+                        {content.mapTitle}
+                      </h2>
+                    ) : null}
+                    <p className="mt-2 break-words text-[15px] leading-7 text-slate-600">
+                      {map.query}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 lg:shrink-0">
+                  <a href={map.directionsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 rounded-full bg-[#005A78] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#00465e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005A78]">
+                    <Navigation size={16} aria-hidden="true" /> Get Directions
+                  </a>
+                  <a href={map.mapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 px-5 py-3 text-sm font-semibold text-[#005A78] transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005A78]">
+                    Open in Google Maps <ExternalLink size={15} aria-hidden="true" />
+                  </a>
+                </div>
+              </div>
+              <div className="bg-slate-50">
+                <iframe
+                  title={`Google Maps — ${map.query}`}
+                  src={map.embedUrl}
+                  className="block w-full max-h-[380px] border-0 sm:max-h-none"
+                  style={{ height: map.height }}
+                  loading="lazy"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allowFullScreen
+                />
+              </div>
+            </section>
+          ) : null}
         </Container>
       </main>
     </PublicLayout>

@@ -8,6 +8,8 @@ import {
   ContactPageContent,
   getAdminContactPage,
   updateAdminContactPage,
+  getContactMap,
+  isGoogleMapsEmbedUrl,
 } from "@/services/contactPageService";
 
 const defaultForm: ContactPageContent = {
@@ -39,6 +41,11 @@ const defaultForm: ContactPageContent = {
   supportEmail: "editor.fstjournal@bup.edu.bd",
   emailButtonLabel: "Email Editorial Office",
   emailSubject: "Journal of FST editorial office inquiry",
+  showMap: true,
+  mapTitle: "Find Us on the Map",
+  mapQuery: "",
+  mapEmbedUrl: "",
+  mapHeight: 420,
   isPublished: true,
 };
 
@@ -109,6 +116,10 @@ export default function AdminContactPage() {
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
+    if (!isGoogleMapsEmbedUrl(form.mapEmbedUrl || "")) {
+      setMessage("Invalid Google Maps embed URL. Copy the src URL from Share > Embed a map, or leave it blank.");
+      return;
+    }
     try {
       setSaving(true);
       setMessage("");
@@ -121,6 +132,9 @@ export default function AdminContactPage() {
       setSaving(false);
     }
   };
+
+  const map = getContactMap(form);
+  const validEmbed = isGoogleMapsEmbedUrl(form.mapEmbedUrl || "");
 
   return (
     <AdminLayout>
@@ -235,6 +249,42 @@ export default function AdminContactPage() {
                 <div className="lg:col-span-2">
                   <TextInput label="Pre-filled Email Subject" value={form.emailSubject} onChange={(value) => updateField("emailSubject", value)} />
                 </div>
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-bold text-slate-950">Google Maps</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">Manage the location card below the public contact details. No API key is needed.</p>
+              <div className="mt-5 space-y-5">
+                <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700">
+                  <input type="checkbox" checked={form.showMap !== false} onChange={(event) => updateField("showMap", event.target.checked)} className="h-4 w-4 accent-[#005A78]" />
+                  Show Google Maps on the Contact Us page
+                </label>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <TextInput label="Map Section Title" value={form.mapTitle} onChange={(value) => updateField("mapTitle", value)} />
+                  <div>
+                    <label htmlFor="contact-map-height" className="mb-1.5 block text-sm font-semibold text-slate-700">Map Height (px)</label>
+                    <input id="contact-map-height" type="number" min={260} max={640} step={1} required value={form.mapHeight} onChange={(event) => updateField("mapHeight", event.target.valueAsNumber)} className="h-12 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-[#005A78]" />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <TextInput label="Map Location / Directions Destination (optional)" value={form.mapQuery} onChange={(value) => updateField("mapQuery", value)} placeholder="Bangladesh University of Professionals, Mirpur Cantonment, Dhaka" />
+                    <p className="mt-2 text-xs leading-5 text-slate-500">Leave blank to use the Institution and Address above. If you use a custom embed URL, enter the same place here so the directions button matches the map.</p>
+                  </div>
+                  <div className="lg:col-span-2">
+                    <TextArea label="Google Maps Embed URL (optional)" value={form.mapEmbedUrl} onChange={(value) => updateField("mapEmbedUrl", value)} />
+                    <p className="mt-2 text-xs leading-5 text-slate-500">For an exact map pin, open Google Maps → Share → Embed a map → Copy HTML, then paste only the iframe src URL (https://www.google.com/maps/embed?pb=...). Leave empty for the automatic location map.</p>
+                    {!validEmbed ? <p role="alert" className="mt-2 text-xs font-semibold text-red-600">Please enter a valid Google Maps embed URL, not an ordinary share link or HTML.</p> : null}
+                  </div>
+                </div>
+                {form.showMap !== false && validEmbed ? (
+                  <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 text-sm text-slate-700">
+                      <span className="font-semibold">Map Preview</span>
+                      <a href={map.mapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 font-semibold text-[#005A78]">Open Google Maps <ExternalLink size={14} /></a>
+                    </div>
+                    <iframe title="Google Maps location preview" src={map.embedUrl} loading="lazy" referrerPolicy="strict-origin-when-cross-origin" className="block w-full border-0" style={{ height: Math.min(map.height, 320) }} />
+                  </div>
+                ) : null}
               </div>
             </section>
 
