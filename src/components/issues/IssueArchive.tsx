@@ -22,7 +22,7 @@ function IssueCard({ issue }: { issue: ArchiveIssue }) {
   return (
     <Link href={`/issues/${issue.slug}`} className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-[#fbfcfd] transition hover:-translate-y-1 hover:border-[#0ea5b7]/45 hover:bg-white hover:shadow-md">
       <div className="relative aspect-[0.72] w-full overflow-hidden bg-[#111433]">
-        <Image src={issue.coverImage || "/images/journal-cover.jpg"} alt={`${issue.title} cover`} fill sizes="(max-width: 639px) 280px, (max-width: 1023px) 300px, 310px" className="object-contain" />
+        <Image src={issue.coverImage || "/images/journal-cover.jpg"} alt={`${issue.title} cover`} fill sizes="(max-width: 639px) 320px, (max-width: 1023px) 45vw, (max-width: 1279px) 30vw, 290px" className="object-contain" />
       </div>
       <div className="flex flex-1 flex-col items-start p-4 sm:p-5">
         {issue.issn && <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#111433]">ISSN {issue.issn}</p>}
@@ -79,8 +79,8 @@ export default function IssueArchive({ title, subtitle, issues, emptyMessage, sh
         </div>
       ) : (
         <>
-          <div className="mx-auto grid max-w-[930px] grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {visible.map(issue => <div key={issue._id} className="mx-auto w-full max-w-[300px]"><IssueCard issue={issue} /></div>)}
+          <div className="grid w-full grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {visible.map(issue => <div key={issue._id} className="mx-auto w-full min-w-0 max-w-[320px] sm:mx-0 sm:max-w-none"><IssueCard issue={issue} /></div>)}
           </div>
           {showFilters && <div className="mt-8 border-t border-slate-100 pt-5 text-center">
             <nav aria-label="Issue pagination" className="flex flex-wrap items-center justify-center gap-2">
