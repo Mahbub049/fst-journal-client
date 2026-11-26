@@ -15,6 +15,8 @@ type LoginStep = "credentials" | "loginOtp" | "forgotEmail" | "resetPassword";
 export default function AdminLoginPage() {
   const router = useRouter();
   const emailInputRef = useRef<HTMLInputElement>(null);
+  const loginOtpRef = useRef<HTMLInputElement>(null);
+  const resetOtpRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<LoginStep>("credentials");
   const [email, setEmail] = useState("");
@@ -31,6 +33,8 @@ export default function AdminLoginPage() {
 
   useEffect(() => {
     if (step === "credentials") emailInputRef.current?.focus();
+    if (step === "loginOtp") loginOtpRef.current?.focus();
+    if (step === "resetPassword") resetOtpRef.current?.focus();
   }, [step]);
 
   const cleanMessages = () => {
@@ -456,6 +460,7 @@ export default function AdminLoginPage() {
                       OTP Code
                     </label>
                     <input
+                      ref={loginOtpRef}
                       type="text"
                       inputMode="numeric"
                       maxLength={6}
@@ -548,6 +553,7 @@ export default function AdminLoginPage() {
                       Reset OTP
                     </label>
                     <input
+                      ref={resetOtpRef}
                       type="text"
                       inputMode="numeric"
                       maxLength={6}

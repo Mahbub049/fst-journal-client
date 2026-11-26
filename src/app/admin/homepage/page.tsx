@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { AdminSectionTabs, AdminSectionPanel } from "@/components/admin/AdminSectionTabs";
 import JournalMetricsSettings from "@/components/admin/JournalMetricsSettings";
 import HomepageLegacyWebsiteSettings from "@/components/admin/HomepageLegacyWebsiteSettings";
 import HomepageLaunchModalSettings from "@/components/admin/HomepageLaunchModalSettings";
@@ -128,7 +129,24 @@ const toIsoDateValue = (value: string) => {
   return Number.isFinite(date.getTime()) ? date.toISOString() : null;
 };
 
+const HOMEPAGE_TABS = [
+  { id: "hero", label: "Hero / Header" },
+  { id: "metrics", label: "Journal Metrics" },
+  { id: "overview", label: "Overview" },
+  { id: "countdown", label: "Countdown Timer" },
+  { id: "carousel", label: "Welcome Image Carousel" },
+  { id: "information", label: "Journal Information" },
+  { id: "headings", label: "Section Headings" },
+  { id: "buttons", label: "Homepage Buttons" },
+  { id: "launch", label: "Launch / Welcome Modal" },
+  { id: "celebration", label: "Site Celebration" },
+  { id: "legacy", label: "Old Website Button" },
+] as const;
+
+type SectionTab = (typeof HOMEPAGE_TABS)[number]["id"];
+
 export default function AdminHomepagePage() {
+  const [activeTab, setActiveTab] = useState<SectionTab>("hero");
   const [form, setForm] = useState<HomepageContent>(emptyHomepage);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -392,7 +410,7 @@ export default function AdminHomepagePage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="grid min-w-0 grid-cols-1 gap-6">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -415,13 +433,19 @@ export default function AdminHomepagePage() {
           </div>
         </div>
 
+        <AdminSectionTabs prefix="homepage" label="Homepage management sections" tabs={HOMEPAGE_TABS} activeTab={activeTab} onChange={setActiveTab} />
+
         {message && (
           <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-700 shadow-sm">
             {message}
           </div>
         )}
 
-        {!loading ? <HomepageLegacyWebsiteSettings /> : null}
+        {!loading ? (
+          <AdminSectionPanel prefix="homepage" id="legacy" activeTab={activeTab}>
+              <HomepageLegacyWebsiteSettings />
+            </AdminSectionPanel>
+        ) : null}
 
         {loading ? (
           <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
@@ -431,12 +455,25 @@ export default function AdminHomepagePage() {
             </p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <HomepageLaunchModalSettings form={form} updateField={updateField} />
+          <form onSubmit={handleSubmit} className={activeTab === "legacy" ? "hidden" : "grid min-w-0 grid-cols-1 gap-6"} hidden={activeTab === "legacy"} onInvalidCapture={(event) => {
+            const field = event.target as HTMLInputElement;
+            const id = field.closest<HTMLElement>("[data-admin-panel]")?.dataset.adminPanel;
+            const tab = HOMEPAGE_TABS.find(item => item.id === id);
+            if (tab && tab.id !== activeTab) {
+              setActiveTab(tab.id);
+              requestAnimationFrame(() => { field.focus(); field.reportValidity(); });
+            }
+          }}>
+            <AdminSectionPanel prefix="homepage" id="launch" activeTab={activeTab}>
+              <HomepageLaunchModalSettings form={form} updateField={updateField} />
+            </AdminSectionPanel>
 
-            <HomepageCelebrationSettings form={form} updateField={updateField} />
+            <AdminSectionPanel prefix="homepage" id="celebration" activeTab={activeTab}>
+              <HomepageCelebrationSettings form={form} updateField={updateField} />
+            </AdminSectionPanel>
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <AdminSectionPanel prefix="homepage" id="hero" activeTab={activeTab}>
+              <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-bold text-slate-950">
                 Hero / Header Section
               </h2>
@@ -608,10 +645,14 @@ export default function AdminHomepagePage() {
                 </div>
               </div>
             </section>
+            </AdminSectionPanel>
 
-            <JournalMetricsSettings />
+            <AdminSectionPanel prefix="homepage" id="metrics" activeTab={activeTab}>
+              <JournalMetricsSettings />
+            </AdminSectionPanel>
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <AdminSectionPanel prefix="homepage" id="overview" activeTab={activeTab}>
+              <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-bold text-slate-950">
                 Overview Section
               </h2>
@@ -645,8 +686,10 @@ export default function AdminHomepagePage() {
                 </div>
               </div>
             </section>
+            </AdminSectionPanel>
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <AdminSectionPanel prefix="homepage" id="countdown" activeTab={activeTab}>
+              <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-lg font-bold text-slate-950">
@@ -719,8 +762,10 @@ export default function AdminHomepagePage() {
                 </div>
               </div>
             </section>
+            </AdminSectionPanel>
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <AdminSectionPanel prefix="homepage" id="carousel" activeTab={activeTab}>
+              <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <h2 className="text-lg font-bold text-slate-950">
@@ -869,8 +914,10 @@ export default function AdminHomepagePage() {
                 ) : null}
               </div>
             </section>
+            </AdminSectionPanel>
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <AdminSectionPanel prefix="homepage" id="information" activeTab={activeTab}>
+              <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <h2 className="text-lg font-bold text-slate-950">
@@ -957,8 +1004,10 @@ export default function AdminHomepagePage() {
                 ))}
               </div>
             </section>
+            </AdminSectionPanel>
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <AdminSectionPanel prefix="homepage" id="headings" activeTab={activeTab}>
+              <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-bold text-slate-950">
                 Homepage Section Headings
               </h2>
@@ -1073,8 +1122,10 @@ export default function AdminHomepagePage() {
                 </div>
               </div>
             </section>
+            </AdminSectionPanel>
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <AdminSectionPanel prefix="homepage" id="buttons" activeTab={activeTab}>
+              <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <h2 className="text-lg font-bold text-slate-950">
@@ -1158,8 +1209,9 @@ export default function AdminHomepagePage() {
                 ))}
               </div>
             </section>
+            </AdminSectionPanel>
 
-            <div className="sticky bottom-4 z-10 flex justify-end">
+            <div className={activeTab === "metrics" ? "hidden" : "sticky bottom-4 z-10 flex justify-end"}>
               <button
                 type="submit"
                 disabled={saving}

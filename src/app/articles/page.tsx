@@ -35,9 +35,9 @@ export default async function ArticlesPage({ searchParams }: {
     <PublicLayout>
       <main className="bg-[#f7f8fb]">
         <section className="border-b border-slate-200 bg-white">
-          <Container className="py-9 md:py-14">
-            <h1 className="text-[36px] font-semibold leading-tight text-[#0b1f3a] md:text-[54px]" style={{ fontFamily: "var(--font-source-serif)" }}>Articles</h1>
-            <p className="mt-3 max-w-3xl text-[15px] leading-7 text-slate-600">Explore research published in the Journal of FST. Browse by issue, discover frequently read and cited papers, or search by article title and author.</p>
+          <Container className="py-12 md:py-16">
+            <h1 className="text-[36px] font-semibold leading-tight tracking-tight text-slate-950 md:text-[56px]" style={{ fontFamily: "var(--font-source-serif)" }}>Articles</h1>
+            <p className="mt-5 hyphens-auto text-justify text-[15px] leading-8 text-slate-600 [text-align-last:left] md:text-[16px]">Explore research published in the Journal of FST. Browse by issue, discover frequently read and cited papers, or search by article title and author.</p>
           </Container>
         </section>
         <Container className="py-6 md:py-10">

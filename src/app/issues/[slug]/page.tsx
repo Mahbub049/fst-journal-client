@@ -1,3 +1,4 @@
+import IssueArchive from "@/components/issues/IssueArchive";
 import Container from "@/components/common/Container";
 import PublicLayout from "@/components/layout/PublicLayout";
 import Link from "next/link";
@@ -146,87 +147,14 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
-function IssueCard({ issue }: { issue: Issue }) {
-  return (
-    <Link
-      href={`/issues/${issue.slug}`}
-      className="block overflow-hidden rounded-3xl border border-slate-200 bg-[#fbfcfd] transition hover:-translate-y-1 hover:bg-white hover:shadow-md"
-    >
-      <div className="relative aspect-[0.72] overflow-hidden bg-slate-100">
-        <Image
-          src={issue.coverImage || "/images/journal-cover.jpg"}
-          alt={issue.title}
-          fill
-          sizes="(max-width: 768px) 100vw, 33vw"
-          className="object-cover"
-        />
-      </div>
-
-      <div className="p-5">
-        {issue.issn ? (
-          <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[#111433]">
-            ISSN {issue.issn}
-          </p>
-        ) : null}
-
-        <h3 className="mt-3 text-[17px] font-semibold leading-7 text-slate-950">
-          {issue.title}
-        </h3>
-
-        <p className="mt-2 text-[14px] text-slate-500">
-          Volume {issue.volume || "-"}, Issue {issue.issueNumber || "-"}
-          {issue.publishDateLabel ? `, ${issue.publishDateLabel}` : ""}
-        </p>
-
-        <span className="mt-5 inline-flex text-[14px] font-medium text-[#111433] hover:text-slate-950">
-          View issue →
-        </span>
-      </div>
-    </Link>
-  );
-}
-
-function IssueListPage({
-  title,
-  subtitle,
-  issues,
-  emptyMessage,
-}: {
-  title: string;
-  subtitle: string;
-  issues: Issue[];
-  emptyMessage: string;
+function IssueListPage({ title, subtitle, issues, emptyMessage, showFilters = true }: {
+  title: string; subtitle: string; issues: Issue[]; emptyMessage: string; showFilters?: boolean;
 }) {
   return (
     <PublicLayout>
       <main className="bg-[#f7f8fb]">
         <Container className="py-8 md:py-10">
-          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
-            <div className="mb-8">
-              <p className="journal-subheading">Published Issues</p>
-
-              <h2
-                className="mt-3 text-[24px] font-semibold leading-tight text-slate-950 md:text-[30px]"
-                style={{ fontFamily: "var(--font-source-serif)" }}
-              >
-                {title}
-              </h2>
-
-              <p className="mt-4 max-w-3xl text-[15px] leading-7 text-slate-600">
-                {subtitle}
-              </p>
-            </div>
-
-            {issues.length === 0 ? (
-              <EmptyState message={emptyMessage} />
-            ) : (
-              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                {issues.map((issue) => (
-                  <IssueCard key={issue._id} issue={issue} />
-                ))}
-              </div>
-            )}
-          </section>
+          <IssueArchive title={title} subtitle={subtitle} issues={issues} emptyMessage={emptyMessage} showFilters={showFilters} />
         </Container>
       </main>
     </PublicLayout>
@@ -550,6 +478,7 @@ export default async function IssuesInnerPage({
           title={issuePages.current.title}
           subtitle={issuePages.current.subtitle}
           issues={[]}
+          showFilters={false}
           emptyMessage="Mark one published issue as recent from the admin panel to show it as the current issue."
         />
       );

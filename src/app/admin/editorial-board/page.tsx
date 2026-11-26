@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { AdminSectionTabs, AdminSectionPanel } from "@/components/admin/AdminSectionTabs";
 import {
   createAdminEditorialBoard,
   deleteAdminEditorialBoard,
@@ -145,7 +146,18 @@ const normalizeConfigOrder = (config: EditorialBoardPageSettings) => ({
   editorialAreas: config.editorialAreas.map((item, index) => ({ ...item, order: index })),
 });
 
+const EDITORIAL_TABS = [
+  { id: "members", label: "Editorial Board Members" },
+  { id: "public", label: "Public Page Settings" },
+  { id: "office", label: "Editorial Office" },
+  { id: "roles", label: "Categories / Roles" },
+  { id: "areas", label: "Editorial Areas" },
+] as const;
+
+type SectionTab = (typeof EDITORIAL_TABS)[number]["id"];
+
 export default function AdminEditorialBoardPage() {
+  const [activeTab, setActiveTab] = useState<SectionTab>("members");
   const [editors, setEditors] = useState<EditorialBoardMember[]>([]);
   const [allEditors, setAllEditors] = useState<EditorialBoardMember[]>([]);
   const [config, setConfig] = useState<EditorialBoardPageSettings>(defaultConfig);
@@ -520,7 +532,7 @@ export default function AdminEditorialBoardPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="grid min-w-0 grid-cols-1 gap-6">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -544,6 +556,8 @@ export default function AdminEditorialBoardPage() {
             </div>
           </div>
         </div>
+
+        <AdminSectionTabs prefix="editorial" label="Editorial board management sections" tabs={EDITORIAL_TABS} activeTab={activeTab} onChange={setActiveTab} />
 
         {message && <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-700 shadow-sm">{message}</div>}
 
@@ -650,22 +664,23 @@ export default function AdminEditorialBoardPage() {
           </div>
         ) : null}
 
+        <AdminSectionPanel prefix="editorial" id="members" activeTab={activeTab}>
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><div><h2 className="text-lg font-bold text-slate-950">Editorial Board Members</h2><p className="mt-1 text-sm text-slate-500">Drag members within the same role to control display order.</p></div><button type="button" onClick={fetchData} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold"><RefreshCw size={16} /> Refresh</button></div>
             <form onSubmit={(e) => { e.preventDefault(); fetchData(); }} className="mb-5 grid gap-3 lg:grid-cols-[1fr_170px_190px_130px_auto]"><div className="relative"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search members" className="h-11 w-full rounded-xl border border-slate-200 pl-11 pr-4 text-sm" /></div><select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm"><option value="all">All Roles</option>{config.categories.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select><select value={areaFilter} onChange={(e) => setAreaFilter(e.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm"><option value="all">All Areas</option>{config.editorialAreas.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select><select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm"><option value="all">All Status</option><option value="active">Active</option><option value="inactive">Inactive</option></select><button type="submit" className="h-11 rounded-xl bg-slate-950 px-4 text-sm font-bold text-white">Search</button></form>
 
             {loading ? <div className="flex min-h-64 items-center justify-center"><Loader2 className="animate-spin text-[#005A78]" /></div> : editors.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">No members found.</div> : <div className="space-y-3">{editors.map((member) => <div key={member._id} draggable onDragStart={() => setDraggingMemberId(member._id)} onDragOver={(e) => e.preventDefault()} onDrop={() => dropMember(member)} onDragEnd={() => setDraggingMemberId(null)} className={`rounded-2xl border p-4 transition ${draggingMemberId === member._id ? "border-[#005A78] bg-cyan-50 opacity-60" : "border-slate-200 bg-slate-50"}`}><div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"><div className="flex min-w-0 gap-4"><GripVertical className="mt-7 shrink-0 cursor-grab text-slate-400" size={18} /><div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white">{member.profileImage ? <img src={member.profileImage} alt={member.name} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center"><UserRound className="text-slate-400" size={30} /></div>}</div><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-slate-950">{member.name}</h3><button type="button" onClick={() => toggleMember(member)} className={`rounded-full px-3 py-1 text-xs font-bold ${member.isActive ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>{member.isActive ? "Active" : "Inactive"}</button></div><p className="mt-1 text-sm font-semibold text-[#005A78]">{member.category}</p><p className="mt-1 text-sm text-slate-600">{member.editorialArea}</p><p className="mt-1 text-sm text-slate-500">{member.designation}{member.institution ? ` · ${member.institution}` : ""}</p>{member.expertise?.length > 0 && <div className="mt-2 flex flex-wrap gap-2">{member.expertise.map((item) => <span key={item} className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600">{item}</span>)}</div>}</div></div><div className="flex gap-2"><button type="button" onClick={() => handleEditMember(member)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold"><Edit size={14} /> Edit</button><button type="button" onClick={() => deleteMember(member)} className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700"><Trash2 size={14} /> Delete</button></div></div></div>)}</div>}
         </section>
+            </AdminSectionPanel>
 
+        <AdminSectionPanel prefix="editorial" id="public" activeTab={activeTab}>
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <div className="flex items-center gap-2"><Settings2 size={19} className="text-[#005A78]" /><h2 className="text-xl font-bold text-slate-950">Public Page and Editorial Office</h2></div>
-              <p className="mt-1 text-sm text-slate-500">These fields now directly control the public editorial board page and office information.</p>
+              <div className="flex items-center gap-2"><Settings2 size={19} className="text-[#005A78]" /><h2 className="text-xl font-bold text-slate-950">Public Page Settings</h2></div>
+              <p className="mt-1 text-sm text-slate-500">These fields control the public editorial board page and summary cards.</p>
             </div>
-            <button type="button" onClick={saveConfig} disabled={savingConfig} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#005A78] px-5 text-sm font-bold text-white disabled:opacity-60">
-              {savingConfig ? <Loader2 size={17} className="animate-spin" /> : <Save size={17} />} Save All Settings
-            </button>
+
           </div>
 
           <div className="grid gap-5 lg:grid-cols-2">
@@ -711,7 +726,11 @@ export default function AdminEditorialBoardPage() {
             </div>
           </div>
 
-          <div className="mt-8 border-t border-slate-200 pt-6">
+        </section>
+            </AdminSectionPanel>
+
+        <AdminSectionPanel prefix="editorial" id="office" activeTab={activeTab}>
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="rounded-3xl border border-[#005A78]/15 bg-[#f3fafc] p-5 sm:p-6">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
@@ -816,10 +835,10 @@ export default function AdminEditorialBoardPage() {
                 </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+            </AdminSectionPanel>
 
-        <section className="grid gap-6 xl:grid-cols-2">
+        <AdminSectionPanel prefix="editorial" id="roles" activeTab={activeTab}>
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between"><div><h2 className="text-lg font-bold text-slate-950">Categories / Roles</h2><p className="text-sm text-slate-500">Create roles, choose count cards, and drag to control public section order.</p></div><button type="button" onClick={addCategory} className="inline-flex items-center gap-2 rounded-xl bg-[#005A78] px-4 py-2.5 text-sm font-bold text-white"><Plus size={16} /> Add Role</button></div>
             <div className="space-y-3">
@@ -830,7 +849,9 @@ export default function AdminEditorialBoardPage() {
               ))}
             </div>
           </div>
+            </AdminSectionPanel>
 
+        <AdminSectionPanel prefix="editorial" id="areas" activeTab={activeTab}>
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between"><div><h2 className="text-lg font-bold text-slate-950">Editorial Areas</h2><p className="text-sm text-slate-500">Create subject or organizational areas and drag to order them.</p></div><button type="button" onClick={addArea} className="inline-flex items-center gap-2 rounded-xl bg-[#005A78] px-4 py-2.5 text-sm font-bold text-white"><Plus size={16} /> Add Area</button></div>
             <div className="space-y-3">
@@ -841,7 +862,15 @@ export default function AdminEditorialBoardPage() {
               ))}
             </div>
           </div>
-        </section>
+            </AdminSectionPanel>
+
+        {activeTab !== "members" && (
+          <div className="sticky bottom-4 z-10 flex justify-end">
+            <button type="button" onClick={saveConfig} disabled={savingConfig} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#005A78] px-5 text-sm font-bold text-white disabled:opacity-60">
+              {savingConfig ? <Loader2 size={17} className="animate-spin" /> : <Save size={17} />} Save All Settings
+            </button>
+          </div>
+        )}
 
       </div>
     </AdminLayout>
